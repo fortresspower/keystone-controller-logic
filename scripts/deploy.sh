@@ -1,12 +1,20 @@
-#!/bin/sh
-set -e
-CONTAINER="$1"
-TARGET_DIR="$2"
-if [ -z "$CONTAINER" ] || [ -z "$TARGET_DIR" ]; then
-  echo "Usage: $0 <container_name> <target_dir>"
-  exit 1
-fi
-docker exec -u 0 -it "$CONTAINER" bash -lc "mkdir -p $TARGET_DIR"
-docker cp "$BASE/dist/." "$CONTAINER":"$TARGET_DIR"/
+#!/usr/bin/env bash
+set -euo pipefail
+
+CONTAINER="${1:-NodeRedModule}"
+DEST="${2:-/data-internal/dist}"
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+echo "Building TypeScript…"
+(cd "$ROOT" && npm run build)
+
+echo "Pushing dist/ into container '$CONTAINER' -> $DEST"
+docker exec -u 0 -it "$CONTAINER" sh -lc "rm -rf '$DEST' && mkdir -p '$DEST'"
+docker cp "$ROOT/dist/." "$CONTAINER":"$DEST"/
+
+echo "Sanity check inside container:"
+docker exec -u 0 -it "$CONTAINER" node -e "const lib=require('$DEST'); console.log({ok:!!lib, keys:Object.keys(lib), version:lib.VERSION})"
+
+echo "Restarting Node-RED container…"
 docker restart "$CONTAINER"
 echo "✅ Deploy complete."
