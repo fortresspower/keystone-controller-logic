@@ -1,6 +1,7 @@
-node_modules/
+# build artifacts & bundles
 dist/
-coverage/
-.DS_Store
-.vscode/
-.idea/
+dist.tar
+
+# runtime/controller copies
+settings.js
+settings.js.backup
