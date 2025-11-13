@@ -88,8 +88,17 @@ function parseValue(regs: number[], base: number, item: TagMapItem) {
   const be = endian === "BE";
   const off = base + item.offset;
   const len = item.length || 1;
-  const parser = item.parser || (len === 1 ? "U16" : len === 2 ? "U32" : "F64");
+
+  // 👇 widen to string so "C" comparison is allowed
+  const parser: string = (item.parser || (len === 1 ? "U16" : len === 2 ? "U32" : "F64")) as string;
+
   const rd = (i: number) => regs[i] ?? 0;
+
+  // Coil handling: Node-RED modbus-flex returns an array of bits; we use the first bit.
+  if (parser === "C") {
+    // Same behavior as old subflow: registerData[0]
+    return regs[0] ?? 0;
+  }
 
   switch (parser) {
     case "U16":

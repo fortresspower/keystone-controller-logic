@@ -1,18 +1,73 @@
 import type { CompilerEnv, ReadPlan, TagMapItem } from "../types";
 
-type FnKey = "IR" | "IRF" | "HR" | "HRF" | string;
-const FC: Record<string, number> = { IR: 4, IRF: 4, HR: 3, HRF: 3 };
+type FnKey =
+  | "HR"
+  | "HRUS"
+  | "HRF"
+  | "HRI"
+  | "HRUI"
+  | "HRUI_64"
+  | "HRI_64"
+  | "HRS"
+  | "IR"
+  | "IRUS"
+  | "IRF"
+  | "IRI"
+  | "IRUI"
+  | "IRUI_64"
+  | "IRI_64"
+  | "IRS"
+  | "C"
+  | string;
+
+const FC: Record<string, number> = {
+  HR: 3,
+  HRUS: 3,
+  HRF: 3,
+  HRI: 3,
+  HRUI: 3,
+  HRLL: 3,
+  HRUI_64: 3,
+  HRS: 3,
+  IR: 4,
+  IRUS: 4,
+  IRF: 4,
+  IRI: 4,
+  IRUI: 4,
+  IRUI_64: 4,
+  IRI_64: 4,
+  IRS: 4,
+  C: 1,
+};
+
+const REGISTER_QTY: Record<string, number> = {
+  HR: 1,
+  HRUS: 1,
+  HRF: 2,
+  HRI: 2,
+  HRUI: 2,
+  HRUI_64: 4,
+  HRI_64: 4,
+  IR: 1,
+  IRUS: 1,
+  IRF: 2,
+  IRI: 2,
+  IRUI: 2,
+  IRUI_64: 4,
+  IRI_64: 4,
+  C: 1,
+};
 
 interface TagDef {
   name: string;
   function: FnKey;
-  address: number; // 1-based register address
-  length: number; // register count
+  address: number; // 1-based register/coil address
+  length?: number; // register count; defaults from REGISTER_QTY
   pollMs?: number;
   pollClass?: "fast" | "normal" | "slow";
   endian?: "BE" | "LE";
   wordOrder32?: "ABCD" | "CDAB" | "BADC" | "DCBA";
-  parser?: "U16" | "S16" | "U32" | "F32" | "F64";
+  parser?: "U16" | "S16" | "U32" | "F32" | "F64" | "C" | string;
   scale?: any;
   alarm?: "Yes" | "No";
   supportingTag?: "Yes" | "No";
@@ -40,10 +95,19 @@ export function buildReadPlan(profile: any, instance: any, env: CompilerEnv): Re
 
   // group by function
   const byFn = new Map<FnKey, TagDef[]>();
-  for (const t of profile.tags as TagDef[]) {
-    const fn = (t.function || "IRF") as FnKey;
+  for (const raw of profile.tags as TagDef[]) {
+    const fn = (raw.function || "IRF") as FnKey;
+    const len = Math.max(1, raw.length ?? REGISTER_QTY[fn] ?? 1);
+    const tag: TagDef = {
+      ...raw,
+      function: fn,
+      length: len,
+      // default parser: coils => "C"; others unchanged
+      parser: raw.parser || (fn === "C" ? "C" : raw.parser),
+    };
+
     if (!byFn.has(fn)) byFn.set(fn, []);
-    byFn.get(fn)!.push(t);
+    byFn.get(fn)!.push(tag);
   }
 
   const blocks: any[] = [];
@@ -54,7 +118,8 @@ export function buildReadPlan(profile: any, instance: any, env: CompilerEnv): Re
 
     for (const t of tags) {
       const start = t.address;
-      const end = t.address + Math.max(1, t.length) - 1;
+      const len = Math.max(1, t.length ?? REGISTER_QTY[t.function] ?? 1);
+      const end = t.address + len - 1;
 
       if (!win) {
         win = { start, end, tags: [t] };
@@ -96,7 +161,12 @@ export function buildReadPlan(profile: any, instance: any, env: CompilerEnv): Re
   };
 }
 
-function emitWindow(fn: FnKey, win: { start: number; end: number; tags: any[] }, out: any[], env: CompilerEnv) {
+function emitWindow(
+  fn: FnKey,
+  win: { start: number; end: number; tags: TagDef[] },
+  out: any[],
+  env: CompilerEnv
+) {
   const qty = win.end - win.start + 1;
 
   for (let base = 0; base < qty; base += env.CompilerMaxQty) {
@@ -104,20 +174,23 @@ function emitWindow(fn: FnKey, win: { start: number; end: number; tags: any[] },
     const chunkQty = Math.min(env.CompilerMaxQty, qty - base);
 
     const map = win.tags
-      .map<TagMapItem>((t) => ({
-        name: t.name,
-        tagID: t.name,
-        offset: (t.address - win.start) - base,
-        length: Math.max(1, t.length),
-        parser: t.parser,
-        endian: t.endian,
-        wordOrder32: t.wordOrder32,
-        scale: t.scale,
-        alarm: t.alarm,
-        supportingTag: t.supportingTag,
-        status: t.status,
-        pollMs: t.pollMs,
-      }))
+      .map<TagMapItem>((t) => {
+        const effLen = Math.max(1, t.length ?? REGISTER_QTY[t.function] ?? 1);
+        return {
+          name: t.name,
+          tagID: t.name,
+          offset: t.address - win.start - base,
+          length: effLen,
+          parser: t.parser,
+          endian: t.endian,
+          wordOrder32: t.wordOrder32,
+          scale: t.scale,
+          alarm: t.alarm,
+          supportingTag: t.supportingTag,
+          status: t.status,
+          pollMs: t.pollMs,
+        } as TagMapItem;
+      })
       .filter((m) => m.offset >= 0 && m.offset + m.length <= chunkQty);
 
     out.push({
