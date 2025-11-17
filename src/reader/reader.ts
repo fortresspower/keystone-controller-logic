@@ -1,14 +1,20 @@
-import type { ReadPlan, ReaderEnv, TagMapItem, Endian, WordOrder32 } from "../types";
+import type { ReadPlan, ReaderEnv, TagMapItem, Endian } from "../types";
 
 type EquipId = string;
+
 interface Runtime {
   timers: NodeJS.Timeout[];
   inflight: number;
 }
+
 const RUNTIMES = new Map<EquipId, Runtime>();
 
 // ---------------------- scheduler ----------------------
-export function start(plan: ReadPlan, env: ReaderEnv, send: (o1?: any, o2?: any, o3?: any) => void) {
+export function start(
+  plan: ReadPlan,
+  env: ReaderEnv,
+  send: (o1?: any, o2?: any, o3?: any) => void
+) {
   stop(plan.equipmentId);
   const rt: Runtime = { timers: [], inflight: 0 };
   const mkAddr = (s: number) => (env.MODBUS_ZERO_BASED ? s - 1 : s);
@@ -23,10 +29,21 @@ export function start(plan: ReadPlan, env: ReaderEnv, send: (o1?: any, o2?: any,
       fc: blk.fc,
       address: mkAddr(blk.start),
       quantity: blk.quantity,
-      payload: { unitid: plan.unitId, fc: blk.fc, address: mkAddr(blk.start), quantity: blk.quantity },
+      payload: {
+        unitid: plan.unitId,
+        fc: blk.fc,
+        address: mkAddr(blk.start),
+        quantity: blk.quantity,
+      },
     };
     send(req, null, {
-      payload: { equipmentId: plan.equipmentId, blockIdx: i, state: "poll", periodMs: blk.pollMs, ts: Date.now() },
+      payload: {
+        equipmentId: plan.equipmentId,
+        blockIdx: i,
+        state: "poll",
+        periodMs: blk.pollMs,
+        ts: Date.now(),
+      },
     });
     setTimeout(() => {
       rt.inflight = Math.max(0, rt.inflight - 1);
@@ -54,7 +71,7 @@ export function stop(equipmentId: string) {
   RUNTIMES.delete(equipmentId);
 }
 
-// ---------------------- parsing ----------------------
+// ---------------------- parsing helpers ----------------------
 function regsFrom(msg: any): number[] {
   if (Array.isArray(msg?.payload)) return msg.payload;
   if (Array.isArray(msg?.payload?.data)) return msg.payload.data;
@@ -63,9 +80,18 @@ function regsFrom(msg: any): number[] {
   return [];
 }
 
-function clamp(v: number, lo: number, hi: number) {
-  return Math.max(lo, Math.min(hi, v));
+function clamp(v: number, lo: number | string, hi: number | string) {
+  const low = Number(lo);
+  const high = Number(hi);
+
+  if (!Number.isFinite(low) || !Number.isFinite(high)) {
+    // if the scale values are garbage, just return v unchanged
+    return v;
+  }
+
+  return Math.max(low, Math.min(high, v));
 }
+
 
 function f32(hi: number, lo: number) {
   const buf = new ArrayBuffer(4);
@@ -83,100 +109,208 @@ function f64(words: number[]) {
   return dv.getFloat64(0, false);
 }
 
+type ParserKind =
+  | "S16" | "U16"
+  | "S32" | "U32"
+  | "F32" | "F64"
+  | "U64" | "S64"
+  | "C"
+  | "STR";
+
 function parseValue(regs: number[], base: number, item: TagMapItem) {
-  const endian: Endian = item.endian || "BE";
+  const endian: Endian = (item as any).endian || "BE";
   const be = endian === "BE";
-  const off = base + item.offset;
+  const off = base + (item.offset ?? 0);
   const len = item.length || 1;
-
-  // 👇 widen to string so "C" comparison is allowed
-  const parser: string = (item.parser || (len === 1 ? "U16" : len === 2 ? "U32" : "F64")) as string;
-
+  const parser = ((item as any).parser as ParserKind) || "U16";
   const rd = (i: number) => regs[i] ?? 0;
 
-  // Coil handling: Node-RED modbus-flex returns an array of bits; we use the first bit.
+  // Coil handling: Node-RED modbus-flex returns an array of bits; we use the first value.
   if (parser === "C") {
-    // Same behavior as old subflow: registerData[0]
     return regs[0] ?? 0;
   }
 
   switch (parser) {
-    case "U16":
+    case "U16": {
       return rd(off) >>> 0;
+    }
     case "S16": {
       let v = rd(off) & 0xffff;
       if (v & 0x8000) v -= 0x10000;
       return v;
     }
-    case "U32": {
-      const a = rd(off),
-        b = rd(off + 1);
-      const hi = item.wordOrder32 === "CDAB" || item.wordOrder32 === "BADC" ? b : a;
-      const lo = item.wordOrder32 === "CDAB" || item.wordOrder32 === "BADC" ? a : b;
-      return be ? ((hi << 16) >>> 0) | (lo >>> 0) : ((lo << 16) >>> 0) | (hi >>> 0);
+    case "U32":
+    case "S32": {
+      const a = rd(off);
+      const b = rd(off + 1);
+      const hi =
+        (item as any).wordOrder32 === "CDAB" || (item as any).wordOrder32 === "BADC" ? b : a;
+      const lo =
+        (item as any).wordOrder32 === "CDAB" || (item as any).wordOrder32 === "BADC" ? a : b;
+
+      let u = be
+        ? ((hi << 16) >>> 0) | (lo >>> 0)
+        : ((lo << 16) >>> 0) | (hi >>> 0);
+
+      if (parser === "S32" && u > 0x7fffffff) {
+        u = u - 0x100000000;
+      }
+      return u;
     }
     case "F32": {
-      const a = rd(off),
-        b = rd(off + 1);
-      const hi = item.wordOrder32 === "CDAB" || item.wordOrder32 === "BADC" ? b : a;
-      const lo = item.wordOrder32 === "CDAB" || item.wordOrder32 === "BADC" ? a : b;
+      const a = rd(off);
+      const b = rd(off + 1);
+      const hi =
+        (item as any).wordOrder32 === "CDAB" || (item as any).wordOrder32 === "BADC" ? b : a;
+      const lo =
+        (item as any).wordOrder32 === "CDAB" || (item as any).wordOrder32 === "BADC" ? a : b;
       return f32(hi, lo);
     }
     case "F64":
-      return f64([rd(off), rd(off + 1), rd(off + 2), rd(off + 3)]);
+    case "U64":
+    case "S64": {
+      return f64([
+        rd(off),
+        rd(off + 1),
+        rd(off + 2),
+        rd(off + 3),
+      ]);
+    }
+    case "STR": {
+      const chars: number[] = [];
+      for (let i = 0; i < len; i++) {
+        const word = rd(off + i);
+        const ch = word & 0xff;  // 1 char per 16-bit word (your latest rule)
+        if (ch) chars.push(ch);
+      }
+      return String.fromCharCode(...chars).replace(/\u0000+$/, "");
+    }
     default:
       return rd(off) >>> 0;
   }
 }
 
-function applyScale(val: number, item: TagMapItem, env: ReaderEnv) {
-  const s = item.scale;
-  if (!s || s.mode !== "Linear") return val;
-  if (s.rawHigh === s.rawLow) return s.engLow;
-  let out = s.engLow + ((val - s.rawLow) / (s.rawHigh - s.rawLow)) * (s.engHigh - s.engLow);
+function applyScale(rawVal: any, item: TagMapItem, env: ReaderEnv): any {
+  // If the parsed value is not a number (e.g., STR, C), do NOT attempt scaling.
+  if (typeof rawVal !== "number" || !Number.isFinite(rawVal)) {
+    return rawVal;
+  }
+
+  const s = (item as any).scale;
+  if (!s || s.mode !== "Linear") return rawVal;
+
+  const rawLow = Number(s.rawLow);
+  const rawHigh = Number(s.rawHigh);
+  const engLow = Number(s.engLow);
+  const engHigh = Number(s.engHigh);
+
+  if (
+    !Number.isFinite(rawLow) ||
+    !Number.isFinite(rawHigh) ||
+    !Number.isFinite(engLow) ||
+    !Number.isFinite(engHigh)
+  ) {
+    return rawVal;
+  }
+
+  if (rawHigh === rawLow) return engLow;
+
+  let out =
+    engLow +
+    ((rawVal - rawLow) / (rawHigh - rawLow)) * (engHigh - engLow);
+
   const doClamp = env.RESPECT_TAG_CLAMP ? !!s.clamp : !!env.SCALE_CLAMP_DEFAULT;
-  return doClamp ? clamp(out, Math.min(s.engLow, s.engHigh), Math.max(s.engLow, s.engHigh)) : out;
+  if (!doClamp) return out;
+
+  const lo = Math.min(engLow, engHigh);
+  const hi = Math.max(engLow, engHigh);
+  return clamp(out, lo, hi);
 }
 
+
+
+
 // ---------------------- main reply handler ----------------------
-export function onReply(msg: any, plan: ReadPlan, env: ReaderEnv): { out2?: any; out3?: any } {
-  const eq = msg?._reader?.equipmentId,
-    idx = msg?._reader?.blockIdx;
+export function onReply(
+  msg: any,
+  plan: ReadPlan,
+  env: ReaderEnv
+): { out2?: any; out3?: any } {
+  const eq = msg?._reader?.equipmentId;
+  const idx = msg?._reader?.blockIdx;
   const diag = (p: any) => ({ payload: p });
-  if (!plan || eq !== plan.equipmentId || typeof idx !== "number")
-    return { out3: diag({ equipmentId: eq || "(unknown)", error: "no-plan-or-index", ts: Date.now() }) };
+
+  if (!plan || eq !== plan.equipmentId || typeof idx !== "number") {
+    return {
+      out3: diag({
+        equipmentId: eq || "(unknown)",
+        error: "no-plan-or-index",
+        ts: Date.now(),
+      }),
+    };
+  }
 
   const blk = plan.blocks[idx];
-  if (!blk) return { out3: diag({ equipmentId: eq, blockIdx: idx, error: "no-block", ts: Date.now() }) };
+  if (!blk) {
+    return {
+      out3: diag({
+        equipmentId: eq,
+        blockIdx: idx,
+        error: "no-block",
+        ts: Date.now(),
+      }),
+    };
+  }
 
-  const regs = regsFrom(msg),
-    need = blk.quantity,
-    have = regs.length;
+  const regs = regsFrom(msg);
+  const need = blk.quantity;
+  const have = regs.length;
+
   const warnings: string[] = [];
   if (have < need) warnings.push("qty-mismatch");
 
   const samples: any[] = [];
-  for (const item of blk.map) {
-    const last = item.offset + Math.max(1, item.length || 1) - 1;
+  for (const item of blk.map as TagMapItem[]) {
+    const last = (item.offset ?? 0) + Math.max(1, item.length || 1) - 1;
     if (last >= have) {
       warnings.push("short-slice");
       continue;
     }
     let value = parseValue(regs, 0, item);
     value = applyScale(value, item, env);
-    const tagID = item.tagID || item.name || "";
+    const tagID = (item as any).tagID || item.name || "";
     if (!env.SKIP_EMPTY_SAMPLES || value !== null) {
       samples.push({
         tagID,
         value,
         timestamp: Date.now(),
-        alarm: item.alarm || "No",
-        supportingTag: item.supportingTag || "No",
+        alarm: (item as any).alarm || "No",
+        supportingTag: (item as any).supportingTag || "No",
       });
     }
   }
 
-  if (!samples.length)
-    return { out3: diag({ equipmentId: eq, blockIdx: idx, warnings, state: "empty", ts: Date.now() }) };
-  return { out2: samples, out3: diag({ equipmentId: eq, blockIdx: idx, have, need, warnings, ts: Date.now() }) };
+  if (!samples.length) {
+    return {
+      out3: diag({
+        equipmentId: eq,
+        blockIdx: idx,
+        warnings,
+        state: "empty",
+        ts: Date.now(),
+      }),
+    };
+  }
+
+  return {
+    out2: samples,
+    out3: diag({
+      equipmentId: eq,
+      blockIdx: idx,
+      have,
+      need,
+      warnings,
+      ts: Date.now(),
+    }),
+  };
 }
