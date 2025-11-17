@@ -8,8 +8,9 @@
   },
   "scripts": {
     "build": "tsc -p .",
-    "test": "jest --runInBand",
-    "deploy": "powershell -ExecutionPolicy Bypass -File ./scripts/deploy.ps1 NodeRedModule /data-internal/dist"
+    "test": "jest --runInBand --verbose",
+    "deploy": "powershell -ExecutionPolicy Bypass -File ./scripts/deploy.ps1 NodeRedModule /data-internal/dist",
+    "deploy:mac": "pwsh -File ./scripts/deploy.ps1 NodeRedModule /data-internal/dist"
   },
   "keywords": [],
   "author": "",
