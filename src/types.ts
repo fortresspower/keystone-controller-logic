@@ -1,64 +1,115 @@
-export interface BrokerEnv { REQUEST_TIMEOUT_MS: number }
+// src/types.ts
 
-export interface ReaderEnv {
-  MODBUS_ZERO_BASED: boolean;
-  SCALE_CLAMP_DEFAULT: boolean;
-  RESPECT_TAG_CLAMP: boolean;
-  SKIP_EMPTY_SAMPLES: boolean;
-  MAX_IN_FLIGHT: number;
-  REQUEST_TIMEOUT_MS: number;
-  JITTER_MS: number;
+//
+// ------------------------------------------------------------
+//  Core Modbus Types shared by Compiler, Reader, Writer
+// ------------------------------------------------------------
+//
+
+// ---------------------------
+//  Numeric register types
+// ---------------------------
+export type ModbusNumericType =
+  | 'HR'        // 16-bit signed
+  | 'HRUS'      // 16-bit unsigned
+  | 'HRI'       // 32-bit signed (2 regs)
+  | 'HRUI'      // 32-bit unsigned (2 regs)
+  | 'HRI_64'    // 64-bit signed (4 regs)
+  | 'HRF'       // Float32 (2 regs)
+  | 'IR'        // 16-bit signed (READ ONLY)
+  | 'IRUS'      // 16-bit unsigned (READ ONLY)
+  | 'IRI'       // 32-bit signed (READ ONLY)
+  | 'IRUI'      // 32-bit unsigned (READ ONLY)
+  | 'IRUI_64'   // 64-bit signed (READ ONLY)
+  | 'IRF'       // Float32 (READ ONLY)
+  | 'C';        // Coil (boolean read/write)
+
+
+// ---------------------------
+//  Tag model (reader + writer)
+// ---------------------------
+export interface CompiledTag {
+  tagID: string;                 // e.g. "PCS.SYSTEM_ACTIVE_POWER_DEMAND"
+  unitId: number;                // Modbus unit ID
+  modbusType: ModbusNumericType; // HR*/IR*/C
+  address: number;               // zero-based register/coil address
+
+  // Optional scaling fields (writer uses inverse scaling)
+  rawLow?: number;
+  rawHigh?: number;
+  scaledLow?: number;
+  scaledHigh?: number;
 }
 
-export interface CompilerEnv {
-  CompilerMaxQty: number;
-  CompilerMaxSpan: number;
-  CompilerMaxHole: number;
-  PollFastMs: number;
-  PollNormalMs: number;
-  PollSlowMs: number;
+
+// ---------------------------
+//  Per-device write configuration
+// ---------------------------
+// HR writes:
+export type HoldingWriteMode = 'FC6' | 'FC16';
+
+// Coil writes:
+export type CoilWriteMode    = 'FC5' | 'FC15';
+
+export interface DeviceWriteConfig {
+  holdingWriteMode: HoldingWriteMode;   // FC6 = single-reg, FC16 = multi-reg
+  coilWriteMode:    CoilWriteMode;      // FC5 = single-coil, FC15 = multi-coil
 }
 
-export type Endian = "BE" | "LE";
-export type WordOrder32 = "ABCD" | "CDAB" | "BADC" | "DCBA";
 
-export interface LinearScale {
-  mode: "Linear";
-  rawLow: number;
-  rawHigh: number;
-  engLow: number;
-  engHigh: number;
-  clamp?: boolean;
+// ---------------------------
+//  Per physical Modbus device
+// ---------------------------
+export interface CompiledDevice {
+  name: string;                  // e.g. "PCS", "BMS", "Fronius1"
+  unitId: number;                // Modbus address
+  writeConfig: DeviceWriteConfig;
 }
 
+
+// ---------------------------
+//  Final compiled profile
+// ---------------------------
+// This object is created once at boot
+// and inserted into Node-RED global context.
+export interface CompiledProfile {
+  tagsById: Map<string, CompiledTag>;          // Quick lookup by tagID
+  devicesByUnitId: Map<number, CompiledDevice>; // Device-level config
+}
+
+// ---------------------------------------------------------------------------
+// Minimal env + plan types for compiler/reader/broker
+// (Placeholder versions so the rest of the code compiles cleanly.)
+// You can tighten these later once everything is stable.
+// ---------------------------------------------------------------------------
+
+export type CompilerEnv = {
+  // Env for the compiler: logger, timeFn, etc.
+  // Using loose typing for now.
+  [key: string]: any;
+};
+
+export type ReaderEnv = {
+  // Env for the reader: modbus client(s), logger, scheduler, etc.
+  [key: string]: any;
+};
+
+export type BrokerEnv = {
+  // Env for the broker: mqtt client, logger, etc.
+  [key: string]: any;
+};
+
+// One entry in the tag map produced by the compiler.
 export interface TagMapItem {
-  name?: string;
-  tagID?: string;
-  offset: number;
-  length: number;
-  parser?: "U16" | "S16" | "U32" | "F32" | "F64";
-  endian?: Endian;
-  wordOrder32?: WordOrder32;
-  scale?: LinearScale;
-  alarm?: "Yes" | "No";
-  supportingTag?: "Yes" | "No";
-  status?: string;
-  pollMs?: number;
+  // You can refine this later based on what compiler.ts uses.
+  [key: string]: any;
 }
 
-export interface ReadBlock {
-  function: string;
-  fc: number;
-  start: number;
-  quantity: number;
-  map: TagMapItem[];
-  pollMs: number;
-}
-
+// Abstract "read plan" produced by compiler, consumed by reader.
 export interface ReadPlan {
-  equipmentId: string;
-  serverKey: string;
-  unitId: number;
-  blocks: ReadBlock[];
-  pollPlan: { fastMs: number; normalMs: number; slowMs: number };
+  // Again, keep it flexible for now.
+  [key: string]: any;
 }
+
+// Endianness flag for register decoding.
+export type Endian = "BE" | "LE";
