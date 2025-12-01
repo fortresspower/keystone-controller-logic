@@ -1,0 +1,39 @@
+{
+    "profileId": "udt_eGauge_V1",
+    "defaults": {
+        "byteOrder": "BE",
+        "wordOrder32": "ABCD"
+    },
+    "tags": [
+        {
+            "name": "Utility_L1_Current",
+            "function": "IRF",
+            "address": 9008,
+            "pollMs": 500
+        },
+        {
+            "name": "Utility_L2_Current",
+            "function": "IRF",
+            "address": 9010,
+            "pollMs": 500
+        },
+        {
+            "name": "Utility_L3_Current",
+            "function": "IRF",
+            "address": 9012,
+            "pollMs": 500
+        },
+        {
+            "name": "timestamp_s",
+            "function": "IRUI",
+            "address": 0,
+            "pollMs": 500
+        },
+        {
+            "name": "timestamp_single_reg",
+            "function": "IR",
+            "length": 2,
+            "pollMs": 500
+        }
+    ]
+}
