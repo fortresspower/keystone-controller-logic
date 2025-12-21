@@ -6,6 +6,9 @@ import type { Endian } from "../types";
 import raw_eGauge_V1 from "./udt_eGauge_V1.json";
 import raw_DELTA_125VH_V3 from "./udt_DELTA_125VH_V3.json";
 import raw_CATL_MBMU_V17 from "./udt_CATL_MBMU_V17.json";
+import raw_solarEdge_V1 from "./udt_solarEdge_V1.json";
+
+// Define the shape of your legacy templates for normalization
 
 type LegacyTemplate = {
   name: string;
@@ -16,7 +19,7 @@ type LegacyTemplate = {
 function normalizeBool(v: any): boolean | undefined {
   if (v === undefined) return undefined;
   if (typeof v === "boolean") return v;
-  if (typeof v === "string") {
+  if (typeof v === "string") { 
     const s = v.toLowerCase();
     if (s === "yes" || s === "true") return true;
     if (s === "no" || s === "false") return false;
@@ -88,5 +91,6 @@ function normalizeTemplate(raw: LegacyTemplate): UdtTemplate {
 export const templates: Record<string, UdtTemplate> = {
   udt_eGauge_V1: normalizeTemplate(raw_eGauge_V1 as LegacyTemplate),
   udt_DELTA_125VH_V3: normalizeTemplate(raw_DELTA_125VH_V3 as LegacyTemplate),
-  udt_CATL_MBMU_V17: normalizeTemplate(raw_CATL_MBMU_V17 as LegacyTemplate)
+  udt_CATL_MBMU_V17: normalizeTemplate(raw_CATL_MBMU_V17 as LegacyTemplate),
+  udt_solarEdge_V1: normalizeTemplate(raw_solarEdge_V1 as LegacyTemplate)
 };

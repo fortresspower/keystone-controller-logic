@@ -5,3 +5,5 @@ dist.tar
 # runtime/controller copies
 settings.js
 settings.js.backup
+
+node_modules/

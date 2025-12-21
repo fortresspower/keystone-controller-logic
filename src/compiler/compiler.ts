@@ -1,7 +1,9 @@
 import type { CompilerEnv, ReadPlan, TagMapItem } from "../types";
+import type { UdtTemplate, UdtTag } from "../templates/types";
+import { templates } from "../templates/loader";
 
 /**
- * Tag definition as it comes from profile/Node-RED.
+ * Tag definition as it comes from profile/Node-RED or from a UDT-normalized tag.
  * NOTE: profile does NOT need to set parser; it is derived from `function`.
  */
 interface TagDef {
@@ -17,6 +19,14 @@ interface TagDef {
   alarm?: "Yes" | "No";
   supportingTag?: "Yes" | "No";
   status?: string;
+}
+
+interface CompilerProfile {
+  defaults?: {
+    byteOrder?: "BE" | "LE";
+    wordOrder32?: "ABCD" | "CDAB" | "BADC" | "DCBA";
+  };
+  tags: TagDef[];
 }
 
 type FnKey = string;
@@ -116,6 +126,131 @@ function deriveFnMeta(fnRaw: string): FnMeta {
 }
 
 /**
+ * Narrow an arbitrary value into a UdtTemplate.
+ */
+function isUdtTemplate(input: any): input is UdtTemplate {
+  return !!input && typeof (input as any).name === "string" && Array.isArray((input as any).tags);
+}
+
+function defaultsFromTemplate(tpl: UdtTemplate): CompilerProfile["defaults"] {
+  const de = tpl.defaultEndian;
+  let byteOrder: "BE" | "LE" = "BE";
+  let wordOrder32: "ABCD" | "CDAB" | "BADC" | "DCBA" = "ABCD";
+
+  if (de === "LE" || de === "BE") {
+    byteOrder = de;
+  } else if (de === "CDAB" || de === "DCBA" || de === "BADC") {
+    wordOrder32 = de as any;
+  }
+
+  return { byteOrder, wordOrder32 };
+}
+
+function endianFromUdtTag(tag: UdtTag): {
+  endian?: "BE" | "LE";
+  wordOrder32?: "ABCD" | "CDAB" | "BADC" | "DCBA";
+} {
+  const e = tag.endian;
+  if (!e) return {};
+  if (e === "BE" || e === "LE") return { endian: e };
+  if (e === "CDAB" || e === "DCBA" || e === "BADC") return { wordOrder32: e as any };
+  return {};
+}
+
+/**
+ * Convert UDT scale fields into the `scale` object the reader expects.
+ *
+ * Reader expects:
+ *   scale = {
+ *     mode: "Linear",
+ *     rawLow, rawHigh,
+ *     engLow, engHigh,
+ *     clamp?: boolean
+ *   }
+ */
+function scaleFromUdtTag(tag: UdtTag): any | undefined {
+  if (!tag.scaleMode || tag.scaleMode === "off") return undefined;
+  if (tag.scaleMode !== "linear") return undefined;
+
+  const rawLow = Number(tag.rawLow);
+  const rawHigh = Number(tag.rawHigh);
+  const engLow = Number(tag.scaledLow);
+  const engHigh = Number(tag.scaledHigh);
+
+  if (
+    !Number.isFinite(rawLow) ||
+    !Number.isFinite(rawHigh) ||
+    !Number.isFinite(engLow) ||
+    !Number.isFinite(engHigh)
+  ) {
+    return undefined;
+  }
+
+  if (rawHigh === rawLow) {
+    // Degenerate case → treat as almost-constant to avoid div/0
+    return {
+      mode: "Linear",
+      rawLow,
+      rawHigh: rawLow + 1,
+      engLow,
+      engHigh,
+      clamp: true,
+    };
+  }
+
+  return {
+    mode: "Linear",
+    rawLow,
+    rawHigh,
+    engLow,
+    engHigh,
+    clamp: true,
+  };
+}
+
+/**
+ * Map a normalized UdtTag → TagDef for the core compiler.
+ */
+function udtTagToTagDef(tag: UdtTag): TagDef {
+  const fn = String((tag as any).modbusType || "").toUpperCase().trim();
+  if (!fn) {
+    throw new Error(`UDT tag "${tag.name}" is missing modbusType`);
+  }
+
+  const address = Number((tag as any).modbusAddress ?? 0);
+  if (!Number.isFinite(address) || address <= 0) {
+    throw new Error(
+      `UDT tag "${tag.name}" has invalid modbusAddress: ${(tag as any).modbusAddress}`
+    );
+  }
+
+  const { endian, wordOrder32 } = endianFromUdtTag(tag);
+  const scale = scaleFromUdtTag(tag);
+
+  return {
+    name: tag.name,
+    function: fn,
+    address,
+    endian,
+    wordOrder32,
+    scale,
+    alarm: tag.alarm ? "Yes" : "No",
+    supportingTag: tag.supportingTag ? "Yes" : "No",
+    status: undefined,
+  };
+}
+
+/**
+ * Convert a UdtTemplate into the legacy CompilerProfile shape.
+ */
+function profileFromTemplate(tpl: UdtTemplate): CompilerProfile {
+  return {
+    defaults: defaultsFromTemplate(tpl),
+    tags: tpl.tags.map(udtTagToTagDef),
+  };
+}
+
+/**
  * Groups tags by Modbus function name, merges contiguous or near-contiguous addresses
  * within CompilerMaxSpan/Hole, then splits large ranges by CompilerMaxQty.
  *
@@ -125,8 +260,16 @@ function deriveFnMeta(fnRaw: string): FnMeta {
  *  - default parser kind
  *
  * Profile does NOT need to specify parser.
+ *
+ * `source` can be either:
+ *  - a legacy { defaults, tags } profile, or
+ *  - a UdtTemplate (udt_eGauge_V1, udt_DELTA_125VH_V3, etc.).
  */
-export function buildReadPlan(profile: any, instance: any, env: CompilerEnv): ReadPlan {
+export function buildReadPlan(source: any, instance: any, env: CompilerEnv): ReadPlan {
+  const profile: CompilerProfile = isUdtTemplate(source)
+    ? profileFromTemplate(source)
+    : (source as CompilerProfile);
+
   if (!profile?.tags?.length) throw new Error("Compiler: profile.tags empty");
   if (!instance?.equipmentId || !instance?.serverKey || typeof instance?.unitId !== "number")
     throw new Error("Compiler: invalid instance");
@@ -281,6 +424,7 @@ function emitWindow(
         status: t.status,
         pollMs: t.pollMs,
       }))
+      // guard against weird negative offsets or out-of-range slices
       .filter((m) => m.offset >= 0 && m.offset + m.length <= chunkQty);
 
     const meta = deriveFnMeta(fn); // for fc
@@ -294,4 +438,33 @@ function emitWindow(
       pollMs: 0,
     });
   }
+}
+
+/**
+ * Convenience: compile directly from a UdtTemplate.
+ */
+export function buildReadPlanFromTemplate(
+  template: UdtTemplate,
+  instance: any,
+  env: CompilerEnv
+): ReadPlan {
+  return buildReadPlan(template, instance, env);
+}
+
+/**
+ * Convenience: compile from a template name using `templates` registry.
+ *
+ * Example:
+ *   buildReadPlanFromTemplateName("udt_eGauge_V1", instance, env)
+ */
+export function buildReadPlanFromTemplateName(
+  templateName: string,
+  instance: any,
+  env: CompilerEnv
+): ReadPlan {
+  const tpl = templates[templateName as keyof typeof templates];
+  if (!tpl) {
+    throw new Error(`Compiler: unknown UDT template "${templateName}"`);
+  }
+  return buildReadPlan(tpl, instance, env);
 }
