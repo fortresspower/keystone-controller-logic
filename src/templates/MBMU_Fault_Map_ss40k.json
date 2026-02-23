@@ -1,0 +1,158 @@
+{
+  "name": "faultmap_CATL_EnerOne_BMS_40103_v1",
+  "ss40k": { "model": 40103 },
+  "equipment": {
+    "vendor": "CATL",
+    "product": "EnerOne / EnerOne+",
+    "protocol": "Modbus TCPIP Communication Protocol V17 (0714)"
+  },
+
+  "inputs": {
+    "MBMU_W0010": { "tag": "MBMU_Warnings_Word0010", "aggregate": "SINGLE" },
+    "MBMU_W0011": { "tag": "MBMU_Warnings_Word0011", "aggregate": "SINGLE" },
+    "MBMU_W0013": { "tag": "MBMU_Warnings_Word0013", "aggregate": "SINGLE" },
+
+    "MBMU_W0005": { "tag": "MBMU_Warnings_Word0005", "aggregate": "SINGLE" },
+    "MBMU_W0006": { "tag": "MBMU_Warnings_Word0006", "aggregate": "SINGLE" },
+    "MBMU_W0007": { "tag": "MBMU_Warnings_Word0007", "aggregate": "SINGLE" },
+    "MBMU_W0008": { "tag": "MBMU_Warnings_Word0008", "aggregate": "SINGLE" },
+    "MBMU_W0009": { "tag": "MBMU_Warnings_Word0009", "aggregate": "SINGLE" },
+
+    "SBMU_W0400_ANY": { "tag": "SBMU_ANY_Word0400", "aggregate": "SINGLE" },
+    "SBMU_W0402_ANY": { "tag": "SBMU_ANY_Word0402", "aggregate": "SINGLE" },
+    "SBMU_W0404_ANY": { "tag": "SBMU_ANY_Word0404", "aggregate": "SINGLE" },
+    "SBMU_W0405_ANY": { "tag": "SBMU_ANY_Word0405", "aggregate": "SINGLE" },
+    "SBMU_W0406_ANY": { "tag": "SBMU_ANY_Word0406", "aggregate": "SINGLE" },
+    "SBMU_W0407_ANY": { "tag": "SBMU_ANY_Word0407", "aggregate": "SINGLE" },
+    "SBMU_W0408_ANY": { "tag": "SBMU_ANY_Word0408", "aggregate": "SINGLE" },
+    "SBMU_W0409_ANY": { "tag": "SBMU_ANY_Word0409", "aggregate": "SINGLE" }
+  },
+
+  "outputs": {
+    "batWarning": {
+      "type": "bitfield32",
+      "notes": "Keep this compact and portable. Use vendor-specific raw words for deep diagnostics.",
+      "bits": {
+        "0": {
+          "label": "No battery detected",
+          "expr": {
+            "anyOf": [{ "in": "MBMU_W0010", "bit": 3 }]
+          },
+          "notes": "Mapped to 'quantity of HV racks less than setting value fault' as closest operational equivalent."
+        },
+
+        "1": {
+          "label": "Battery charge/discharge fault",
+          "expr": {
+            "anyOf": [
+              { "in": "SBMU_W0406_ANY", "bit": 15 },
+              { "in": "SBMU_W0407_ANY", "bit": 3 },
+              { "in": "SBMU_W0405_ANY", "bits": [1, 2, 3, 4, 5] }
+            ]
+          },
+          "notes": "Aggregates contactor/precharge/HV-circuit-open behaviors that typically block charge/discharge."
+        },
+
+        "2": {
+          "label": "BMS communication fault",
+          "expr": {
+            "anyOf": [
+              { "in": "MBMU_W0010", "bit": 6 },
+              { "in": "MBMU_W0010", "bit": 7 },
+              { "in": "MBMU_W0010", "bit": 8 },
+              { "in": "MBMU_W0010", "bit": 9 },
+              { "in": "MBMU_W0006", "bits": [5, 6, 7, 8, 9, 10] }
+            ]
+          }
+        },
+
+        "3": {
+          "label": "Battery discharge over-current",
+          "expr": { "anyOf": [] },
+          "notes": "TODO: map once you confirm which CATL bits explicitly represent discharge OC in your firmware build."
+        },
+
+        "4": {
+          "label": "Battery over-temperature",
+          "expr": {
+            "anyOf": [
+              { "in": "SBMU_W0402_ANY", "bits": [8, 9, 10, 11] },
+              { "in": "SBMU_W0409_ANY", "bit": 8 }
+            ]
+          }
+        },
+
+        "5": {
+          "label": "Battery under-temperature",
+          "expr": {
+            "anyOf": [{ "in": "SBMU_W0402_ANY", "bits": [12, 13, 14] }]
+          }
+        },
+
+        "6": {
+          "label": "Battery  Reversed",
+          "expr": {
+            "anyOf": [
+              { "in": "MBMU_W0007", "bit": 9 },
+              { "in": "SBMU_W0407_ANY", "bit": 9 }
+            ]
+          }
+        }
+      }
+    },
+
+    "batFault": {
+      "type": "bitfield32",
+      "notes": "Hard battery protection faults (stop charge/discharge).",
+      "bits": {
+        "0": {
+          "label": "Battery over-voltage",
+          "expr": {
+            "anyOf": [{ "in": "SBMU_W0400_ANY", "bit": 6 }]
+          },
+          "notes": "Mapped to 'single cell extreme over-voltage fault'."
+        },
+        "1": {
+          "label": "Battery under-voltage",
+          "expr": {
+            "anyOf": [{ "in": "SBMU_W0400_ANY", "bit": 7 }]
+          },
+          "notes": "Mapped to 'single cell extreme under-voltage fault'."
+        }
+      }
+    },
+
+    "bmsSafetyFault": {
+      "type": "bitfield32",
+      "notes": "Optional (recommended) extension bucket: safety-chain events that deserve hard stop + loud alarms.",
+      "bits": {
+        "0": {
+          "label": "Insulation fault",
+          "expr": { "anyOf": [{ "in": "MBMU_W0010", "bits": [1, 2] }] }
+        },
+        "1": {
+          "label": "E-STOP fault",
+          "expr": { "anyOf": [{ "in": "MBMU_W0011", "bits": [7, 8] }] }
+        },
+        "2": {
+          "label": "Thermal runaway / fire fault",
+          "expr": {
+            "anyOf": [
+              { "in": "MBMU_W0008", "bit": 0 },
+              { "in": "SBMU_W0408_ANY", "bit": 0 }
+            ]
+          }
+        },
+        "3": {
+          "label": "Fire system / aerosol triggered",
+          "expr": {
+            "anyOf": [
+              { "in": "SBMU_W0405_ANY", "bits": [9, 10, 11, 14, 15] },
+              { "in": "SBMU_W0406_ANY", "bit": 0 }
+            ]
+          }
+        }
+      }
+    }
+  }
+}

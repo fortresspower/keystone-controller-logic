@@ -1,0 +1,372 @@
+{
+  "name": "faultmap_DELTA_PCS125HV_40103_v1",
+  "ss40k": {
+    "model": 40103
+  },
+  "equipment": {
+    "vendor": "Delta",
+    "product": "PCS125HV",
+    "protocol": "PCS125HV Protocol v1.2.0"
+  },
+  "inputs": {
+    "DAM_GRID_AC_1": {
+      "tag": "FAULT_DAM_GRID_AC_1",
+      "aggregate": "ANY"
+    },
+    "DAM_GRID_AC_2": {
+      "tag": "FAULT_DAM_GRID_AC_2",
+      "aggregate": "ANY"
+    },
+    "SYS_GRID_AC": {
+      "tag": "FAULT_SYS_GRID_AC",
+      "aggregate": "SINGLE"
+    },
+    "SYS_AC_SUPPLIMEN": {
+      "tag": "FAULT_SYS_AC_SUPPLIMEN",
+      "aggregate": "SINGLE"
+    },
+    "DAM_HARDWARE": {
+      "tag": "FAULT_DAM_HARDWARE",
+      "aggregate": "ANY"
+    },
+    "SYS_HARDWARE": {
+      "tag": "FAULT_SYS_HARDWARE",
+      "aggregate": "SINGLE"
+    },
+    "SYS_COMMUNICATION": {
+      "tag": "FAULT_SYS_COMMUNICATION",
+      "aggregate": "SINGLE"
+    },
+    "SYS_SYSTEM": {
+      "tag": "FAULT_SYS_SYSTEM",
+      "aggregate": "SINGLE"
+    },
+    "DAM_FPGA": {
+      "tag": "FAULT_DAM_FPGA",
+      "aggregate": "ANY"
+    },
+    "DAM_DC_SIDE": {
+      "tag": "FAULT_DAM_DC_SIDE",
+      "aggregate": "ANY"
+    },
+    "DAM_CONVERTER": {
+      "tag": "FAULT_DAM_CONVERTER",
+      "aggregate": "ANY"
+    },
+    "DAM_OTHER": {
+      "tag": "FAULT_DAM_OTHER",
+      "aggregate": "ANY"
+    },
+    "DAM_RELAY": {
+      "tag": "FAULT_DAM_RELAY",
+      "aggregate": "ANY"
+    },
+    "SYS_PCS_AC": {
+      "tag": "FAULT_SYS_PCS_AC",
+      "aggregate": "SINGLE"
+    },
+    "SYS_DC": {
+      "tag": "FAULT_SYS_DC",
+      "aggregate": "SINGLE"
+    }
+  },
+  "outputs": {
+    "gridWarning": {
+      "type": "bitfield32",
+      "bits": {
+        "0": {
+          "label": "No grid detected",
+          "expr": {
+            "anyOf": []
+          },
+          "notes": "Delta does not expose a dedicated 'no grid' bit in the mapped words; keep empty unless you choose to use Phase Loss as a proxy."
+        },
+        "1": {
+          "label": "Grid abnormal",
+          "expr": {
+            "anyOf": [
+              {
+                "in": "DAM_GRID_AC_2",
+                "bits": [2, 3, 4]
+              },
+              {
+                "in": "SYS_AC_SUPPLIMEN",
+                "bits": [2, 8, 9, 10, 11]
+              }
+            ]
+          }
+        },
+        "2": {
+          "label": "VAC abnormal",
+          "expr": {
+            "anyOf": []
+          },
+          "notes": "Left unmapped for Delta grid scope (avoid mixing PCS output-side conditions into gridWarning)."
+        },
+        "3": {
+          "label": "Grid over-voltage",
+          "expr": {
+            "anyOf": [
+              {
+                "in": "DAM_GRID_AC_1",
+                "bits": [0, 1, 2, 6, 7, 8, 12, 13, 14]
+              },
+              {
+                "in": "SYS_GRID_AC",
+                "bits": [0, 1, 2, 6, 7, 8]
+              }
+            ]
+          }
+        },
+        "4": {
+          "label": "Grid under-voltage",
+          "expr": {
+            "anyOf": [
+              {
+                "in": "DAM_GRID_AC_1",
+                "bits": [3, 4, 5, 9, 10, 11]
+              },
+              {
+                "in": "SYS_GRID_AC",
+                "bits": [3, 4, 5, 9, 10, 11]
+              }
+            ]
+          }
+        },
+        "5": {
+          "label": "Grid frequency fault",
+          "expr": {
+            "anyOf": [
+              {
+                "in": "DAM_GRID_AC_2",
+                "bits": [0, 1]
+              },
+              {
+                "in": "SYS_AC_SUPPLIMEN",
+                "bits": [0, 1]
+              }
+            ]
+          }
+        },
+        "6": {
+          "label": "Grid over-frequency",
+          "expr": {
+            "anyOf": [
+              {
+                "in": "DAM_GRID_AC_2",
+                "bit": 0
+              },
+              {
+                "in": "SYS_AC_SUPPLIMEN",
+                "bit": 0
+              }
+            ]
+          }
+        },
+        "7": {
+          "label": "Grid under-frequency",
+          "expr": {
+            "anyOf": [
+              {
+                "in": "DAM_GRID_AC_2",
+                "bit": 1
+              },
+              {
+                "in": "SYS_AC_SUPPLIMEN",
+                "bit": 1
+              }
+            ]
+          }
+        }
+      }
+    },
+    "gridFault": {
+      "type": "bitfield32",
+      "bits": {
+        "0": {
+          "label": "Inverter DC-bias over-current",
+          "expr": {
+            "anyOf": []
+          }
+        },
+        "1": {
+          "label": "AC moving-average voltage high",
+          "expr": {
+            "anyOf": []
+          }
+        },
+        "2": {
+          "label": "Grid neutral abnormal",
+          "expr": {
+            "anyOf": []
+          }
+        },
+        "3": {
+          "label": "DSP-MCU grid-voltage fault",
+          "expr": {
+            "anyOf": []
+          }
+        },
+        "4": {
+          "label": "DC-bus UV sampling fault",
+          "expr": {
+            "anyOf": []
+          }
+        }
+      }
+    },
+    "pcsWarning": {
+      "type": "bitfield32",
+      "bits": {
+        "0": {
+          "label": "Fan abnormal",
+          "expr": {
+            "anyOf": [
+              {
+                "in": "DAM_HARDWARE",
+                "bits": [4, 5, 6, 7, 8, 9]
+              },
+              {
+                "in": "SYS_HARDWARE",
+                "bits": [9, 10, 11]
+              }
+            ]
+          }
+        },
+        "1": {
+          "label": "LCD communication fault",
+          "expr": {
+            "anyOf": []
+          },
+          "notes": "Unmapped until we decide which Delta comm/UI bit(s) represent LCD communication fault."
+        },
+        "2": {
+          "label": "Auto test failure",
+          "expr": {
+            "anyOf": []
+          },
+          "notes": "Unmapped until we identify Delta auto-test specific bit(s)."
+        }
+      }
+    },
+    "pcsFault": {
+      "type": "bitfield32",
+      "bits": {
+        "0": {
+          "label": "Soft-start abnormal",
+          "expr": {
+            "anyOf": []
+          }
+        },
+        "1": {
+          "label": "DC bus short circuit",
+          "expr": {
+            "anyOf": []
+          }
+        },
+        "2": {
+          "label": "DC link unbalance/undervoltage",
+          "expr": {
+            "anyOf": []
+          }
+        },
+        "3": {
+          "label": "DC link overvoltage",
+          "expr": {
+            "anyOf": []
+          }
+        },
+        "4": {
+          "label": "DCDC abnormal",
+          "expr": {
+            "anyOf": []
+          }
+        },
+        "5": {
+          "label": "Inverter over temperature",
+          "expr": {
+            "anyOf": []
+          },
+          "notes": "Candidate sources: DAM_FPGA bit5 IGBT over-temperature; SYS_SYSTEM ambient temp faults. Map after full PCS walk-through."
+        },
+        "6": {
+          "label": "Hardware over-current protection",
+          "expr": {
+            "anyOf": []
+          },
+          "notes": "Candidate sources: DAM_FPGA AC over-current protection bits; DAM_CONVERTER overload/overcurrent bits. Map after full PCS walk-through."
+        },
+        "7": {
+          "label": "Inverter relay abnormal",
+          "expr": {
+            "anyOf": []
+          },
+          "notes": "Candidate sources: DAM_RELAY relay fault bits. Map after full PCS walk-through."
+        },
+        "8": {
+          "label": "Internal power supply abnormal",
+          "expr": {
+            "anyOf": []
+          }
+        },
+        "9": {
+          "label": "Software version incompatibility",
+          "expr": {
+            "anyOf": []
+          }
+        },
+        "10": {
+          "label": "Internal DSP communication lost",
+          "expr": {
+            "anyOf": []
+          },
+          "notes": "Candidate sources: SYS_COMMUNICATION internal comm faults; DAM_OTHER heartbeat/comm faults. Map after full PCS walk-through."
+        },
+        "11": {
+          "label": "Internal communication loss EMS to master DSP",
+          "expr": {
+            "anyOf": []
+          },
+          "notes": "Candidate sources: EMS\u2194DSP loss may map from SYS_COMMUNICATION/DAM_OTHER comm-loss faults. Map after full PCS walk-through."
+        },
+        "12": {
+          "label": "Internal storage error",
+          "expr": {
+            "anyOf": []
+          },
+          "notes": "Candidate sources: SYS_SYSTEM flash/EEPROM/storage error bits; DAM_OTHER flash faults. Map after full PCS walk-through."
+        },
+        "13": {
+          "label": "M3 Microprocessor TX failure",
+          "expr": {
+            "anyOf": []
+          }
+        },
+        "14": {
+          "label": "M3 Microprocessor RX failure",
+          "expr": {
+            "anyOf": []
+          }
+        },
+        "15": {
+          "label": "M8 Microprocessor TX failure",
+          "expr": {
+            "anyOf": []
+          }
+        },
+        "16": {
+          "label": "M8 Microprocessor RX failure",
+          "expr": {
+            "anyOf": []
+          }
+        },
+        "17": {
+          "label": "US/European Model detection error",
+          "expr": {
+            "anyOf": []
+          }
+        }
+      }
+    }
+  }
+}
