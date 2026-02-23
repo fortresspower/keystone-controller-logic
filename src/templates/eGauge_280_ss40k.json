@@ -1,0 +1,732 @@
+{
+  "version": "2",
+  "device": {
+    "vendor": "eGauge",
+    "model": "280_meter_builtIn_plus_virtual",
+    "protocol": "modbus-tcp",
+    "defaultByteOrder": "BE",
+    "defaultWordOrder32": "ABCD",
+    "notes": "Built-in addresses use 30k-dropped form (30500->500, 31500->1500, 32000->2000). Virtual tags begin at 9000. Voltages/frequency are shared across Grid/Load/Gen/AcCp (same eGauge). No energy tags."
+  },
+  "telemetry": [
+    {
+      "id": "EG_V_L1",
+      "description": "Built-in RMS voltage L1",
+      "category": "BuiltIn",
+      "function": "IRF",
+      "address": 500,
+      "pollClass": "fast"
+    },
+    {
+      "id": "EG_V_L2",
+      "description": "Built-in RMS voltage L2",
+      "category": "BuiltIn",
+      "function": "IRF",
+      "address": 502,
+      "pollClass": "fast"
+    },
+    {
+      "id": "EG_V_L3",
+      "description": "Built-in RMS voltage L3",
+      "category": "BuiltIn",
+      "function": "IRF",
+      "address": 504,
+      "pollClass": "fast"
+    },
+
+    {
+      "id": "EG_HZ_L1",
+      "description": "Built-in frequency L1",
+      "category": "BuiltIn",
+      "function": "IRF",
+      "address": 1500,
+      "pollClass": "fast"
+    },
+    {
+      "id": "EG_HZ_L2",
+      "description": "Built-in frequency L2",
+      "category": "BuiltIn",
+      "function": "IRF",
+      "address": 1502,
+      "pollClass": "fast"
+    },
+    {
+      "id": "EG_HZ_L3",
+      "description": "Built-in frequency L3",
+      "category": "BuiltIn",
+      "function": "IRF",
+      "address": 1504,
+      "pollClass": "fast"
+    },
+
+    {
+      "id": "EG_I_S1",
+      "description": "Built-in current S1 (Grid L1)",
+      "category": "BuiltIn",
+      "function": "IRF",
+      "address": 2000,
+      "pollClass": "fast"
+    },
+    {
+      "id": "EG_I_S2",
+      "description": "Built-in current S2 (Grid L2)",
+      "category": "BuiltIn",
+      "function": "IRF",
+      "address": 2002,
+      "pollClass": "fast"
+    },
+    {
+      "id": "EG_I_S3",
+      "description": "Built-in current S3 (Grid L3)",
+      "category": "BuiltIn",
+      "function": "IRF",
+      "address": 2004,
+      "pollClass": "fast"
+    },
+
+    {
+      "id": "EG_I_S4",
+      "description": "Built-in current S4 (PV/AcCp L1)",
+      "category": "BuiltIn",
+      "function": "IRF",
+      "address": 2006,
+      "pollClass": "fast"
+    },
+    {
+      "id": "EG_I_S5",
+      "description": "Built-in current S5 (PV/AcCp L2)",
+      "category": "BuiltIn",
+      "function": "IRF",
+      "address": 2008,
+      "pollClass": "fast"
+    },
+    {
+      "id": "EG_I_S6",
+      "description": "Built-in current S6 (PV/AcCp L3)",
+      "category": "BuiltIn",
+      "function": "IRF",
+      "address": 2010,
+      "pollClass": "fast"
+    },
+
+    {
+      "id": "EG_I_S7",
+      "description": "Built-in current S7 (Load L1)",
+      "category": "BuiltIn",
+      "function": "IRF",
+      "address": 2012,
+      "pollClass": "fast"
+    },
+    {
+      "id": "EG_I_S8",
+      "description": "Built-in current S8 (Load L2)",
+      "category": "BuiltIn",
+      "function": "IRF",
+      "address": 2014,
+      "pollClass": "fast"
+    },
+    {
+      "id": "EG_I_S9",
+      "description": "Built-in current S9 (Load L3)",
+      "category": "BuiltIn",
+      "function": "IRF",
+      "address": 2016,
+      "pollClass": "fast"
+    },
+
+    {
+      "id": "EG_I_S10",
+      "description": "Built-in current S10 (Gen L1)",
+      "category": "BuiltIn",
+      "function": "IRF",
+      "address": 2018,
+      "pollClass": "fast"
+    },
+    {
+      "id": "EG_I_S11",
+      "description": "Built-in current S11 (Gen L2)",
+      "category": "BuiltIn",
+      "function": "IRF",
+      "address": 2020,
+      "pollClass": "fast"
+    },
+    {
+      "id": "EG_I_S12",
+      "description": "Built-in current S12 (Gen L3)",
+      "category": "BuiltIn",
+      "function": "IRF",
+      "address": 2022,
+      "pollClass": "fast"
+    },
+
+    {
+      "id": "MTR_V_GRID_L1N",
+      "description": "Grid V L1-N (shared)",
+      "category": "Grid",
+      "function": "IRF",
+      "address": 500,
+      "pollClass": "fast",
+      "ss40k": { "name": "vGridL1N", "model": "40101" }
+    },
+    {
+      "id": "MTR_V_GRID_L2N",
+      "description": "Grid V L2-N (shared)",
+      "category": "Grid",
+      "function": "IRF",
+      "address": 502,
+      "pollClass": "fast",
+      "ss40k": { "name": "vGridL2N", "model": "40101" }
+    },
+    {
+      "id": "MTR_V_GRID_L3N",
+      "description": "Grid V L3-N (shared)",
+      "category": "Grid",
+      "function": "IRF",
+      "address": 504,
+      "pollClass": "fast",
+      "ss40k": { "name": "vGridL3N", "model": "40101" }
+    },
+    {
+      "id": "MTR_F_GRID",
+      "description": "Grid frequency (shared)",
+      "category": "Grid",
+      "function": "IRF",
+      "address": 1500,
+      "pollClass": "fast",
+      "ss40k": { "name": "fGrid", "model": "40101" }
+    },
+
+    {
+      "id": "MTR_F_LOAD",
+      "description": "Load frequency (shared)",
+      "category": "Load",
+      "function": "IRF",
+      "address": 1500,
+      "pollClass": "fast",
+      "ss40k": { "name": "fLoad", "model": "40101" }
+    },
+    {
+      "id": "MTR_F_GEN",
+      "description": "Gen frequency (shared)",
+      "category": "Gen",
+      "function": "IRF",
+      "address": 1500,
+      "pollClass": "fast",
+      "ss40k": { "name": "fGen", "model": "40101" }
+    },
+    {
+      "id": "MTR_F_ACCP",
+      "description": "AcCp frequency (shared)",
+      "category": "AcCp",
+      "function": "IRF",
+      "address": 1500,
+      "pollClass": "fast",
+      "ss40k": { "name": "fAcCpl", "model": "40101" }
+    },
+
+    {
+      "id": "MTR_GRID_P_IMP_TOT",
+      "description": "Grid import P total",
+      "category": "Grid",
+      "function": "IRF",
+      "address": 9000,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1000,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
+      "pollClass": "fast",
+      "ss40k": { "name": "pGridImpTot", "model": "40101" }
+    },
+
+    {
+      "id": "MTR_GRID_P_EXP_TOT",
+      "description": "Grid export P total",
+      "category": "Grid",
+      "function": "IRF",
+      "address": 9002,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1000,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
+      "pollClass": "fast",
+      "ss40k": { "name": "pGridExpTot", "model": "40101" }
+    },
+
+    {
+      "id": "MTR_GRID_Q_TOT",
+      "description": "Grid Q total",
+      "category": "Grid",
+      "function": "IRF",
+      "address": 9004,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1000,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
+      "pollClass": "fast",
+      "ss40k": { "name": "qGridTot", "model": "40101" }
+    },
+
+    {
+      "id": "MTR_GRID_S_TOT",
+      "description": "Grid S total",
+      "category": "Grid",
+      "function": "IRF",
+      "address": 9006,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1000,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
+      "pollClass": "fast",
+      "ss40k": { "name": "sGridTot", "model": "40101" }
+    },
+
+    {
+      "id": "MTR_GRID_PF_TOT",
+      "description": "Grid PF total",
+      "category": "Grid",
+      "function": "IRF",
+      "address": 9008,
+      "pollClass": "fast",
+      "ss40k": { "name": "pfGridTot", "model": "40101" }
+    },
+
+    {
+      "id": "MTR_GRID_I_TOT",
+      "description": "Grid I total",
+      "category": "Grid",
+      "function": "IRF",
+      "address": 9010,
+      "pollClass": "fast",
+      "ss40k": { "name": "iGridTot", "model": "40101" }
+    },
+
+    {
+      "id": "MTR_GRID_P_L1",
+      "description": "Grid P L1",
+      "category": "Grid",
+      "function": "IRF",
+      "address": 9018,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1000,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
+      "pollClass": "fast",
+      "ss40k": { "name": "pGridL1", "model": "40101" }
+    },
+
+    {
+      "id": "MTR_GRID_P_L2",
+      "description": "Grid P L2",
+      "category": "Grid",
+      "function": "IRF",
+      "address": 9020,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1000,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
+      "pollClass": "fast",
+      "ss40k": { "name": "pGridL2", "model": "40101" }
+    },
+
+    {
+      "id": "MTR_GRID_P_L3",
+      "description": "Grid P L3",
+      "category": "Grid",
+      "function": "IRF",
+      "address": 9022,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1000,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
+      "pollClass": "fast",
+      "ss40k": { "name": "pGridL3", "model": "40101" }
+    },
+
+    {
+      "id": "MTR_LOAD_P_TOT",
+      "description": "Load P total",
+      "category": "Load",
+      "function": "IRF",
+      "address": 9030,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1000,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
+      "pollClass": "fast",
+      "ss40k": { "name": "pLoad", "model": "40101" }
+    },
+
+    {
+      "id": "MTR_LOAD_Q_TOT",
+      "description": "Load Q total",
+      "category": "Load",
+      "function": "IRF",
+      "address": 9032,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1000,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
+      "pollClass": "fast",
+      "ss40k": { "name": "qLoadTot", "model": "40101" }
+    },
+
+    {
+      "id": "MTR_LOAD_S_TOT",
+      "description": "Load S total",
+      "category": "Load",
+      "function": "IRF",
+      "address": 9034,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1000,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
+      "pollClass": "fast",
+      "ss40k": { "name": "sLoadTot", "model": "40101" }
+    },
+
+    {
+      "id": "MTR_LOAD_PF_TOT",
+      "description": "Load PF total",
+      "category": "Load",
+      "function": "IRF",
+      "address": 9036,
+      "pollClass": "fast",
+      "ss40k": { "name": "pfLoadTot", "model": "40101" }
+    },
+
+    {
+      "id": "MTR_LOAD_I_TOT",
+      "description": "Load I total",
+      "category": "Load",
+      "function": "IRF",
+      "address": 9038,
+      "pollClass": "fast",
+      "ss40k": { "name": "iLoadTot", "model": "40101" }
+    },
+
+    {
+      "id": "MTR_LOAD_P_L1",
+      "description": "Load P L1",
+      "category": "Load",
+      "function": "IRF",
+      "address": 9046,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1000,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
+      "pollClass": "fast",
+      "ss40k": { "name": "pLoadL1", "model": "40101" }
+    },
+
+    {
+      "id": "MTR_LOAD_P_L2",
+      "description": "Load P L2",
+      "category": "Load",
+      "function": "IRF",
+      "address": 9048,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1000,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
+      "pollClass": "fast",
+      "ss40k": { "name": "pLoadL2", "model": "40101" }
+    },
+
+    {
+      "id": "MTR_LOAD_P_L3",
+      "description": "Load P L3",
+      "category": "Load",
+      "function": "IRF",
+      "address": 9050,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1000,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
+      "pollClass": "fast",
+      "ss40k": { "name": "pLoadL3", "model": "40101" }
+    },
+
+    {
+      "id": "MTR_GEN_P_TOT",
+      "description": "Gen P total",
+      "category": "Gen",
+      "function": "IRF",
+      "address": 9060,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1000,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
+      "pollClass": "fast",
+      "ss40k": { "name": "pGenTot", "model": "40101" }
+    },
+
+    {
+      "id": "MTR_GEN_Q_TOT",
+      "description": "Gen Q total",
+      "category": "Gen",
+      "function": "IRF",
+      "address": 9062,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1000,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
+      "pollClass": "fast",
+      "ss40k": { "name": "qGenTot", "model": "40101" }
+    },
+
+    {
+      "id": "MTR_GEN_S_TOT",
+      "description": "Gen S total",
+      "category": "Gen",
+      "function": "IRF",
+      "address": 9064,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1000,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
+      "pollClass": "fast",
+      "ss40k": { "name": "sGenTot", "model": "40101" }
+    },
+
+    {
+      "id": "MTR_GEN_PF_TOT",
+      "description": "Gen PF total",
+      "category": "Gen",
+      "function": "IRF",
+      "address": 9066,
+      "pollClass": "fast",
+      "ss40k": { "name": "pfGenTot", "model": "40101" }
+    },
+
+    {
+      "id": "MTR_GEN_I_TOT",
+      "description": "Gen I total",
+      "category": "Gen",
+      "function": "IRF",
+      "address": 9068,
+      "pollClass": "fast",
+      "ss40k": { "name": "iGenTot", "model": "40101" }
+    },
+
+    {
+      "id": "MTR_GEN_P_L1",
+      "description": "Gen P L1",
+      "category": "Gen",
+      "function": "IRF",
+      "address": 9076,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1000,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
+      "pollClass": "fast",
+      "ss40k": { "name": "pGenL1", "model": "40101" }
+    },
+
+    {
+      "id": "MTR_GEN_P_L2",
+      "description": "Gen P L2",
+      "category": "Gen",
+      "function": "IRF",
+      "address": 9078,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1000,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
+      "pollClass": "fast",
+      "ss40k": { "name": "pGenL2", "model": "40101" }
+    },
+
+    {
+      "id": "MTR_GEN_P_L3",
+      "description": "Gen P L3",
+      "category": "Gen",
+      "function": "IRF",
+      "address": 9080,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1000,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
+      "pollClass": "fast",
+      "ss40k": { "name": "pGenL3", "model": "40101" }
+    },
+
+    {
+      "id": "MTR_ACCP_P_TOT",
+      "description": "AcCp P total",
+      "category": "AcCp",
+      "function": "IRF",
+      "address": 9090,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1000,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
+      "pollClass": "fast",
+      "ss40k": { "name": "pAcCplTot", "model": "40101" }
+    },
+
+    {
+      "id": "MTR_ACCP_Q_TOT",
+      "description": "AcCp Q total",
+      "category": "AcCp",
+      "function": "IRF",
+      "address": 9092,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1000,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
+      "pollClass": "fast",
+      "ss40k": { "name": "qAcCplTot", "model": "40101" }
+    },
+
+    {
+      "id": "MTR_ACCP_S_TOT",
+      "description": "AcCp S total",
+      "category": "AcCp",
+      "function": "IRF",
+      "address": 9094,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1000,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
+      "pollClass": "fast",
+      "ss40k": { "name": "sAcCplTot", "model": "40101" }
+    },
+
+    {
+      "id": "MTR_ACCP_PF_TOT",
+      "description": "AcCp PF total",
+      "category": "AcCp",
+      "function": "IRF",
+      "address": 9096,
+      "pollClass": "fast",
+      "ss40k": { "name": "pfAcCplTot", "model": "40101" }
+    },
+
+    {
+      "id": "MTR_ACCP_I_TOT",
+      "description": "AcCp I total",
+      "category": "AcCp",
+      "function": "IRF",
+      "address": 9098,
+      "pollClass": "fast",
+      "ss40k": { "name": "iAcCplTot", "model": "40101" }
+    },
+
+    {
+      "id": "MTR_ACCP_P_L1",
+      "description": "AcCp P L1",
+      "category": "AcCp",
+      "function": "IRF",
+      "address": 9106,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1000,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
+      "pollClass": "fast",
+      "ss40k": { "name": "pAcCplL1", "model": "40101" }
+    },
+
+    {
+      "id": "MTR_ACCP_P_L2",
+      "description": "AcCp P L2",
+      "category": "AcCp",
+      "function": "IRF",
+      "address": 9108,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1000,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
+      "pollClass": "fast",
+      "ss40k": { "name": "pAcCplL2", "model": "40101" }
+    },
+
+    {
+      "id": "MTR_ACCP_P_L3",
+      "description": "AcCp P L3",
+      "category": "AcCp",
+      "function": "IRF",
+      "address": 9110,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1000,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
+      "pollClass": "fast",
+      "ss40k": { "name": "pAcCplL3", "model": "40101" }
+    }
+  ]
+}

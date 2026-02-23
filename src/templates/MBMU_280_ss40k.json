@@ -1,0 +1,366 @@
+{
+  "version": "2",
+  "device": {
+    "vendor": "EnerOne",
+    "model": "BMS",
+    "protocol": "modbus-tcp",
+    "defaultByteOrder": "BE",
+    "defaultWordOrder32": "ABCD"
+  },
+  "telemetry": [
+    {
+      "id": "BMS_CAP_BAT",
+      "description": "Battery capacity (constant for now)",
+      "category": "BMS",
+      "pollClass": "startup",
+      "constant": 280,
+      "ss40k": {
+        "name": "capBat",
+        "model": "40101"
+      }
+    },
+
+    {
+      "id": "BMS_SOC",
+      "description": "Battery state of charge (SOC)",
+      "category": "BMS",
+      "function": "HRUS",
+      "address": 34,
+      "pollClass": "fast",
+      "ss40k": {
+        "name": "socBat",
+        "model": "40101"
+      }
+    },
+
+    {
+      "id": "BMS_V_BAT",
+      "description": "System voltage",
+      "category": "BMS",
+      "function": "HRUS",
+      "address": 32,
+      "pollClass": "fast",
+      "ss40k": {
+        "name": "vBat",
+        "model": "40101"
+      }
+    },
+    {
+      "id": "BMS_I_BAT",
+      "description": "System current",
+      "category": "BMS",
+      "function": "HR",
+      "address": 33,
+      "pollClass": "fast",
+      "ss40k": {
+        "name": "iBat",
+        "model": "40101"
+      }
+    },
+
+    {
+      "id": "BMS_P_SYS",
+      "description": "System power (+ discharging, - charging)",
+      "category": "BMS",
+      "function": "HR",
+      "address": 46,
+      "pollClass": "fast"
+    },
+
+    {
+      "id": "BMS_P_BAT_CHG",
+      "description": "Battery charge power (derived from system power; positive magnitude when charging)",
+      "category": "BMS",
+      "pollClass": "fast",
+      "calc": {
+        "from": "BMS_P_SYS",
+        "expr": "max(0, -x)"
+      },
+      "ss40k": {
+        "name": "pBatChg",
+        "model": "40101"
+      }
+    },
+    {
+      "id": "BMS_P_BAT_DISCHG",
+      "description": "Battery discharge power (derived from system power; positive magnitude when discharging)",
+      "category": "BMS",
+      "pollClass": "fast",
+      "calc": {
+        "from": "BMS_P_SYS",
+        "expr": "max(0, x)"
+      },
+      "ss40k": {
+        "name": "pBatDischg",
+        "model": "40101"
+      }
+    },
+
+    {
+      "id": "BMS_V_CELL_MAX",
+      "description": "Maximum cell voltage",
+      "category": "BMS",
+      "function": "HRUS",
+      "address": 36,
+      "pollClass": "normal",
+      "ss40k": {
+        "name": "vBatCellMax",
+        "model": "40101"
+      }
+    },
+    {
+      "id": "BMS_V_CELL_MIN",
+      "description": "Minimum cell voltage",
+      "category": "BMS",
+      "function": "HRUS",
+      "address": 37,
+      "pollClass": "normal",
+      "ss40k": {
+        "name": "vBatCellMin",
+        "model": "40101"
+      }
+    },
+
+    {
+      "id": "BMS_TEMP_CELL_AVG",
+      "description": "Average cell temperature",
+      "category": "BMS",
+      "function": null,
+      "address": null,
+      "pollClass": "normal",
+      "ss40k": {
+        "name": "tempBatCellAvg",
+        "model": "40101"
+      }
+    },
+    {
+      "id": "BMS_TEMP_CELL_MAX",
+      "description": "Maximum cell temperature",
+      "category": "BMS",
+      "function": null,
+      "address": null,
+      "pollClass": "normal",
+      "ss40k": {
+        "name": "tempBatCellMax",
+        "model": "40101"
+      }
+    },
+    {
+      "id": "BMS_TEMP_CELL_MIN",
+      "description": "Minimum cell temperature",
+      "category": "BMS",
+      "function": null,
+      "address": null,
+      "pollClass": "normal",
+      "ss40k": {
+        "name": "tempBatCellMin",
+        "model": "40101"
+      }
+    },
+
+    {
+      "id": "BMS_ALARM_WORD_0",
+      "description": "BMS alarm/fault bitfield word 0 (vendor specific)",
+      "category": "BMSFaultRaw",
+      "function": null,
+      "address": null,
+      "pollClass": "fast",
+      "status": {
+        "bitfieldStatus": true
+      }
+    },
+    {
+      "id": "BMS_WARN_WORD_0",
+      "description": "BMS warning bitfield word 0 (vendor specific)",
+      "category": "BMSWarnRaw",
+      "function": null,
+      "address": null,
+      "pollClass": "fast",
+      "status": {
+        "bitfieldStatus": true
+      }
+    },
+
+    {
+      "id": "BMS_AUX_POWER_STATE",
+      "description": "Aux power supply state (0 normal, 1 aux power lose)",
+      "category": "BMSStatus",
+      "function": "HRUS",
+      "address": 898,
+      "pollClass": "fast",
+      "status": {
+        "enum": {
+          "0": "Normal",
+          "1": "AuxPowerLose"
+        }
+      }
+    }
+  ],
+  "commands": [
+    {
+      "id": "CMD_EMS_HEARTBEAT",
+      "description": "EMS heartbeat (0-255; update every 1s)",
+      "category": "BMSControl",
+      "function": "HRUS",
+      "address": 896
+    },
+    {
+      "id": "CMD_EMS_RELAY_CONTROL",
+      "description": "Relay control command",
+      "category": "BMSControl",
+      "function": "HRUS",
+      "address": 897,
+      "enum": {
+        "0": "Initial",
+        "1": "Stay",
+        "2": "PowerOnCmd",
+        "3": "PowerOffCmd"
+      }
+    },
+    {
+      "id": "CMD_EMS_RTC_YEAR",
+      "description": "EMS RTC year (base 2000)",
+      "category": "BMSRTC",
+      "function": "HRUS",
+      "address": 900
+    },
+    {
+      "id": "CMD_EMS_RTC_MONTH",
+      "description": "EMS RTC month",
+      "category": "BMSRTC",
+      "function": "HRUS",
+      "address": 901
+    },
+    {
+      "id": "CMD_EMS_RTC_DAY",
+      "description": "EMS RTC day",
+      "category": "BMSRTC",
+      "function": "HRUS",
+      "address": 902
+    },
+    {
+      "id": "CMD_EMS_RTC_HOUR",
+      "description": "EMS RTC hour",
+      "category": "BMSRTC",
+      "function": "HRUS",
+      "address": 903
+    },
+    {
+      "id": "CMD_EMS_RTC_MINUTE",
+      "description": "EMS RTC minute",
+      "category": "BMSRTC",
+      "function": "HRUS",
+      "address": 904
+    },
+    {
+      "id": "CMD_EMS_RTC_SECOND",
+      "description": "EMS RTC second",
+      "category": "BMSRTC",
+      "function": "HRUS",
+      "address": 905
+    },
+    {
+      "id": "CMD_EMS_RTC_CMD",
+      "description": "RTC command",
+      "category": "BMSRTC",
+      "function": "HRUS",
+      "address": 906,
+      "enum": {
+        "0": "Reserved",
+        "1": "WriteRTC",
+        "2": "ReadRTC"
+      }
+    },
+    {
+      "id": "CMD_INSULATION_SWITCH",
+      "description": "Insulation detection control",
+      "category": "BMSControl",
+      "function": "HRUS",
+      "address": 907,
+      "enum": {
+        "0": "Reserved",
+        "1": "TurnOn",
+        "2": "TurnOff"
+      }
+    },
+    {
+      "id": "CMD_FAULT_CLEAR",
+      "description": "Fault clear command",
+      "category": "BMSControl",
+      "function": "HRUS",
+      "address": 908,
+      "enum": {
+        "0": "Normal",
+        "1": "FaultClearCmd"
+      }
+    },
+    {
+      "id": "CMD_RACK_DISABLE_1",
+      "description": "Rack disable bits (Racks 1-16): bit=1 disable, bit=0 enable",
+      "category": "BMSRackControl",
+      "function": "HRUS",
+      "address": 909
+    },
+    {
+      "id": "CMD_RACK_DISABLE_2",
+      "description": "Rack disable bits (Racks 17-32): bit=1 disable, bit=0 enable",
+      "category": "BMSRackControl",
+      "function": "HRUS",
+      "address": 910
+    },
+    {
+      "id": "CMD_RACK_DISABLE_3",
+      "description": "Rack disable bits (Racks 33-48): bit=1 disable, bit=0 enable",
+      "category": "BMSRackControl",
+      "function": "HRUS",
+      "address": 911
+    },
+    {
+      "id": "CMD_STEP_CHARGE_SWITCH",
+      "description": "Step-charge switch",
+      "category": "BMSControl",
+      "function": "HRUS",
+      "address": 912,
+      "enum": {
+        "0": "Initialize",
+        "1": "Disable",
+        "2": "Enable"
+      }
+    },
+    {
+      "id": "CMD_BLACK_START",
+      "description": "Black-start command",
+      "category": "BMSControl",
+      "function": "HRUS",
+      "address": 913,
+      "enum": {
+        "0": "Normal",
+        "3": "BlackStart"
+      }
+    },
+    {
+      "id": "CMD_PROD_DATE_TARGET_SBMU",
+      "description": "Target SBMU selector for production date reading",
+      "category": "BMSMaintenance",
+      "function": "HRUS",
+      "address": 914
+    },
+    {
+      "id": "CMD_PROD_DATE_READ_CMD",
+      "description": "Command for reading production date",
+      "category": "BMSMaintenance",
+      "function": "HRUS",
+      "address": 915,
+      "enum": {
+        "1": "Read"
+      }
+    },
+    {
+      "id": "CMD_PROD_DATE_ATTRIBUTE",
+      "description": "Data attribute requested (0x11 = Battery production date)",
+      "category": "BMSMaintenance",
+      "function": "HRUS",
+      "address": 916
+    }
+  ]
+}

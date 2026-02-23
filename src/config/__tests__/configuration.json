@@ -1,0 +1,862 @@
+{
+  "protocols": [
+    {
+      "model": 40104,
+      "point": "SystemProfile",
+      "block": "fixed",
+      "entry": {
+        "name": "SystemProfile",
+        "description": "System profile identifier (eSpire280 / MINI-*)",
+        "longdescription": "System profile identifier (eSpire280 / MINI-*) Data code: 40104.SystemProfile",
+        "dtype": "string",
+        "unit": "N/A",
+        "category": "Site",
+        "meanings": {}
+      }
+    },
+    {
+      "model": 40104,
+      "point": "ControllerTimezone",
+      "block": "fixed",
+      "entry": {
+        "name": "ControllerTimezone",
+        "description": "Controller timezone (IANA, e.g., America/Los_Angeles)",
+        "longdescription": "Controller timezone (IANA, e.g., America/Los_Angeles) Data code: 40104.ControllerTimezone",
+        "dtype": "string",
+        "unit": "N/A",
+        "category": "Site",
+        "meanings": {}
+      }
+    },
+    {
+      "model": 40104,
+      "point": "NominalVoltageVll",
+      "block": "fixed",
+      "entry": {
+        "name": "NominalVoltageVll",
+        "description": "Nominal line-to-line voltage",
+        "longdescription": "Nominal line-to-line voltage Data code: 40104.NominalVoltageVll",
+        "dtype": "uint16",
+        "unit": "V",
+        "category": "Site",
+        "meanings": {}
+      }
+    },
+    {
+      "model": 40104,
+      "point": "NominalFrequencyHz",
+      "block": "fixed",
+      "entry": {
+        "name": "NominalFrequencyHz",
+        "description": "Nominal frequency",
+        "longdescription": "Nominal frequency Data code: 40104.NominalFrequencyHz",
+        "dtype": "uint16",
+        "unit": "Hz",
+        "category": "Site",
+        "meanings": {}
+      }
+    },
+    {
+      "model": 40104,
+      "point": "ControllerIP",
+      "block": "fixed",
+      "entry": {
+        "name": "ControllerIP",
+        "description": "Controller IP address",
+        "longdescription": "Controller IP address Data code: 40104.ControllerIP",
+        "dtype": "string",
+        "unit": "N/A",
+        "category": "General",
+        "meanings": {}
+      }
+    },
+    {
+      "model": 40104,
+      "point": "ModbusServerIP",
+      "block": "fixed",
+      "entry": {
+        "name": "ModbusServerIP",
+        "description": "Modbus server IP address (controller or gateway)",
+        "longdescription": "Modbus server IP address (controller or gateway) Data code: 40104.ModbusServerIP",
+        "dtype": "string",
+        "unit": "N/A",
+        "category": "General",
+        "meanings": {}
+      }
+    },
+    {
+      "model": 40104,
+      "point": "ModbusServerPort",
+      "block": "fixed",
+      "entry": {
+        "name": "ModbusServerPort",
+        "description": "Modbus server TCP port",
+        "longdescription": "Modbus server TCP port Data code: 40104.ModbusServerPort",
+        "dtype": "uint16",
+        "unit": "N/A",
+        "category": "General",
+        "meanings": {}
+      }
+    },
+    {
+      "model": 40104,
+      "point": "EmOperatingMode",
+      "block": "fixed",
+      "entry": {
+        "name": "EmOperatingMode",
+        "description": "EMS operating mode",
+        "longdescription": "EMS operating mode Data code: 40104.EmOperatingMode",
+        "dtype": "enum16",
+        "unit": "N/A",
+        "category": "Basic",
+        "meanings": {
+          "0": "grid-tied",
+          "1": "off-grid",
+          "2": "microgrid",
+          "3": "islanded",
+          "4": "black-start"
+        }
+      }
+    },
+    {
+      "model": 40104,
+      "point": "GridCodeProfile",
+      "block": "fixed",
+      "entry": {
+        "name": "GridCodeProfile",
+        "description": "Grid code profile selection",
+        "longdescription": "Grid code profile selection Data code: 40104.GridCodeProfile",
+        "dtype": "enum16",
+        "unit": "N/A",
+        "category": "GridBase",
+        "meanings": {
+          "0": "Custom",
+          "1": "Rule21",
+          "2": "IEEE1547-2018",
+          "3": "Hawaii",
+          "4": "Other"
+        }
+      }
+    },
+    {
+      "model": 40104,
+      "point": "CustomGridProfileJson",
+      "block": "fixed",
+      "entry": {
+        "name": "CustomGridProfileJson",
+        "description": "Custom grid profile (JSON)",
+        "longdescription": "Custom grid profile (JSON) Data code: 40104.CustomGridProfileJson",
+        "dtype": "string",
+        "unit": "N/A",
+        "category": "GridBase",
+        "meanings": {}
+      }
+    },
+    {
+      "model": 40104,
+      "point": "CrdMode",
+      "block": "fixed",
+      "entry": {
+        "name": "CrdMode",
+        "description": "CRD / POI restriction mode",
+        "longdescription": "CRD / POI restriction mode Data code: 40104.CrdMode",
+        "dtype": "enum16",
+        "unit": "N/A",
+        "category": "GridConnection",
+        "meanings": {
+          "0": "no-restriction",
+          "1": "no-import",
+          "2": "no-export",
+          "3": "export-limit",
+          "4": "import-limit",
+          "5": "zero-export"
+        }
+      }
+    },
+    {
+      "model": 40104,
+      "point": "PoiExportLimitW",
+      "block": "fixed",
+      "entry": {
+        "name": "PoiExportLimitW",
+        "description": "POI export limit (W) when CrdMode=export-limit/zero-export",
+        "longdescription": "POI export limit (W) when CrdMode=export-limit/zero-export Data code: 40104.PoiExportLimitW",
+        "dtype": "uint32",
+        "unit": "W",
+        "category": "GridConnection",
+        "meanings": {}
+      }
+    },
+    {
+      "model": 40104,
+      "point": "PoiImportLimitW",
+      "block": "fixed",
+      "entry": {
+        "name": "PoiImportLimitW",
+        "description": "POI import limit (W) when CrdMode=import-limit",
+        "longdescription": "POI import limit (W) when CrdMode=import-limit Data code: 40104.PoiImportLimitW",
+        "dtype": "uint32",
+        "unit": "W",
+        "category": "GridConnection",
+        "meanings": {}
+      }
+    },
+    {
+      "model": 40104,
+      "point": "ScheduledControlEnabled",
+      "block": "fixed",
+      "entry": {
+        "name": "ScheduledControlEnabled",
+        "description": "Enable scheduled (TOU) dispatch at EMS layer",
+        "longdescription": "Enable scheduled (TOU) dispatch at EMS layer Data code: 40104.ScheduledControlEnabled",
+        "dtype": "enum16",
+        "unit": "N/A",
+        "category": "Basic",
+        "meanings": {
+          "0": "disable",
+          "1": "enable"
+        }
+      }
+    },
+    {
+      "model": 40104,
+      "point": "CommandSourcePriorityJson",
+      "block": "fixed",
+      "entry": {
+        "name": "CommandSourcePriorityJson",
+        "description": "Command source priority stack (JSON)",
+        "longdescription": "Command source priority stack (JSON) Data code: 40104.CommandSourcePriorityJson",
+        "dtype": "string",
+        "unit": "N/A",
+        "category": "PCS",
+        "meanings": {}
+      }
+    },
+    {
+      "model": 40104,
+      "point": "SetpointRampRatePctPerSec",
+      "block": "fixed",
+      "entry": {
+        "name": "SetpointRampRatePctPerSec",
+        "description": "EMS setpoint ramp rate limit (percent per second)",
+        "longdescription": "EMS setpoint ramp rate limit (percent per second) Data code: 40104.SetpointRampRatePctPerSec",
+        "dtype": "uint16",
+        "unit": "%/s",
+        "category": "PCS",
+        "meanings": {}
+      }
+    },
+    {
+      "model": 40104,
+      "point": "SetpointHoldOnCommsLoss",
+      "block": "fixed",
+      "entry": {
+        "name": "SetpointHoldOnCommsLoss",
+        "description": "Behavior on comms loss for external setpoints",
+        "longdescription": "Behavior on comms loss for external setpoints Data code: 40104.SetpointHoldOnCommsLoss",
+        "dtype": "enum16",
+        "unit": "N/A",
+        "category": "PCS",
+        "meanings": {
+          "0": "revert-default",
+          "1": "hold-last",
+          "2": "safe-zero"
+        }
+      }
+    },
+    {
+      "model": 40104,
+      "point": "DefaultRealPowerSetpointW",
+      "block": "fixed",
+      "entry": {
+        "name": "DefaultRealPowerSetpointW",
+        "description": "Default EMS real-power setpoint on revert (positive=discharge, negative=charge)",
+        "longdescription": "Default EMS real-power setpoint on revert (positive=discharge, negative=charge) Data code: 40104.DefaultRealPowerSetpointW",
+        "dtype": "string",
+        "unit": "N/A",
+        "category": "PCS",
+        "meanings": {}
+      }
+    },
+    {
+      "model": 40104,
+      "point": "DefaultReactivePowerSetpointVar",
+      "block": "fixed",
+      "entry": {
+        "name": "DefaultReactivePowerSetpointVar",
+        "description": "Default EMS reactive-power setpoint on revert",
+        "longdescription": "Default EMS reactive-power setpoint on revert Data code: 40104.DefaultReactivePowerSetpointVar",
+        "dtype": "string",
+        "unit": "N/A",
+        "category": "PCS",
+        "meanings": {}
+      }
+    },
+    {
+      "model": 40104,
+      "point": "PcsDaisyChainJson",
+      "block": "fixed",
+      "entry": {
+        "name": "PcsDaisyChainJson",
+        "description": "PCS daisy-chain layout (JSON, e.g., [2,2])",
+        "longdescription": "PCS daisy-chain layout (JSON, e.g., [2,2]) Data code: 40104.PcsDaisyChainJson",
+        "dtype": "string",
+        "unit": "N/A",
+        "category": "PCS",
+        "meanings": {}
+      }
+    },
+    {
+      "model": 40104,
+      "point": "PcsMaxChargePowerW",
+      "block": "fixed",
+      "entry": {
+        "name": "PcsMaxChargePowerW",
+        "description": "PCS max charge power limit (site-level)",
+        "longdescription": "PCS max charge power limit (site-level) Data code: 40104.PcsMaxChargePowerW",
+        "dtype": "uint32",
+        "unit": "W",
+        "category": "PCS",
+        "meanings": {}
+      }
+    },
+    {
+      "model": 40104,
+      "point": "PcsMaxDischargePowerW",
+      "block": "fixed",
+      "entry": {
+        "name": "PcsMaxDischargePowerW",
+        "description": "PCS max discharge power limit (site-level)",
+        "longdescription": "PCS max discharge power limit (site-level) Data code: 40104.PcsMaxDischargePowerW",
+        "dtype": "uint32",
+        "unit": "W",
+        "category": "PCS",
+        "meanings": {}
+      }
+    },
+    {
+      "model": 40104,
+      "point": "PcsMaxApparentPowerVA",
+      "block": "fixed",
+      "entry": {
+        "name": "PcsMaxApparentPowerVA",
+        "description": "PCS max apparent power limit (site-level)",
+        "longdescription": "PCS max apparent power limit (site-level) Data code: 40104.PcsMaxApparentPowerVA",
+        "dtype": "uint32",
+        "unit": "VA",
+        "category": "PCS",
+        "meanings": {}
+      }
+    },
+    {
+      "model": 40104,
+      "point": "PcsReactivePowerMode",
+      "block": "fixed",
+      "entry": {
+        "name": "PcsReactivePowerMode",
+        "description": "Site-level reactive power mode",
+        "longdescription": "Site-level reactive power mode Data code: 40104.PcsReactivePowerMode",
+        "dtype": "enum16",
+        "unit": "N/A",
+        "category": "PCS",
+        "meanings": {
+          "0": "follow-gridcode",
+          "1": "fixed-pf",
+          "2": "fixed-q",
+          "3": "disabled"
+        }
+      }
+    },
+    {
+      "model": 40104,
+      "point": "PcsFixedPowerFactor",
+      "block": "fixed",
+      "entry": {
+        "name": "PcsFixedPowerFactor",
+        "description": "Fixed PF target (x1000, e.g., 950 = 0.95 lag)",
+        "longdescription": "Fixed PF target (x1000, e.g., 950 = 0.95 lag) Data code: 40104.PcsFixedPowerFactor",
+        "dtype": "int16",
+        "unit": "N/A",
+        "category": "PCS",
+        "meanings": {}
+      }
+    },
+    {
+      "model": 40104,
+      "point": "PcsFixedReactivePowerVar",
+      "block": "fixed",
+      "entry": {
+        "name": "PcsFixedReactivePowerVar",
+        "description": "Fixed Q target (var) when enabled",
+        "longdescription": "Fixed Q target (var) when enabled Data code: 40104.PcsFixedReactivePowerVar",
+        "dtype": "string",
+        "unit": "N/A",
+        "category": "PCS",
+        "meanings": {}
+      }
+    },
+    {
+      "model": 40104,
+      "point": "SbmuStringsJson",
+      "block": "fixed",
+      "entry": {
+        "name": "SbmuStringsJson",
+        "description": "SBMU string layout per MBMU (JSON, e.g., [2,3,2])",
+        "longdescription": "SBMU string layout per MBMU (JSON, e.g., [2,3,2]) Data code: 40104.SbmuStringsJson",
+        "dtype": "string",
+        "unit": "N/A",
+        "category": "BatteryBase",
+        "meanings": {}
+      }
+    },
+    {
+      "model": 40104,
+      "point": "BatteryReserveMinSoc",
+      "block": "fixed",
+      "entry": {
+        "name": "BatteryReserveMinSoc",
+        "description": "Minimum reserve SOC for backup/ride-through",
+        "longdescription": "Minimum reserve SOC for backup/ride-through Data code: 40104.BatteryReserveMinSoc",
+        "dtype": "uint16",
+        "unit": "%",
+        "category": "BatteryBase",
+        "meanings": {}
+      }
+    },
+    {
+      "model": 40104,
+      "point": "BatteryReserveMinKwh",
+      "block": "fixed",
+      "entry": {
+        "name": "BatteryReserveMinKwh",
+        "description": "Minimum reserve energy (Wh) for backup/ride-through",
+        "longdescription": "Minimum reserve energy (Wh) for backup/ride-through Data code: 40104.BatteryReserveMinKwh",
+        "dtype": "uint32",
+        "unit": "Wh",
+        "category": "BatteryBase",
+        "meanings": {}
+      }
+    },
+    {
+      "model": 40104,
+      "point": "AcPvInvertersJson",
+      "block": "fixed",
+      "entry": {
+        "name": "AcPvInvertersJson",
+        "description": "AC-coupled PV inverter inventory (JSON array)",
+        "longdescription": "AC-coupled PV inverter inventory (JSON array) Data code: 40104.AcPvInvertersJson",
+        "dtype": "string",
+        "unit": "N/A",
+        "category": "ACCoupledPV",
+        "meanings": {}
+      }
+    },
+    {
+      "model": 40104,
+      "point": "PvCurtailmentMethod",
+      "block": "fixed",
+      "entry": {
+        "name": "PvCurtailmentMethod",
+        "description": "PV curtailment method",
+        "longdescription": "PV curtailment method Data code: 40104.PvCurtailmentMethod",
+        "dtype": "enum16",
+        "unit": "N/A",
+        "category": "ACCoupledPV",
+        "meanings": {
+          "0": "none",
+          "1": "frequency-shifting",
+          "2": "modbus-limit",
+          "3": "hard-off"
+        }
+      }
+    },
+    {
+      "model": 40104,
+      "point": "PvCurtailmentMaxPercent",
+      "block": "fixed",
+      "entry": {
+        "name": "PvCurtailmentMaxPercent",
+        "description": "Max allowed PV output percent when curtailing (0-100)",
+        "longdescription": "Max allowed PV output percent when curtailing (0-100) Data code: 40104.PvCurtailmentMaxPercent",
+        "dtype": "uint16",
+        "unit": "%",
+        "category": "ACCoupledPV",
+        "meanings": {}
+      }
+    },
+    {
+      "model": 40104,
+      "point": "MeterType",
+      "block": "fixed",
+      "entry": {
+        "name": "MeterType",
+        "description": "Meter make/model (e.g., eGauge-4015, AcuRev)",
+        "longdescription": "Meter make/model (e.g., eGauge-4015, AcuRev) Data code: 40104.MeterType",
+        "dtype": "string",
+        "unit": "N/A",
+        "category": "Measurement",
+        "meanings": {}
+      }
+    },
+    {
+      "model": 40104,
+      "point": "MeterModbusProfile",
+      "block": "fixed",
+      "entry": {
+        "name": "MeterModbusProfile",
+        "description": "Meter Modbus profile name (UDT/template id)",
+        "longdescription": "Meter Modbus profile name (UDT/template id) Data code: 40104.MeterModbusProfile",
+        "dtype": "string",
+        "unit": "N/A",
+        "category": "Measurement",
+        "meanings": {}
+      }
+    },
+    {
+      "model": 40104,
+      "point": "MeterIP",
+      "block": "fixed",
+      "entry": {
+        "name": "MeterIP",
+        "description": "Meter IP address",
+        "longdescription": "Meter IP address Data code: 40104.MeterIP",
+        "dtype": "string",
+        "unit": "N/A",
+        "category": "Measurement",
+        "meanings": {}
+      }
+    },
+    {
+      "model": 40104,
+      "point": "MeterReadsUtility",
+      "block": "fixed",
+      "entry": {
+        "name": "MeterReadsUtility",
+        "description": "Enable utility/POI reads from meter",
+        "longdescription": "Enable utility/POI reads from meter Data code: 40104.MeterReadsUtility",
+        "dtype": "enum16",
+        "unit": "N/A",
+        "category": "Measurement",
+        "meanings": {
+          "0": "disable",
+          "1": "enable"
+        }
+      }
+    },
+    {
+      "model": 40104,
+      "point": "MeterReadsLoad",
+      "block": "fixed",
+      "entry": {
+        "name": "MeterReadsLoad",
+        "description": "Enable load reads from meter",
+        "longdescription": "Enable load reads from meter Data code: 40104.MeterReadsLoad",
+        "dtype": "enum16",
+        "unit": "N/A",
+        "category": "Measurement",
+        "meanings": {
+          "0": "disable",
+          "1": "enable"
+        }
+      }
+    },
+    {
+      "model": 40104,
+      "point": "MeterReadsPv",
+      "block": "fixed",
+      "entry": {
+        "name": "MeterReadsPv",
+        "description": "Enable PV reads from meter",
+        "longdescription": "Enable PV reads from meter Data code: 40104.MeterReadsPv",
+        "dtype": "enum16",
+        "unit": "N/A",
+        "category": "Measurement",
+        "meanings": {
+          "0": "disable",
+          "1": "enable"
+        }
+      }
+    },
+    {
+      "model": 40104,
+      "point": "PvFromInverter",
+      "block": "fixed",
+      "entry": {
+        "name": "PvFromInverter",
+        "description": "PV power source",
+        "longdescription": "PV power source Data code: 40104.PvFromInverter",
+        "dtype": "enum16",
+        "unit": "N/A",
+        "category": "Measurement",
+        "meanings": {
+          "0": "from-meter",
+          "1": "from-inverter"
+        }
+      }
+    },
+    {
+      "model": 40104,
+      "point": "PoiPowerSignConvention",
+      "block": "fixed",
+      "entry": {
+        "name": "PoiPowerSignConvention",
+        "description": "POI power sign convention",
+        "longdescription": "POI power sign convention Data code: 40104.PoiPowerSignConvention",
+        "dtype": "enum16",
+        "unit": "N/A",
+        "category": "Measurement",
+        "meanings": {
+          "0": "+import/-export",
+          "1": "+export/-import"
+        }
+      }
+    },
+    {
+      "model": 40104,
+      "point": "BessPowerSignConvention",
+      "block": "fixed",
+      "entry": {
+        "name": "BessPowerSignConvention",
+        "description": "BESS power sign convention",
+        "longdescription": "BESS power sign convention Data code: 40104.BessPowerSignConvention",
+        "dtype": "enum16",
+        "unit": "N/A",
+        "category": "Measurement",
+        "meanings": {
+          "0": "+discharge/-charge",
+          "1": "+charge/-discharge"
+        }
+      }
+    },
+    {
+      "model": 40104,
+      "point": "PhaseMappingJson",
+      "block": "fixed",
+      "entry": {
+        "name": "PhaseMappingJson",
+        "description": "Phase mapping / CT polarity / wiring notes (JSON)",
+        "longdescription": "Phase mapping / CT polarity / wiring notes (JSON) Data code: 40104.PhaseMappingJson",
+        "dtype": "string",
+        "unit": "N/A",
+        "category": "Measurement",
+        "meanings": {}
+      }
+    },
+    {
+      "model": 40104,
+      "point": "IslandingDevice",
+      "block": "fixed",
+      "entry": {
+        "name": "IslandingDevice",
+        "description": "Islanding/protection device",
+        "longdescription": "Islanding/protection device Data code: 40104.IslandingDevice",
+        "dtype": "enum16",
+        "unit": "N/A",
+        "category": "GridProtection",
+        "meanings": {
+          "0": "none",
+          "1": "SEL751",
+          "2": "SEL851",
+          "3": "Other"
+        }
+      }
+    },
+    {
+      "model": 40104,
+      "point": "IslandingSignalsJson",
+      "block": "fixed",
+      "entry": {
+        "name": "IslandingSignalsJson",
+        "description": "Islanding/protection I/O mapping (JSON)",
+        "longdescription": "Islanding/protection I/O mapping (JSON) Data code: 40104.IslandingSignalsJson",
+        "dtype": "string",
+        "unit": "N/A",
+        "category": "GridProtection",
+        "meanings": {}
+      }
+    },
+    {
+      "model": 40104,
+      "point": "BlackStartEnabled",
+      "block": "fixed",
+      "entry": {
+        "name": "BlackStartEnabled",
+        "description": "Enable black-start sequence at EMS layer",
+        "longdescription": "Enable black-start sequence at EMS layer Data code: 40104.BlackStartEnabled",
+        "dtype": "enum16",
+        "unit": "N/A",
+        "category": "BackupPower",
+        "meanings": {
+          "0": "disable",
+          "1": "enable"
+        }
+      }
+    },
+    {
+      "model": 40104,
+      "point": "GeneratorControlType",
+      "block": "fixed",
+      "entry": {
+        "name": "GeneratorControlType",
+        "description": "Generator control interface",
+        "longdescription": "Generator control interface Data code: 40104.GeneratorControlType",
+        "dtype": "enum16",
+        "unit": "N/A",
+        "category": "Generator",
+        "meanings": {
+          "0": "none",
+          "1": "SEL",
+          "2": "modbus",
+          "3": "dry-contact"
+        }
+      }
+    },
+    {
+      "model": 40104,
+      "point": "GeneratorMaxPowerW",
+      "block": "fixed",
+      "entry": {
+        "name": "GeneratorMaxPowerW",
+        "description": "Generator max real power",
+        "longdescription": "Generator max real power Data code: 40104.GeneratorMaxPowerW",
+        "dtype": "uint32",
+        "unit": "W",
+        "category": "Generator",
+        "meanings": {}
+      }
+    },
+    {
+      "model": 40104,
+      "point": "ChargeFromGenerator",
+      "block": "fixed",
+      "entry": {
+        "name": "ChargeFromGenerator",
+        "description": "Allow charging BESS from generator",
+        "longdescription": "Allow charging BESS from generator Data code: 40104.ChargeFromGenerator",
+        "dtype": "enum16",
+        "unit": "N/A",
+        "category": "Generator",
+        "meanings": {
+          "0": "disable",
+          "1": "enable"
+        }
+      }
+    },
+    {
+      "model": 40104,
+      "point": "GeneratorChargePowerLimitW",
+      "block": "fixed",
+      "entry": {
+        "name": "GeneratorChargePowerLimitW",
+        "description": "Generator-to-BESS charge power limit",
+        "longdescription": "Generator-to-BESS charge power limit Data code: 40104.GeneratorChargePowerLimitW",
+        "dtype": "uint32",
+        "unit": "W",
+        "category": "Generator",
+        "meanings": {}
+      }
+    },
+    {
+      "model": 40104,
+      "point": "GeneratorStartSoc",
+      "block": "fixed",
+      "entry": {
+        "name": "GeneratorStartSoc",
+        "description": "Start generator below SOC threshold",
+        "longdescription": "Start generator below SOC threshold Data code: 40104.GeneratorStartSoc",
+        "dtype": "uint16",
+        "unit": "%",
+        "category": "Generator",
+        "meanings": {}
+      }
+    },
+    {
+      "model": 40104,
+      "point": "GeneratorStopSoc",
+      "block": "fixed",
+      "entry": {
+        "name": "GeneratorStopSoc",
+        "description": "Stop generator above SOC threshold",
+        "longdescription": "Stop generator above SOC threshold Data code: 40104.GeneratorStopSoc",
+        "dtype": "uint16",
+        "unit": "%",
+        "category": "Generator",
+        "meanings": {}
+      }
+    },
+    {
+      "model": 40104,
+      "point": "ConfigVersion",
+      "block": "fixed",
+      "entry": {
+        "name": "ConfigVersion",
+        "description": "Configuration version",
+        "longdescription": "Configuration version Data code: 40104.ConfigVersion",
+        "dtype": "string",
+        "unit": "N/A",
+        "category": "General",
+        "meanings": {}
+      }
+    },
+    {
+      "model": 40104,
+      "point": "ConfigChecksum",
+      "block": "fixed",
+      "entry": {
+        "name": "ConfigChecksum",
+        "description": "Configuration checksum (for audit/verification)",
+        "longdescription": "Configuration checksum (for audit/verification) Data code: 40104.ConfigChecksum",
+        "dtype": "string",
+        "unit": "N/A",
+        "category": "General",
+        "meanings": {}
+      }
+    },
+    {
+      "model": 40104,
+      "point": "ConfigLastAppliedUtc",
+      "block": "fixed",
+      "entry": {
+        "name": "ConfigLastAppliedUtc",
+        "description": "Last applied timestamp (UTC ISO-8601)",
+        "longdescription": "Last applied timestamp (UTC ISO-8601) Data code: 40104.ConfigLastAppliedUtc",
+        "dtype": "string",
+        "unit": "N/A",
+        "category": "General",
+        "meanings": {}
+      }
+    },
+    {
+      "model": 40104,
+      "point": "ConfigAppliedBy",
+      "block": "fixed",
+      "entry": {
+        "name": "ConfigAppliedBy",
+        "description": "Who/what applied the config (user/service/tool)",
+        "longdescription": "Who/what applied the config (user/service/tool) Data code: 40104.ConfigAppliedBy",
+        "dtype": "string",
+        "unit": "N/A",
+        "category": "General",
+        "meanings": {}
+      }
+    },
+    {
+      "model": 40104,
+      "point": "ConfigApplyMode",
+      "block": "fixed",
+      "entry": {
+        "name": "ConfigApplyMode",
+        "description": "Configuration apply mode",
+        "longdescription": "Configuration apply mode Data code: 40104.ConfigApplyMode",
+        "dtype": "enum16",
+        "unit": "N/A",
+        "category": "General",
+        "meanings": {
+          "0": "direct",
+          "1": "staged",
+          "2": "dry-run"
+        }
+      }
+    }
+  ]
+}
