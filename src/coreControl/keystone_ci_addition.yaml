@@ -1,0 +1,383 @@
+points:
+- section_id: site
+  title: System Profile
+  command_id: SITE.SystemProfile
+  element_type: custom
+  access: RW
+  entries:
+  - name: System Profile
+    arg: SystemProfile
+    dtype: String
+  protocol:
+    cgi:
+      MEP: KeystoneController
+      Cluster: SiteConfig
+      Element: SystemProfile
+  subsection_id: site-identity
+  help: C&I product/topology identifier such as eSpire280 or MINI-* profile. Used by Keystone controller to validate topology-specific
+    settings and defaults.
+- section_id: site
+  title: Controller Timezone
+  command_id: SITE.ControllerTimezone
+  element_type: custom
+  access: RW
+  entries:
+  - name: Controller Timezone
+    arg: ControllerTimezone
+    dtype: String
+  protocol:
+    cgi:
+      MEP: KeystoneController
+      Cluster: SiteConfig
+      Element: ControllerTimezone
+  subsection_id: site-time
+  help: IANA timezone used by the controller for schedules, logs, and TOU behavior (for example America/Los_Angeles).
+- section_id: site
+  title: Controller Network
+  command_id: SITE.ControllerNetwork
+  element_type: custom
+  access: RW
+  entries:
+  - name: Controller IP
+    arg: ControllerIp
+    dtype: String
+  - name: Modbus Server IP
+    arg: ModbusServerIp
+    dtype: String
+  - name: Modbus Server Port
+    arg: ModbusServerPort
+    dtype: Number
+    range:
+      min: 1
+      max: 65535
+  protocol:
+    cgi:
+      MEP: KeystoneController
+      Cluster: SiteConfig
+      Element: ControllerNetwork
+  subsection_id: site-network
+  help: Controller-owned network settings used for commissioning reference and external integrations.
+- section_id: microgrid
+  title: Grid Code
+  command_id: SITE.GridCode
+  element_type: custom
+  access: RW
+  entries:
+  - name: Grid Code
+    arg: GridCode
+    dtype: enum16
+    meanings:
+      '0': IEEE1547-2018
+      '1': Rule21
+      '2': Rule14H
+      '3': PREPA-MTR
+      '4': ISO
+      '5': Custom
+  protocol:
+    cgi:
+      MEP: KeystoneController
+      Cluster: SiteConfig
+      Element: GridCode
+  subsection_id: compliance
+  help: Controller-level grid compliance profile. Use Custom when a site-specific grid profile JSON will be applied.
+- section_id: microgrid
+  title: Custom Grid Profile (JSON)
+  command_id: SITE.CustomGridProfileJson
+  element_type: custom
+  access: RW
+  entries:
+  - name: Custom Grid Profile JSON
+    arg: CustomGridProfileJson
+    dtype: String
+  protocol:
+    cgi:
+      MEP: KeystoneController
+      Cluster: SiteConfig
+      Element: CustomGridProfileJson
+  subsection_id: compliance
+  visibility: advanced
+  collapsedByDefault: true
+  help: JSON object defining custom ride-through, volt-var, volt-watt, freq-watt, reconnection, and ramp-rate behavior. Intended
+    for Grid Code = Custom.
+- section_id: microgrid
+  title: CRD Mode
+  command_id: SITE.CRDMode
+  element_type: custom
+  access: RW
+  entries:
+  - name: CRD Mode
+    arg: CRDMode
+    dtype: enum16
+    meanings:
+      '0': no-restriction
+      '1': no-import
+      '2': no-export
+      '3': no-exchange
+  protocol:
+    cgi:
+      MEP: KeystoneController
+      Cluster: SiteConfig
+      Element: CRDMode
+  subsection_id: operation
+  help: Controller rule mode enforced using POI metering plus device export/limit settings.
+- section_id: microgrid
+  title: Scheduled Control Enabled
+  command_id: SITE.ScheduledControlEnabled
+  element_type: custom
+  access: RW
+  entries:
+  - name: Scheduled Control Enabled
+    arg: ScheduledControlEnabled
+    dtype: enum16
+    meanings:
+      '0': disable
+      '1': enable
+  protocol:
+    cgi:
+      MEP: KeystoneController
+      Cluster: SiteConfig
+      Element: ScheduledControlEnabled
+  subsection_id: operation
+  visibility: advanced
+  collapsedByDefault: true
+  help: Enables controller scheduling logic. When disabled, controller uses realtime control only.
+- section_id: battery
+  title: PCS Daisy Chain (JSON)
+  command_id: SITE.PcsDaisyChain
+  element_type: custom
+  access: RW
+  entries:
+  - name: PCS Daisy Chain JSON
+    arg: PcsDaisyChain
+    dtype: String
+  protocol:
+    cgi:
+      MEP: KeystoneController
+      Cluster: SiteConfig
+      Element: PcsDaisyChain
+  subsection_id: pcs-topology
+  help: JSON array describing PCS daisy-chain groups for the site, for example [1,2,1].
+- section_id: battery
+  title: Site Charge/Discharge Limits
+  command_id: SITE.PcsSiteLimits
+  element_type: custom
+  access: RW
+  entries:
+  - name: Max Charge kW
+    arg: SiteMaxChargekW
+    dtype: Number
+    unit: kW
+    range:
+      min: 0
+  - name: Max Discharge kW
+    arg: SiteMaxDischargekW
+    dtype: Number
+    unit: kW
+    range:
+      min: 0
+  protocol:
+    cgi:
+      MEP: KeystoneController
+      Cluster: SiteConfig
+      Element: PcsSiteLimits
+  subsection_id: pcs-limits
+  help: Aggregate site-level power limits enforced by the controller across all PCS.
+- section_id: battery
+  title: SBMU Strings (JSON)
+  command_id: SITE.SbmuStrings
+  element_type: custom
+  access: RW
+  entries:
+  - name: SBMU Strings JSON
+    arg: SbmuStrings
+    dtype: String
+  protocol:
+    cgi:
+      MEP: KeystoneController
+      Cluster: SiteConfig
+      Element: SbmuStrings
+  subsection_id: bms-topology
+  help: JSON array describing SBMU string counts per MBMU/cabinet group, for example [2,3,2].
+- section_id: battery
+  title: Controller SOC Policy
+  command_id: SITE.ControllerSocPolicy
+  element_type: custom
+  access: RW
+  entries:
+  - name: Controller Min SOC
+    arg: ControllerMinSOC
+    dtype: Number
+    range:
+      min: 0
+      max: 1
+  - name: Controller Max SOC
+    arg: ControllerMaxSOC
+    dtype: Number
+    range:
+      min: 0
+      max: 1
+  protocol:
+    cgi:
+      MEP: KeystoneController
+      Cluster: SiteConfig
+      Element: ControllerSocPolicy
+  subsection_id: battery-policy
+  visibility: advanced
+  collapsedByDefault: true
+  help: Controller-owned SOC floor/ceiling for dispatch and reserve logic. This is distinct from any residential inverter
+    SOC cut-off settings.
+- section_id: ac-coupled-pv
+  title: AC Inverters (JSON)
+  command_id: SITE.AcInvertersJson
+  element_type: custom
+  access: RW
+  entries:
+  - name: AC Inverters JSON
+    arg: AcInvertersJson
+    dtype: String
+  protocol:
+    cgi:
+      MEP: KeystoneController
+      Cluster: SiteConfig
+      Element: AcInvertersJson
+  subsection_id: pv-inventory
+  help: JSON array of AC-coupled PV inverter definitions including type, model, rated kW, IP, port, and Modbus profile.
+- section_id: ac-coupled-pv
+  title: PV Curtailment Method
+  command_id: SITE.PvCurtailmentMethod
+  element_type: custom
+  access: RW
+  entries:
+  - name: PV Curtailment Method
+    arg: PvCurtailmentMethod
+    dtype: enum16
+    meanings:
+      '0': modbus
+      '1': frequency-shifting
+      '2': none
+  protocol:
+    cgi:
+      MEP: KeystoneController
+      Cluster: SiteConfig
+      Element: PvCurtailmentMethod
+  subsection_id: pv-control
+  help: Curtailment strategy used by the controller for AC-coupled PV.
+- section_id: protection
+  title: Islanding Device
+  command_id: SITE.IslandingDevice
+  element_type: custom
+  access: RW
+  entries:
+  - name: Islanding Device
+    arg: IslandingDevice
+    dtype: enum16
+    meanings:
+      '0': None
+      '1': SEL351
+      '2': SEL751
+      '3': SEL851
+      '4': ASCO-ATS
+      '5': EATON-ATS
+  protocol:
+    cgi:
+      MEP: KeystoneController
+      Cluster: SiteConfig
+      Element: IslandingDevice
+  subsection_id: islanding
+  help: Protection or transfer device used to isolate the site from the utility. This is controller/site integration data,
+    not a residential inverter register.
+- section_id: metering
+  title: Primary Meter Integration
+  command_id: SITE.PrimaryMeterIntegration
+  element_type: custom
+  access: RW
+  entries:
+  - name: Primary Meter Model
+    arg: PrimaryMeterModel
+    dtype: String
+  - name: Meter Modbus Profile
+    arg: MeterModbusProfile
+    dtype: String
+  - name: Meter IP
+    arg: MeterIp
+    dtype: String
+  - name: Reads PV
+    arg: ReadsPV
+    dtype: enum16
+    meanings:
+      '0': 'false'
+      '1': 'true'
+  - name: PV From Inverter
+    arg: PVFromInverter
+    dtype: enum16
+    meanings:
+      '0': 'false'
+      '1': 'true'
+  - name: Reads Utility
+    arg: ReadsUtility
+    dtype: enum16
+    meanings:
+      '0': 'false'
+      '1': 'true'
+  - name: Reads Load
+    arg: ReadsLoad
+    dtype: enum16
+    meanings:
+      '0': 'false'
+      '1': 'true'
+  protocol:
+    cgi:
+      MEP: KeystoneController
+      Cluster: SiteConfig
+      Element: PrimaryMeterIntegration
+  subsection_id: primary-meter
+  help: Defines primary meter model/profile and which measurements are sourced from the meter versus inverter telemetry.
+- section_id: generator
+  title: Generator Policy
+  command_id: SITE.GeneratorPolicy
+  element_type: custom
+  access: RW
+  entries:
+  - name: Generator Max kW
+    arg: GeneratorMaxkW
+    dtype: Number
+    unit: kW
+    range:
+      min: 0
+  - name: Charge From Generator
+    arg: ChargeFromGenerator
+    dtype: enum16
+    meanings:
+      '0': disable
+      '1': enable
+  - name: Generator Charge Limit kW
+    arg: GeneratorChargekWLimit
+    dtype: Number
+    unit: kW
+    range:
+      min: 0
+  - name: Generator Start SOC
+    arg: GeneratorStartSOC
+    dtype: Number
+    range:
+      min: 0
+      max: 1
+  - name: Generator Stop SOC
+    arg: GeneratorStopSOC
+    dtype: Number
+    range:
+      min: 0
+      max: 1
+  - name: Generator Control Type
+    arg: GeneratorControlType
+    dtype: enum16
+    meanings:
+      '0': RemoteIO
+      '1': SEL
+  protocol:
+    cgi:
+      MEP: KeystoneController
+      Cluster: SiteConfig
+      Element: GeneratorPolicy
+  subsection_id: generator-policy
+  help: Controller-owned generator dispatch and charging policy. Intended for backup/off-grid capable C&I sites.
