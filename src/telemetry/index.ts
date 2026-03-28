@@ -2,9 +2,19 @@
 import { SiteConfig } from "../config";
 import { SiteCapabilities, deriveCapabilities } from "../capabilities";
 import { buildTelemetryMap as _buildTelemetryMap } from "./buildTelemetryMap";
+import { buildReadPlan } from "../compiler/compiler";
+import type { CompilerEnv, ReadPlan } from "../types";
+import {
+  adaptTelemetryTemplateToReadProfile,
+  resolveTelemetryTemplate,
+} from "./templateAdapter";
 
 // Re-export the function directly on the telemetry namespace
 export const buildTelemetryMap = _buildTelemetryMap;
+export {
+  adaptTelemetryTemplateToReadProfile,
+  resolveTelemetryTemplate,
+} from "./templateAdapter";
 
 export function initTelemetry(config: SiteConfig): {
   caps: SiteCapabilities;
@@ -13,5 +23,23 @@ export function initTelemetry(config: SiteConfig): {
   const caps = deriveCapabilities(config);
   const map = _buildTelemetryMap(config, caps);
   return { caps, map };
+}
+
+export function buildTelemetryReadPlan(
+  profileName: string,
+  instance: { equipmentId: string; serverKey: string; unitId: number },
+  env: CompilerEnv
+): ReadPlan {
+  if (!profileName || !profileName.trim()) {
+    throw new Error("Telemetry plan error: profileName is required");
+  }
+
+  const template = resolveTelemetryTemplate(profileName);
+  const normalizedProfile = adaptTelemetryTemplateToReadProfile(
+    profileName,
+    template
+  );
+
+  return buildReadPlan(normalizedProfile, instance, env);
 }
 

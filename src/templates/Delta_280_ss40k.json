@@ -15,12 +15,8 @@
       "category": "PCSInfo",
       "function": "HRS8",
       "address": 1537,
-      "scale": { "mode": "none" },
       "pollClass": "startup",
-      "alarmFlag": false,
       "statusFlag": true,
-      "bitfieldStatus": false,
-      "supporting": false,
       "ss40k": { "name": "SN", "section": "PCS information" }
     },
 
@@ -30,12 +26,8 @@
       "category": "PCSInfo",
       "function": "HRS10",
       "address": 1600,
-      "scale": { "mode": "none" },
       "pollClass": "startup",
-      "alarmFlag": false,
       "statusFlag": true,
-      "bitfieldStatus": false,
-      "supporting": false,
       "ss40k": { "name": "hwVer", "section": "PCS information" }
     },
     {
@@ -44,12 +36,8 @@
       "category": "PCSInfo",
       "function": "HRS10",
       "address": 1610,
-      "scale": { "mode": "none" },
       "pollClass": "startup",
-      "alarmFlag": false,
       "statusFlag": true,
-      "bitfieldStatus": false,
-      "supporting": false,
       "ss40k": { "name": "verDspMaster", "section": "PCS information" }
     },
     {
@@ -58,12 +46,8 @@
       "category": "PCSInfo",
       "function": "HRS10",
       "address": 1620,
-      "scale": { "mode": "none" },
       "pollClass": "startup",
-      "alarmFlag": false,
       "statusFlag": true,
-      "bitfieldStatus": false,
-      "supporting": false,
       "ss40k": { "name": "verProto", "section": "PCS information" }
     },
 
@@ -73,13 +57,16 @@
       "category": "Inverter",
       "function": "HR",
       "address": 1816,
-      "scale": { "mode": "factor", "factor": 1.0 },
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
       "pollClass": "fast",
-      "alarmFlag": false,
       "statusFlag": true,
-      "bitfieldStatus": false,
-      "supporting": false,
-      "ss40k": { "name": "W", "section": "Inverter" }
+      "ss40k": { "name": "W", "model": "40101" }
     },
     {
       "id": "PCS_VAR",
@@ -87,13 +74,16 @@
       "category": "Inverter",
       "function": "HR",
       "address": 1817,
-      "scale": { "mode": "factor", "factor": 1.0 },
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
       "pollClass": "fast",
-      "alarmFlag": false,
       "statusFlag": true,
-      "bitfieldStatus": false,
-      "supporting": false,
-      "ss40k": { "name": "Var", "section": "Inverter" }
+      "ss40k": { "name": "Var", "model": "40101" }
     },
     {
       "id": "PCS_VA",
@@ -101,13 +91,16 @@
       "category": "Inverter",
       "function": "HR",
       "address": 1818,
-      "scale": { "mode": "factor", "factor": 1.0 },
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
       "pollClass": "fast",
-      "alarmFlag": false,
       "statusFlag": true,
-      "bitfieldStatus": false,
-      "supporting": false,
-      "ss40k": { "name": "VA", "section": "Inverter" }
+      "ss40k": { "name": "VA", "model": "40101" }
     },
 
     {
@@ -116,13 +109,16 @@
       "category": "Inverter",
       "function": "HR",
       "address": 1807,
-      "scale": { "mode": "factor", "factor": 1.0 },
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
       "pollClass": "fast",
-      "alarmFlag": false,
       "statusFlag": true,
-      "bitfieldStatus": false,
-      "supporting": false,
-      "ss40k": { "name": "WL1", "section": "Inverter" }
+      "ss40k": { "name": "WL1", "model": "40101" }
     },
     {
       "id": "PCS_WL2",
@@ -130,13 +126,16 @@
       "category": "Inverter",
       "function": "HR",
       "address": 1808,
-      "scale": { "mode": "factor", "factor": 1.0 },
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
       "pollClass": "fast",
-      "alarmFlag": false,
       "statusFlag": true,
-      "bitfieldStatus": false,
-      "supporting": false,
-      "ss40k": { "name": "WL2", "section": "Inverter" }
+      "ss40k": { "name": "WL2", "model": "40101" }
     },
     {
       "id": "PCS_WL3",
@@ -144,13 +143,16 @@
       "category": "Inverter",
       "function": "HR",
       "address": 1809,
-      "scale": { "mode": "factor", "factor": 1.0 },
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
       "pollClass": "fast",
-      "alarmFlag": false,
       "statusFlag": true,
-      "bitfieldStatus": false,
-      "supporting": false,
-      "ss40k": { "name": "WL3", "section": "Inverter" }
+      "ss40k": { "name": "WL3", "model": "40101" }
     },
 
     {
@@ -159,13 +161,16 @@
       "category": "Inverter",
       "function": "HR",
       "address": 1810,
-      "scale": { "mode": "factor", "factor": 1.0 },
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
       "pollClass": "fast",
-      "alarmFlag": false,
       "statusFlag": true,
-      "bitfieldStatus": false,
-      "supporting": false,
-      "ss40k": { "name": "VarL1", "section": "Inverter" }
+      "ss40k": { "name": "VarL1", "model": "40101" }
     },
     {
       "id": "PCS_VARL2",
@@ -173,13 +178,16 @@
       "category": "Inverter",
       "function": "HR",
       "address": 1811,
-      "scale": { "mode": "factor", "factor": 1.0 },
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
       "pollClass": "fast",
-      "alarmFlag": false,
       "statusFlag": true,
-      "bitfieldStatus": false,
-      "supporting": false,
-      "ss40k": { "name": "VarL2", "section": "Inverter" }
+      "ss40k": { "name": "VarL2", "model": "40101" }
     },
     {
       "id": "PCS_VARL3",
@@ -187,13 +195,16 @@
       "category": "Inverter",
       "function": "HR",
       "address": 1812,
-      "scale": { "mode": "factor", "factor": 1.0 },
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
       "pollClass": "fast",
-      "alarmFlag": false,
       "statusFlag": true,
-      "bitfieldStatus": false,
-      "supporting": false,
-      "ss40k": { "name": "VarL3", "section": "Inverter" }
+      "ss40k": { "name": "VarL3", "model": "40101" }
     },
 
     {
@@ -202,13 +213,16 @@
       "category": "Inverter",
       "function": "HR",
       "address": 1813,
-      "scale": { "mode": "factor", "factor": 1.0 },
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
       "pollClass": "fast",
-      "alarmFlag": false,
       "statusFlag": true,
-      "bitfieldStatus": false,
-      "supporting": false,
-      "ss40k": { "name": "VAL1", "section": "Inverter" }
+      "ss40k": { "name": "VAL1", "model": "40101" }
     },
     {
       "id": "PCS_VAL2",
@@ -216,13 +230,16 @@
       "category": "Inverter",
       "function": "HR",
       "address": 1814,
-      "scale": { "mode": "factor", "factor": 1.0 },
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
       "pollClass": "fast",
-      "alarmFlag": false,
       "statusFlag": true,
-      "bitfieldStatus": false,
-      "supporting": false,
-      "ss40k": { "name": "VAL2", "section": "Inverter" }
+      "ss40k": { "name": "VAL2", "model": "40101" }
     },
     {
       "id": "PCS_VAL3",
@@ -230,13 +247,16 @@
       "category": "Inverter",
       "function": "HR",
       "address": 1815,
-      "scale": { "mode": "factor", "factor": 1.0 },
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
       "pollClass": "fast",
-      "alarmFlag": false,
       "statusFlag": true,
-      "bitfieldStatus": false,
-      "supporting": false,
-      "ss40k": { "name": "VAL3", "section": "Inverter" }
+      "ss40k": { "name": "VAL3", "model": "40101" }
     },
 
     {
@@ -245,13 +265,16 @@
       "category": "Inverter",
       "function": "HR",
       "address": 1791,
-      "scale": { "mode": "factor", "factor": 1.0 },
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
       "pollClass": "fast",
-      "alarmFlag": false,
       "statusFlag": true,
-      "bitfieldStatus": false,
-      "supporting": false,
-      "ss40k": { "name": "Hz", "section": "Inverter" }
+      "ss40k": { "name": "Hz", "model": "40101" }
     },
 
     {
@@ -260,13 +283,16 @@
       "category": "Inverter",
       "function": "HR",
       "address": 1760,
-      "scale": { "mode": "factor", "factor": 1.0 },
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
       "pollClass": "fast",
-      "alarmFlag": false,
       "statusFlag": true,
-      "bitfieldStatus": false,
-      "supporting": false,
-      "ss40k": { "name": "VL1L2", "section": "Inverter" }
+      "ss40k": { "name": "VL1L2", "model": "40101" }
     },
     {
       "id": "PCS_VL2L3",
@@ -274,13 +300,16 @@
       "category": "Inverter",
       "function": "HR",
       "address": 1761,
-      "scale": { "mode": "factor", "factor": 1.0 },
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
       "pollClass": "fast",
-      "alarmFlag": false,
       "statusFlag": true,
-      "bitfieldStatus": false,
-      "supporting": false,
-      "ss40k": { "name": "VL2L3", "section": "Inverter" }
+      "ss40k": { "name": "VL2L3", "model": "40101" }
     },
     {
       "id": "PCS_VL3L1",
@@ -288,13 +317,16 @@
       "category": "Inverter",
       "function": "HR",
       "address": 1762,
-      "scale": { "mode": "factor", "factor": 1.0 },
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
       "pollClass": "fast",
-      "alarmFlag": false,
       "statusFlag": true,
-      "bitfieldStatus": false,
-      "supporting": false,
-      "ss40k": { "name": "VL3L1", "section": "Inverter" }
+      "ss40k": { "name": "VL3L1", "model": "40101" }
     },
 
     {
@@ -303,13 +335,16 @@
       "category": "Inverter",
       "function": "HR",
       "address": 1763,
-      "scale": { "mode": "factor", "factor": 1.0 },
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
       "pollClass": "fast",
-      "alarmFlag": false,
       "statusFlag": true,
-      "bitfieldStatus": false,
-      "supporting": false,
-      "ss40k": { "name": "VL1", "section": "Inverter" }
+      "ss40k": { "name": "VL1", "model": "40101" }
     },
     {
       "id": "PCS_VL2",
@@ -317,13 +352,16 @@
       "category": "Inverter",
       "function": "HR",
       "address": 1764,
-      "scale": { "mode": "factor", "factor": 1.0 },
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
       "pollClass": "fast",
-      "alarmFlag": false,
       "statusFlag": true,
-      "bitfieldStatus": false,
-      "supporting": false,
-      "ss40k": { "name": "VL2", "section": "Inverter" }
+      "ss40k": { "name": "VL2", "model": "40101" }
     },
     {
       "id": "PCS_VL3",
@@ -331,13 +369,16 @@
       "category": "Inverter",
       "function": "HR",
       "address": 1765,
-      "scale": { "mode": "factor", "factor": 1.0 },
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
       "pollClass": "fast",
-      "alarmFlag": false,
       "statusFlag": true,
-      "bitfieldStatus": false,
-      "supporting": false,
-      "ss40k": { "name": "VL3", "section": "Inverter" }
+      "ss40k": { "name": "VL3", "model": "40101" }
     },
 
     {
@@ -346,13 +387,16 @@
       "category": "Inverter",
       "function": "HR",
       "address": 1770,
-      "scale": { "mode": "factor", "factor": 1.0 },
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
       "pollClass": "fast",
-      "alarmFlag": false,
       "statusFlag": true,
-      "bitfieldStatus": false,
-      "supporting": false,
-      "ss40k": { "name": "AL1", "section": "Inverter" }
+      "ss40k": { "name": "AL1", "model": "40101" }
     },
     {
       "id": "PCS_AL2",
@@ -360,13 +404,16 @@
       "category": "Inverter",
       "function": "HR",
       "address": 1771,
-      "scale": { "mode": "factor", "factor": 1.0 },
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
       "pollClass": "fast",
-      "alarmFlag": false,
       "statusFlag": true,
-      "bitfieldStatus": false,
-      "supporting": false,
-      "ss40k": { "name": "AL2", "section": "Inverter" }
+      "ss40k": { "name": "AL2", "model": "40101" }
     },
     {
       "id": "PCS_AL3",
@@ -374,13 +421,16 @@
       "category": "Inverter",
       "function": "HR",
       "address": 1772,
-      "scale": { "mode": "factor", "factor": 1.0 },
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
       "pollClass": "fast",
-      "alarmFlag": false,
       "statusFlag": true,
-      "bitfieldStatus": false,
-      "supporting": false,
-      "ss40k": { "name": "AL3", "section": "Inverter" }
+      "ss40k": { "name": "AL3", "model": "40101" }
     },
 
     {
@@ -389,13 +439,16 @@
       "category": "Inverter",
       "function": "HR",
       "address": 1825,
-      "scale": { "mode": "factor", "factor": 0.001 },
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1000,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
       "pollClass": "fast",
-      "alarmFlag": false,
       "statusFlag": true,
-      "bitfieldStatus": false,
-      "supporting": false,
-      "ss40k": { "name": "PF", "section": "Inverter" }
+      "ss40k": { "name": "PF", "model": "40101" }
     },
     {
       "id": "PCS_PFL1",
@@ -403,13 +456,16 @@
       "category": "Inverter",
       "function": "HR",
       "address": 1826,
-      "scale": { "mode": "factor", "factor": 0.001 },
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1000,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
       "pollClass": "fast",
-      "alarmFlag": false,
       "statusFlag": true,
-      "bitfieldStatus": false,
-      "supporting": false,
-      "ss40k": { "name": "PFL1", "section": "Inverter" }
+      "ss40k": { "name": "PFL1", "model": "40101" }
     },
     {
       "id": "PCS_PFL2",
@@ -417,13 +473,16 @@
       "category": "Inverter",
       "function": "HR",
       "address": 1827,
-      "scale": { "mode": "factor", "factor": 0.001 },
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1000,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
       "pollClass": "fast",
-      "alarmFlag": false,
       "statusFlag": true,
-      "bitfieldStatus": false,
-      "supporting": false,
-      "ss40k": { "name": "PFL2", "section": "Inverter" }
+      "ss40k": { "name": "PFL2", "model": "40101" }
     },
     {
       "id": "PCS_PFL3",
@@ -431,13 +490,16 @@
       "category": "Inverter",
       "function": "HR",
       "address": 1828,
-      "scale": { "mode": "factor", "factor": 0.001 },
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1000,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
       "pollClass": "fast",
-      "alarmFlag": false,
       "statusFlag": true,
-      "bitfieldStatus": false,
-      "supporting": false,
-      "ss40k": { "name": "PFL3", "section": "Inverter" }
+      "ss40k": { "name": "PFL3", "model": "40101" }
     },
 
     {
@@ -446,13 +508,16 @@
       "category": "Inverter",
       "function": "HR",
       "address": 1822,
-      "scale": { "mode": "factor", "factor": 0.1 },
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
       "pollClass": "normal",
-      "alarmFlag": false,
       "statusFlag": true,
-      "bitfieldStatus": false,
-      "supporting": false,
-      "ss40k": { "name": "tempAmb", "section": "Inverter" }
+      "ss40k": { "name": "tempAmb", "model": "40101" }
     },
     {
       "id": "PCS_TEMP_INT",
@@ -460,13 +525,16 @@
       "category": "Inverter",
       "function": "HR",
       "address": 1823,
-      "scale": { "mode": "factor", "factor": 0.1 },
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
       "pollClass": "normal",
-      "alarmFlag": false,
       "statusFlag": true,
-      "bitfieldStatus": false,
-      "supporting": false,
-      "ss40k": { "name": "tempInt", "section": "Inverter" }
+      "ss40k": { "name": "tempInt", "model": "40101" }
     },
     {
       "id": "PCS_TEMP_LLC",
@@ -474,13 +542,16 @@
       "category": "Inverter",
       "function": "HR",
       "address": 1824,
-      "scale": { "mode": "factor", "factor": 0.1 },
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
       "pollClass": "normal",
-      "alarmFlag": false,
       "statusFlag": true,
-      "bitfieldStatus": false,
-      "supporting": false,
-      "ss40k": { "name": "tempLLC", "section": "Inverter" }
+      "ss40k": { "name": "tempLLC", "model": "40101" }
     },
     {
       "id": "PCS_TEMP_INV_STAGE",
@@ -488,13 +559,16 @@
       "category": "Inverter",
       "function": "HR",
       "address": 1830,
-      "scale": { "mode": "factor", "factor": 0.1 },
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
       "pollClass": "normal",
-      "alarmFlag": false,
       "statusFlag": true,
-      "bitfieldStatus": false,
-      "supporting": false,
-      "ss40k": { "name": "tempInv", "section": "Inverter" }
+      "ss40k": { "name": "tempInv", "model": "40101" }
     },
 
     {
@@ -503,13 +577,16 @@
       "category": "Inverter",
       "function": "HRUI_64",
       "address": 1900,
-      "scale": { "mode": "factor", "factor": 1.0 },
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
       "pollClass": "slow",
-      "alarmFlag": false,
       "statusFlag": true,
-      "bitfieldStatus": false,
-      "supporting": false,
-      "ss40k": { "name": "eInvTdy", "section": "Inverter" }
+      "ss40k": { "name": "eInvTdy", "model": "40101" }
     },
     {
       "id": "PCS_E_INV_TOT",
@@ -517,13 +594,16 @@
       "category": "Inverter",
       "function": "HRUI_64",
       "address": 1904,
-      "scale": { "mode": "factor", "factor": 1.0 },
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
       "pollClass": "slow",
-      "alarmFlag": false,
       "statusFlag": true,
-      "bitfieldStatus": false,
-      "supporting": false,
-      "ss40k": { "name": "eInvTot", "section": "Inverter" }
+      "ss40k": { "name": "eInvTot", "model": "40101" }
     },
     {
       "id": "PCS_E_REC_TDY",
@@ -531,13 +611,16 @@
       "category": "Inverter",
       "function": "HRUI_64",
       "address": 1910,
-      "scale": { "mode": "factor", "factor": 1.0 },
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
       "pollClass": "slow",
-      "alarmFlag": false,
       "statusFlag": true,
-      "bitfieldStatus": false,
-      "supporting": false,
-      "ss40k": { "name": "eRecTdy", "section": "Inverter" }
+      "ss40k": { "name": "eRecTdy", "model": "40101" }
     },
     {
       "id": "PCS_E_REC_TOT",
@@ -545,13 +628,16 @@
       "category": "Inverter",
       "function": "HRUI_64",
       "address": 1914,
-      "scale": { "mode": "factor", "factor": 1.0 },
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
       "pollClass": "slow",
-      "alarmFlag": false,
       "statusFlag": true,
-      "bitfieldStatus": false,
-      "supporting": false,
-      "ss40k": { "name": "eRecTot", "section": "Inverter" }
+      "ss40k": { "name": "eRecTot", "model": "40101" }
     },
 
     {
@@ -560,12 +646,8 @@
       "category": "GlobalState",
       "function": "HR",
       "address": 1780,
-      "scale": { "mode": "none" },
       "pollClass": "fast",
-      "alarmFlag": false,
-      "statusFlag": true,
-      "bitfieldStatus": false,
-      "supporting": false
+      "statusFlag": true
     },
     {
       "id": "PCS_STATE_SWITCH",
@@ -573,12 +655,9 @@
       "category": "GlobalState",
       "function": "HR",
       "address": 1783,
-      "scale": { "mode": "none" },
       "pollClass": "fast",
-      "alarmFlag": false,
       "statusFlag": true,
-      "bitfieldStatus": true,
-      "supporting": false
+      "bitfieldStatus": true
     },
 
     {
@@ -587,12 +666,10 @@
       "category": "FaultRaw",
       "function": "HR",
       "address": 2000,
-      "scale": { "mode": "none" },
       "pollClass": "fast",
       "alarmFlag": true,
       "statusFlag": true,
-      "bitfieldStatus": true,
-      "supporting": false
+      "bitfieldStatus": true
     },
     {
       "id": "PCS_FAULT_SYS_1",
@@ -600,12 +677,10 @@
       "category": "FaultRaw",
       "function": "HR",
       "address": 2001,
-      "scale": { "mode": "none" },
       "pollClass": "fast",
       "alarmFlag": true,
       "statusFlag": true,
-      "bitfieldStatus": true,
-      "supporting": false
+      "bitfieldStatus": true
     },
     {
       "id": "PCS_WARN_SYS_0",
@@ -613,12 +688,9 @@
       "category": "WarnRaw",
       "function": "HR",
       "address": 2010,
-      "scale": { "mode": "none" },
       "pollClass": "fast",
-      "alarmFlag": false,
       "statusFlag": true,
-      "bitfieldStatus": true,
-      "supporting": false
+      "bitfieldStatus": true
     }
   ],
 
