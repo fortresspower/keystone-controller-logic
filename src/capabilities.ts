@@ -43,6 +43,15 @@ export interface SiteCapabilities {
   hasACPV: boolean;
   usesCustomGrid: boolean;
   hasIslanding: boolean;
+  hasControllerNetwork: boolean;
+  hasMeterIntegration: boolean;
+  hasPcsTopology: boolean;
+  hasMbmuTopology: boolean;
+  hasAcInverterInventory: boolean;
+  scheduledControlEnabled: boolean;
+  crdRestricted: boolean;
+  pvCurtailmentViaModbus: boolean;
+  pvCurtailmentViaFrequencyShift: boolean;
   miniModelInfo: MiniModelInfo | null;
 }
 
@@ -59,6 +68,21 @@ export function deriveCapabilities(config: SiteConfig): SiteCapabilities {
   const hasACPV = config.pv.acInverters?.length > 0;
   const usesCustomGrid = config.operation.gridCode === "Custom";
   const hasIslanding = !!config.islanding;
+  const hasControllerNetwork =
+    !!config.network?.controller?.ip &&
+    !!config.network?.controller?.modbusServer?.ip;
+  const hasMeterIntegration =
+    !!config.metering?.meterType &&
+    !!config.metering?.modbusProfile &&
+    !!config.metering?.ip;
+  const hasPcsTopology = Array.isArray(config.pcs?.pcsDaisyChain) && config.pcs!.pcsDaisyChain.length > 0;
+  const hasMbmuTopology = Array.isArray(config.mbmu?.sbmuStrings) && config.mbmu!.sbmuStrings.length > 0;
+  const hasAcInverterInventory = Array.isArray(config.pv?.acInverters) && config.pv.acInverters.length > 0;
+  const scheduledControlEnabled = !!config.operation.scheduledControlEnabled;
+  const crdRestricted = config.operation.crdMode !== "no-restriction";
+  const pvCurtailmentViaModbus = config.pv.curtailmentMethod === "modbus";
+  const pvCurtailmentViaFrequencyShift =
+    config.pv.curtailmentMethod === "frequency-shifting";
 
   return {
     isMini,
@@ -69,6 +93,15 @@ export function deriveCapabilities(config: SiteConfig): SiteCapabilities {
     hasACPV,
     usesCustomGrid,
     hasIslanding,
+    hasControllerNetwork,
+    hasMeterIntegration,
+    hasPcsTopology,
+    hasMbmuTopology,
+    hasAcInverterInventory,
+    scheduledControlEnabled,
+    crdRestricted,
+    pvCurtailmentViaModbus,
+    pvCurtailmentViaFrequencyShift,
     miniModelInfo,
   };
 }

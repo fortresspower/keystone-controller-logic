@@ -165,9 +165,7 @@
       "function": null,
       "address": null,
       "pollClass": "fast",
-      "status": {
-        "bitfieldStatus": true
-      }
+      "bitfieldStatus": true
     },
     {
       "id": "BMS_WARN_WORD_0",
@@ -176,9 +174,7 @@
       "function": null,
       "address": null,
       "pollClass": "fast",
-      "status": {
-        "bitfieldStatus": true
-      }
+      "bitfieldStatus": true
     },
 
     {
@@ -188,11 +184,9 @@
       "function": "HRUS",
       "address": 898,
       "pollClass": "fast",
-      "status": {
-        "enum": {
-          "0": "Normal",
-          "1": "AuxPowerLose"
-        }
+      "enumStatus": {
+        "0": "Normal",
+        "1": "AuxPowerLose"
       }
     }
   ],

@@ -9,6 +9,9 @@
   "scripts": {
     "build": "tsc -p .",
     "test": "jest --runInBand --verbose",
+    "build:local": "./scripts/with-local-node.sh npm run -s build",
+    "test:local": "./scripts/with-local-node.sh npm -s test",
+    "check:local": "./scripts/with-local-node.sh sh -lc 'npm run -s build && npm -s test'",
     "deploy": "powershell -ExecutionPolicy Bypass -File ./scripts/deploy.ps1 NodeRedModule /data-internal/dist",
     "deploy:mac": "pwsh -File ./scripts/deploy.ps1 NodeRedModule /data-internal/dist"
   },

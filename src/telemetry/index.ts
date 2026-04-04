@@ -8,6 +8,10 @@ import {
   adaptTelemetryTemplateToReadProfile,
   resolveTelemetryTemplate,
 } from "./templateAdapter";
+import {
+  createTelemetryRuntimeState,
+  handleTelemetryMessage,
+} from "./runtime";
 
 // Re-export the function directly on the telemetry namespace
 export const buildTelemetryMap = _buildTelemetryMap;
@@ -15,6 +19,10 @@ export {
   adaptTelemetryTemplateToReadProfile,
   resolveTelemetryTemplate,
 } from "./templateAdapter";
+export {
+  createTelemetryRuntimeState,
+  handleTelemetryMessage,
+} from "./runtime";
 
 export function initTelemetry(config: SiteConfig): {
   caps: SiteCapabilities;

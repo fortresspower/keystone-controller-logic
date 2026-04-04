@@ -5,6 +5,7 @@ type EquipId = string;
 interface Runtime {
   timers: NodeJS.Timeout[];
   inflight: number;
+  values: Record<string, any>;
 }
 
 const RUNTIMES = new Map<EquipId, Runtime>();
@@ -16,8 +17,56 @@ export function start(
   send: (o1?: any, o2?: any, o3?: any) => void
 ) {
   stop(plan.equipmentId);
-  const rt: Runtime = { timers: [], inflight: 0 };
+  const rt: Runtime = { timers: [], inflight: 0, values: {} };
   const mkAddr = (s: number) => (env.MODBUS_ZERO_BASED ? s - 1 : s);
+  const constants = Array.isArray((plan as any).constants)
+    ? (plan as any).constants
+    : [];
+  const virtuals = Array.isArray((plan as any).virtuals)
+    ? (plan as any).virtuals
+    : [];
+
+  if (constants.length) {
+    for (const item of constants) {
+      rt.values[item.tagID] = item.value;
+    }
+    send(
+      null,
+      constants.map((item: any) => ({
+        tagID: item.tagID,
+        value: item.value,
+        timestamp: Date.now(),
+        alarm: item.alarm || "No",
+        supportingTag: item.supportingTag || "No",
+      })),
+      {
+        payload: {
+          equipmentId: plan.equipmentId,
+          state: "constants",
+          count: constants.length,
+          ts: Date.now(),
+        },
+      }
+    );
+  }
+
+  if (virtuals.length) {
+    send(
+      null,
+      null,
+      {
+        payload: {
+          equipmentId: plan.equipmentId,
+          state: "virtual-tags-skipped",
+          count: virtuals.length,
+          tagIDs: virtuals.map((item: any) => item.tagID),
+          ts: Date.now(),
+        },
+      }
+    );
+  }
+
+  RUNTIMES.set(plan.equipmentId, rt);
 
   const poll = (i: number, blk: ReadPlan["blocks"][number]) => {
     if (rt.inflight >= (env.MAX_IN_FLIGHT ?? 1)) return;
@@ -56,12 +105,15 @@ export function start(
     const jitter = Math.max(0, Number(env.JITTER_MS || 0));
     const delay = jitter ? Math.floor(Math.random() * jitter) : 0;
     const t0 = setTimeout(() => {
+      if ((blk as any).startupOnly) {
+        poll(i, blk);
+        return;
+      }
       const t = setInterval(() => poll(i, blk), period);
       rt.timers.push(t);
     }, delay);
     rt.timers.push(t0);
   }
-  RUNTIMES.set(plan.equipmentId, rt);
 }
 
 export function stop(equipmentId: string) {
@@ -201,8 +253,8 @@ function applyScale(rawVal: any, item: TagMapItem, env: ReaderEnv): any {
 
   const rawLow = Number(s.rawLow);
   const rawHigh = Number(s.rawHigh);
-  const engLow = Number(s.engLow);
-  const engHigh = Number(s.engHigh);
+  const engLow = Number(s.engLow ?? s.scaledLow);
+  const engHigh = Number(s.engHigh ?? s.scaledHigh);
 
   if (
     !Number.isFinite(rawLow) ||
@@ -225,6 +277,48 @@ function applyScale(rawVal: any, item: TagMapItem, env: ReaderEnv): any {
   const lo = Math.min(engLow, engHigh);
   const hi = Math.max(engLow, engHigh);
   return clamp(out, lo, hi);
+}
+
+function decodeStatusMeta(value: any, item: TagMapItem) {
+  const out: Record<string, any> = {};
+  const enumStatus = (item as any).enumStatus;
+  if (enumStatus && typeof enumStatus === "object") {
+    const enumKey = String(value);
+    if (typeof enumStatus[enumKey] === "string") {
+      out.enumLabel = enumStatus[enumKey];
+    }
+  }
+
+  const bitfieldStatus = (item as any).bitfieldStatus;
+  if (typeof value === "number" && Number.isInteger(value) && bitfieldStatus) {
+    const unsignedValue = value >>> 0;
+    const activeBits: number[] = [];
+    const activeLabels: string[] = [];
+
+    if (bitfieldStatus === true) {
+      for (let bit = 0; bit < 32; bit++) {
+        if (((unsignedValue >>> bit) & 0x1) === 1) {
+          activeBits.push(bit);
+        }
+      }
+      out.activeBits = activeBits;
+    } else if (typeof bitfieldStatus === "object") {
+      for (const [bitKey, label] of Object.entries(bitfieldStatus)) {
+        const bit = Number(bitKey);
+        if (!Number.isInteger(bit) || bit < 0 || bit > 31) continue;
+        if (((unsignedValue >>> bit) & 0x1) === 1) {
+          activeBits.push(bit);
+          if (typeof label === "string") {
+            activeLabels.push(label);
+          }
+        }
+      }
+      out.activeBits = activeBits;
+      out.activeLabels = activeLabels;
+    }
+  }
+
+  return out;
 }
 
 
@@ -280,14 +374,28 @@ export function onReply(
     value = applyScale(value, item, env);
     const tagID = (item as any).tagID || item.name || "";
     if (!env.SKIP_EMPTY_SAMPLES || value !== null) {
+      const statusMeta = decodeStatusMeta(value, item);
       samples.push({
         tagID,
         value,
         timestamp: Date.now(),
         alarm: (item as any).alarm || "No",
         supportingTag: (item as any).supportingTag || "No",
+        ...statusMeta,
       });
     }
+  }
+
+  const rt = RUNTIMES.get(plan.equipmentId);
+  if (rt) {
+    for (const sample of samples) {
+      rt.values[sample.tagID] = sample.value;
+    }
+  }
+
+  const derived = evaluateCalculatedTags(plan, rt?.values || {});
+  if (derived.length) {
+    samples.push(...derived);
   }
 
   if (!samples.length) {
@@ -313,4 +421,53 @@ export function onReply(
       ts: Date.now(),
     }),
   };
+}
+
+function evaluateCalculatedTags(plan: ReadPlan, values: Record<string, any>) {
+  const calcs = Array.isArray((plan as any).calcs) ? (plan as any).calcs : [];
+  const out: any[] = [];
+
+  for (const calc of calcs) {
+    const scope: Record<string, number> = {};
+    let missing = false;
+
+    for (const [name, tagID] of Object.entries(calc.inputs || {})) {
+      const value = values[tagID as string];
+      if (typeof value !== "number" || !Number.isFinite(value)) {
+        missing = true;
+        break;
+      }
+      scope[name] = value;
+    }
+
+    if (missing) continue;
+
+    const value = evalCalcExpr(calc.expr, scope);
+    if (!Number.isFinite(value)) continue;
+
+    out.push({
+      tagID: calc.tagID,
+      value,
+      timestamp: Date.now(),
+      alarm: calc.alarm || "No",
+      supportingTag: calc.supportingTag || "No",
+    });
+  }
+
+  return out;
+}
+
+function evalCalcExpr(expr: string, scope: Record<string, number>) {
+  const names = Object.keys(scope);
+  const vals = names.map((name) => scope[name]);
+  const fn = new Function(
+    ...names,
+    "abs",
+    "min",
+    "max",
+    "pow",
+    `return (${expr});`
+  ) as (...args: any[]) => number;
+
+  return fn(...vals, Math.abs, Math.min, Math.max, Math.pow);
 }

@@ -11,5 +11,6 @@ export * as bitTools from "./utils/bitTools";
 export * as telemetry from "./telemetry";          // or "./telemetry/index"
 export * as capabilities from "./capabilities";
 export * as config from "./config"; 
+export * as cloudConfig from "./cloudConfig/engine";
 
 // optional but useful

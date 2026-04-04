@@ -6,17 +6,25 @@ import type { CompilerEnv, ReadPlan, TagMapItem } from "../types";
  */
 interface TagDef {
   name: string;
-  function: string;             // HR, HRUS, HRI, HRUI_64, IRF, IRUI, HRS10, C, etc.
-  address: number;              // 1-based register/coil address
+  function?: string;            // HR, HRUS, HRI, HRUI_64, IRF, IRUI, HRS10, C, etc.
+  address?: number;             // 1-based register/coil address
   length?: number;              // optional override; usually omitted
   pollMs?: number;
-  pollClass?: "fast" | "normal" | "slow";
+  pollClass?: "fast" | "normal" | "slow" | "startup";
+  constant?: string | number | boolean | null;
+  calc?: {
+    inputs: Record<string, string>;
+    expr: string;
+  };
+  virtual?: true;
   endian?: "BE" | "LE";
   wordOrder32?: "ABCD" | "CDAB" | "BADC" | "DCBA";
   scale?: any;
   alarm?: "Yes" | "No";
   supportingTag?: "Yes" | "No";
   status?: string;
+  enumStatus?: Record<string, string>;
+  bitfieldStatus?: boolean | Record<string, string>;
 }
 
 type FnKey = string;
@@ -151,13 +159,42 @@ export function buildReadPlan(profile: any, instance: any, env: CompilerEnv): Re
 
   // Normalize tags: derive length/parser/fc from function, unless explicitly overridden
   const rawTags = profile.tags as TagDef[];
+  const constantTags = rawTags.filter((t) =>
+    Object.prototype.hasOwnProperty.call(t, "constant")
+  );
+  const calcTags = rawTags.filter((t) => !!t.calc);
+  const virtualTags = rawTags.filter((t) => !!t.virtual);
+  const modbusTags = rawTags.filter((t) =>
+    !Object.prototype.hasOwnProperty.call(t, "constant") && !t.calc && !t.virtual
+  );
 
-  const tags: (TagDef & {
+  const tags: ({
+    name: string;
     function: FnKey;
+    address: number;
     length: number;
+    pollMs?: number;
+    pollClass?: "fast" | "normal" | "slow" | "startup";
+    constant?: string | number | boolean | null;
     parser: ParserKind;
     fc: number;
-  })[] = rawTags.map((t) => {
+    resolvedPollMs: number;
+    startupOnly: boolean;
+    endian?: "BE" | "LE";
+    wordOrder32?: "ABCD" | "CDAB" | "BADC" | "DCBA";
+    scale?: any;
+    alarm?: "Yes" | "No";
+    supportingTag?: "Yes" | "No";
+    status?: string;
+    enumStatus?: Record<string, string>;
+    bitfieldStatus?: boolean | Record<string, string>;
+  })[] = modbusTags.map((t) => {
+    if (typeof t.function !== "string" || !t.function.trim()) {
+      throw new Error(`Compiler: tag "${t.name}" missing function`);
+    }
+    if (typeof t.address !== "number" || !Number.isFinite(t.address)) {
+      throw new Error(`Compiler: tag "${t.name}" has invalid address`);
+    }
     const fn = (t.function || "IR").toUpperCase();
     const meta = deriveFnMeta(fn);
 
@@ -172,39 +209,42 @@ export function buildReadPlan(profile: any, instance: any, env: CompilerEnv): Re
 
     const endian = t.endian || (defaultEndian as any);
     const wordOrder32 = t.wordOrder32 || defaultWordOrder32;
+    const resolvedPollMs =
+      typeof t.pollMs === "number"
+        ? t.pollMs
+        : t.pollClass === "fast"
+        ? pollFast
+        : t.pollClass === "slow"
+        ? pollSlow
+        : pollNormal;
+    const startupOnly = t.pollClass === "startup";
 
     return {
       ...t,
       function: fn,
+      address: t.address,
       length,
       parser,
       fc: meta.fc,
       endian,
       wordOrder32,
+      resolvedPollMs,
+      startupOnly,
     };
   });
 
-  // poll period resolution hierarchy
-  const pollOf = (t: TagDef & { parser: ParserKind }) =>
-    typeof t.pollMs === "number"
-      ? t.pollMs
-      : t.pollClass === "fast"
-      ? pollFast
-      : t.pollClass === "slow"
-      ? pollSlow
-      : pollNormal;
-
-  // group by function (FnKey)
+  // group by function and startup mode so startup tags do not merge into recurring blocks
   const byFn = new Map<FnKey, typeof tags>();
   for (const t of tags) {
-    const fn = t.function;
+    const fn = `${t.function}::${t.startupOnly ? "startup" : "poll"}`;
     if (!byFn.has(fn)) byFn.set(fn, [] as any);
     byFn.get(fn)!.push(t);
   }
 
   const blocks: any[] = [];
 
-  for (const [fn, list] of byFn) {
+  for (const [groupKey, list] of byFn) {
+    const fn = groupKey.split("::")[0];
     const fnTags = list.slice().sort((a, b) => a.address - b.address);
     let win: { start: number; end: number; tags: typeof fnTags } | null = null;
 
@@ -225,19 +265,31 @@ export function buildReadPlan(profile: any, instance: any, env: CompilerEnv): Re
         win.end = Math.max(win.end, end);
         win.tags.push(t);
       } else {
-        emitWindow(fn, win, blocks, { maxQty });
+        emitWindow(fn, win, blocks, {
+          maxQty,
+          startupOnly: !!win.tags[0]?.startupOnly,
+        });
         win = { start, end, tags: [t] as any };
       }
     }
-    if (win) emitWindow(fn, win, blocks, { maxQty });
+    if (win) {
+      emitWindow(fn, win, blocks, {
+        maxQty,
+        startupOnly: !!win.tags[0]?.startupOnly,
+      });
+    }
   }
 
   // determine each block's polling rate (minimum of member tag polls)
   for (const b of blocks) {
+    if (b.startupOnly) {
+      b.pollMs = 0;
+      continue;
+    }
     const mins = b.map.map((m: TagMapItem & { pollMs?: number }) =>
       typeof m.pollMs === "number" ? m.pollMs : Infinity
     );
-    b.pollMs = Math.min(...mins, pollNormal);
+    b.pollMs = Math.min(...mins);
     if (!isFinite(b.pollMs)) b.pollMs = pollNormal;
   }
 
@@ -246,6 +298,25 @@ export function buildReadPlan(profile: any, instance: any, env: CompilerEnv): Re
     serverKey: instance.serverKey,
     unitId: instance.unitId,
     blocks,
+    constants: constantTags.map((t) => ({
+      tagID: t.name,
+      value: t.constant,
+      alarm: t.alarm || "No",
+      supportingTag: t.supportingTag || "No",
+    })),
+    calcs: calcTags.map((t) => ({
+      tagID: t.name,
+      inputs: t.calc?.inputs || {},
+      expr: t.calc?.expr || "",
+      alarm: t.alarm || "No",
+      supportingTag: t.supportingTag || "No",
+    })),
+    virtuals: virtualTags.map((t) => ({
+      tagID: t.name,
+      pollClass: t.pollClass || "normal",
+      alarm: t.alarm || "No",
+      supportingTag: t.supportingTag || "No",
+    })),
     pollPlan: {
       fastMs: pollFast,
       normalMs: pollNormal,
@@ -258,7 +329,7 @@ function emitWindow(
   fn: FnKey,
   win: { start: number; end: number; tags: any[] },
   out: any[],
-  env: { maxQty: number }
+  env: { maxQty: number; startupOnly: boolean }
 ) {
   const qty = win.end - win.start + 1;
 
@@ -279,7 +350,9 @@ function emitWindow(
         alarm: t.alarm,
         supportingTag: t.supportingTag,
         status: t.status,
-        pollMs: t.pollMs,
+        enumStatus: t.enumStatus,
+        bitfieldStatus: t.bitfieldStatus,
+        pollMs: t.resolvedPollMs,
       }))
       .filter((m) => m.offset >= 0 && m.offset + m.length <= chunkQty);
 
@@ -292,6 +365,7 @@ function emitWindow(
       quantity: chunkQty,
       map,
       pollMs: 0,
+      startupOnly: env.startupOnly,
     });
   }
 }

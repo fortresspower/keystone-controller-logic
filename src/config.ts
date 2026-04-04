@@ -9,6 +9,7 @@ export type GridCode =
   | "Rule21"
   | "Rule14H"
   | "PREPA-MTR"
+  | "ISO"
   | "Ontario-ESA"
   | "Custom";
 

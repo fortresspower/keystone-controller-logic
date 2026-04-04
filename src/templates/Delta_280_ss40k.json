@@ -17,7 +17,7 @@
       "address": 1537,
       "pollClass": "startup",
       "statusFlag": true,
-      "ss40k": { "name": "SN", "section": "PCS information" }
+      "ss40k": { "name": "SN", "model": "40100" }
     },
 
     {
@@ -28,7 +28,7 @@
       "address": 1600,
       "pollClass": "startup",
       "statusFlag": true,
-      "ss40k": { "name": "hwVer", "section": "PCS information" }
+      "ss40k": { "name": "hwVer", "model": "40100" }
     },
     {
       "id": "PCS_VER_DSP_MASTER",
@@ -38,7 +38,7 @@
       "address": 1610,
       "pollClass": "startup",
       "statusFlag": true,
-      "ss40k": { "name": "verDspMaster", "section": "PCS information" }
+      "ss40k": { "name": "verDspMaster", "model": "40100" }
     },
     {
       "id": "PCS_VER_PROTO",
@@ -48,7 +48,7 @@
       "address": 1620,
       "pollClass": "startup",
       "statusFlag": true,
-      "ss40k": { "name": "verProto", "section": "PCS information" }
+      "ss40k": { "name": "verProto", "model": "40100" }
     },
 
     {

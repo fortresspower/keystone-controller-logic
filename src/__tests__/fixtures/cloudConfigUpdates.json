@@ -1,0 +1,28 @@
+[
+  {
+    "commandId": "SITE.ControllerNetwork",
+    "values": {
+      "ControllerIp": "10.1.1.100",
+      "ModbusServerIp": "10.1.1.101",
+      "ModbusServerPort": 1502
+    }
+  },
+  {
+    "commandId": "SITE.CRDMode",
+    "values": {
+      "CRDMode": 2
+    }
+  },
+  {
+    "commandId": "SITE.ScheduledControlEnabled",
+    "values": {
+      "ScheduledControlEnabled": 1
+    }
+  },
+  {
+    "commandId": "SITE.PcsDaisyChain",
+    "values": {
+      "PcsDaisyChain": "[1,2,1]"
+    }
+  }
+]

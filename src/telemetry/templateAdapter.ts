@@ -12,15 +12,29 @@ export interface TelemetryTemplateScale {
   clamp?: boolean;
 }
 
+export interface TelemetryTemplateCalc {
+  from?: string;
+  inputs?: Record<string, string>;
+  expr: string;
+}
+
 export interface TelemetryTemplateEntry {
   id: string;
-  function: string;
-  address: number;
+  function?: string | null;
+  address?: number | null;
   pollClass?: "fast" | "normal" | "slow" | "startup";
+  constant?: string | number | boolean | null;
+  calc?: TelemetryTemplateCalc;
   scale?: TelemetryTemplateScale;
   alarmFlag?: boolean;
   supporting?: boolean;
   statusFlag?: boolean;
+  enumStatus?: Record<string, string>;
+  bitfieldStatus?: boolean | Record<string, string>;
+  status?: {
+    enum?: Record<string, string>;
+    bitfieldStatus?: boolean | Record<string, string>;
+  };
 }
 
 export interface TelemetryTemplateDocument {
@@ -46,13 +60,21 @@ export interface NormalizedTelemetryScale {
 
 export interface NormalizedTelemetryTag {
   name: string;
-  function: string;
-  address: number;
-  pollClass?: "fast" | "normal" | "slow";
+  function?: string;
+  address?: number;
+  pollClass?: "fast" | "normal" | "slow" | "startup";
+  constant?: string | number | boolean | null;
+  calc?: {
+    inputs: Record<string, string>;
+    expr: string;
+  };
+  virtual?: true;
   scale?: NormalizedTelemetryScale;
   alarm?: "Yes" | "No";
   supportingTag?: "Yes" | "No";
   status?: string;
+  enumStatus?: Record<string, string>;
+  bitfieldStatus?: boolean | Record<string, string>;
 }
 
 export interface NormalizedTelemetryProfile {
@@ -65,6 +87,10 @@ export interface NormalizedTelemetryProfile {
 }
 
 const TEMPLATE_FILE_ALIASES: Record<string, string> = {
+  eGauge_280_ss40k: "eGauge_280_ss40k.json",
+  egauge_280_ss40k: "eGauge_280_ss40k.json",
+  egauge_280: "eGauge_280_ss40k.json",
+  egauge: "eGauge_280_ss40k.json",
   udt_eGauge_V1: "eGauge_280_ss40k.json",
 };
 
@@ -77,10 +103,11 @@ function fail(message: string): never {
 }
 
 export function resolveTelemetryTemplatePath(profileName: string): string {
+  const aliasCandidate = TEMPLATE_FILE_ALIASES[profileName];
   const directCandidates = [
+    aliasCandidate,
     profileName,
     `${profileName}.json`,
-    TEMPLATE_FILE_ALIASES[profileName],
   ].filter((candidate): candidate is string => !!candidate);
 
   for (const candidate of directCandidates) {
@@ -125,10 +152,33 @@ function validateTelemetryTemplate(
     if (typeof entry.id !== "string" || !entry.id.trim()) {
       fail(`profile "${profileName}" telemetry[${index}] is missing id`);
     }
-    if (typeof entry.function !== "string" || !entry.function.trim()) {
-      fail(`profile "${profileName}" telemetry[${index}] is missing function`);
+    const hasConstant = Object.prototype.hasOwnProperty.call(entry, "constant");
+    const hasCalc = !!entry.calc;
+    const hasFunction = typeof entry.function === "string" && !!entry.function.trim();
+    const hasAddress = typeof entry.address === "number" && Number.isFinite(entry.address);
+    const hasPhysical = hasFunction && hasAddress;
+    const isVirtualPlaceholder =
+      entry.function == null &&
+      entry.address == null &&
+      !hasConstant &&
+      !hasCalc;
+    const sourceCount =
+      Number(hasConstant) + Number(hasCalc) + Number(hasPhysical) + Number(isVirtualPlaceholder);
+
+    if (sourceCount === 0) {
+      fail(`profile "${profileName}" telemetry[${index}] is missing function/address, constant, or calc`);
     }
-    if (typeof entry.address !== "number" || !Number.isFinite(entry.address)) {
+    if (sourceCount > 1) {
+      fail(`profile "${profileName}" telemetry[${index}] mixes multiple source types`);
+    }
+    if (hasCalc) {
+      const inputs = normalizeCalcInputs(entry.calc!);
+      const expr = entry.calc?.expr;
+      if (!Object.keys(inputs).length || typeof expr !== "string" || !expr.trim()) {
+        fail(`profile "${profileName}" telemetry[${index}] has malformed calc`);
+      }
+    }
+    if (!hasConstant && !hasCalc && !hasAddress && !isVirtualPlaceholder) {
       fail(`profile "${profileName}" telemetry[${index}] has invalid address`);
     }
     if (
@@ -165,14 +215,35 @@ function adaptTelemetryEntry(
 ): NormalizedTelemetryTag {
   const normalized: NormalizedTelemetryTag = {
     name: entry.id,
-    function: entry.function,
-    address: entry.address,
     alarm: entry.alarmFlag ? "Yes" : "No",
     supportingTag: entry.supporting ? "Yes" : "No",
     status: entry.statusFlag ? "Yes" : "No",
   };
+  const enumStatus = normalizeEnumStatus(entry);
+  if (enumStatus) {
+    normalized.enumStatus = enumStatus;
+  }
+  const bitfieldStatus = normalizeBitfieldStatus(entry);
+  if (bitfieldStatus !== undefined) {
+    normalized.bitfieldStatus = bitfieldStatus;
+  }
 
-  if (entry.pollClass && entry.pollClass !== "startup") {
+  if (entry.constant !== undefined) {
+    normalized.constant = entry.constant;
+  } else if (entry.calc) {
+    normalized.calc = {
+      inputs: normalizeCalcInputs(entry.calc),
+      expr: entry.calc.expr,
+    };
+  } else if (entry.function == null && entry.address == null) {
+    normalized.virtual = true;
+  } else {
+    normalized.function = entry.function || undefined;
+    normalized.address =
+      typeof entry.address === "number" ? entry.address : undefined;
+  }
+
+  if (entry.pollClass) {
     normalized.pollClass = entry.pollClass;
   }
 
@@ -223,4 +294,69 @@ function normalizeScale(
     engHigh,
     clamp: scale.clamp,
   };
+}
+
+function normalizeCalcInputs(calc: TelemetryTemplateCalc): Record<string, string> {
+  if (calc.inputs && typeof calc.inputs === "object") {
+    return Object.fromEntries(
+      Object.entries(calc.inputs).filter(
+        ([key, value]) =>
+          typeof key === "string" &&
+          !!key.trim() &&
+          typeof value === "string" &&
+          !!value.trim()
+      )
+    );
+  }
+
+  if (typeof calc.from === "string" && calc.from.trim()) {
+    return { x: calc.from };
+  }
+
+  return {};
+}
+
+function normalizeEnumStatus(
+  entry: TelemetryTemplateEntry
+): Record<string, string> | undefined {
+  const candidate = entry.enumStatus ?? entry.status?.enum;
+  if (!candidate || typeof candidate !== "object") {
+    return undefined;
+  }
+
+  const normalized = Object.fromEntries(
+    Object.entries(candidate).filter(
+      ([key, value]) =>
+        typeof key === "string" &&
+        !!key.trim() &&
+        typeof value === "string" &&
+        !!value.trim()
+    )
+  );
+
+  return Object.keys(normalized).length ? normalized : undefined;
+}
+
+function normalizeBitfieldStatus(
+  entry: TelemetryTemplateEntry
+): boolean | Record<string, string> | undefined {
+  const candidate = entry.bitfieldStatus ?? entry.status?.bitfieldStatus;
+  if (candidate === true) {
+    return true;
+  }
+  if (!candidate || typeof candidate !== "object") {
+    return undefined;
+  }
+
+  const normalized = Object.fromEntries(
+    Object.entries(candidate).filter(
+      ([key, value]) =>
+        typeof key === "string" &&
+        !!key.trim() &&
+        typeof value === "string" &&
+        !!value.trim()
+    )
+  );
+
+  return Object.keys(normalized).length ? normalized : undefined;
 }
