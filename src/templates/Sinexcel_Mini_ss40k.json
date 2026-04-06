@@ -1,0 +1,1153 @@
+{
+  "version": "2",
+  "device": {
+    "vendor": "Sinexcel",
+    "model": "Mini PCS",
+    "protocol": "modbus-tcp",
+    "defaultByteOrder": "BE",
+    "defaultWordOrder32": "ABCD"
+  },
+  "telemetry": [
+    {
+      "id": "PCS_SYSTEM_STATUS_MAP",
+      "description": "System status",
+      "category": "Status",
+      "function": "HRUS",
+      "address": 32,
+      "pollClass": "fast",
+      "enumStatus": {
+        "0": "Fault",
+        "2": "Derating",
+        "3": "Booting",
+        "4": "Grid-tied",
+        "5": "Off-grid",
+        "9": "Failed"
+      }
+    },
+    {
+      "id": "PCS_SYSTEM_CHG_STATUS_MAP",
+      "description": "Charge/discharge status",
+      "category": "Status",
+      "function": "HRUS",
+      "address": 33,
+      "pollClass": "fast",
+      "enumStatus": {
+        "0": "ON/OFF",
+        "1": "Standby",
+        "2": "Charging",
+        "3": "Discharging",
+        "4": "Fully Charged",
+        "5": "Totally Discharged",
+        "6": "Constant Volt Topping"
+      }
+    },
+    {
+      "id": "PCS_AC_BUS_TOTAL_ACTIVE_POWER",
+      "description": "Total active power",
+      "category": "Inverter",
+      "function": "HR",
+      "address": 168,
+      "pollClass": "fast",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "W",
+        "model": "40101"
+      }
+    },
+    {
+      "id": "PCS_AC_BUS_L_1ACTIVE_POWER",
+      "description": "Active power L1",
+      "category": "Inverter",
+      "function": "HR",
+      "address": 169,
+      "pollClass": "fast",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "WL1",
+        "model": "40101"
+      }
+    },
+    {
+      "id": "PCS_AC_BUS_L_2ACTIVE_POWER",
+      "description": "Active power L2",
+      "category": "Inverter",
+      "function": "HR",
+      "address": 170,
+      "pollClass": "fast",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "WL2",
+        "model": "40101"
+      }
+    },
+    {
+      "id": "PCS_AC_BUS_L_3ACTIVE_POWER",
+      "description": "Active power L3",
+      "category": "Inverter",
+      "function": "HR",
+      "address": 171,
+      "pollClass": "fast",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "WL3",
+        "model": "40101"
+      }
+    },
+    {
+      "id": "PCS_AC_BUS_L_1CURRENT",
+      "description": "Current L1",
+      "category": "Inverter",
+      "function": "HR",
+      "address": 180,
+      "pollClass": "fast",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "AL1",
+        "model": "40101"
+      }
+    },
+    {
+      "id": "PCS_AC_BUS_L_2CURRENT",
+      "description": "Current L2",
+      "category": "Inverter",
+      "function": "HR",
+      "address": 181,
+      "pollClass": "fast",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "AL2",
+        "model": "40101"
+      }
+    },
+    {
+      "id": "PCS_AC_BUS_L_3CURRENT",
+      "description": "Current L3",
+      "category": "Inverter",
+      "function": "HR",
+      "address": 182,
+      "pollClass": "fast",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "AL3",
+        "model": "40101"
+      }
+    },
+    {
+      "id": "PCS_AC_BUS_FREQUENCY",
+      "description": "Frequency",
+      "category": "Inverter",
+      "function": "HRUS",
+      "address": 183,
+      "pollClass": "fast",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 100,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "Hz",
+        "model": "40101"
+      }
+    },
+    {
+      "id": "PCS_AC_BUS_L_1L_2VOLTAGE",
+      "description": "Voltage L1-L2",
+      "category": "Inverter",
+      "function": "HRUS",
+      "address": 184,
+      "pollClass": "fast",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "VL1L2",
+        "model": "40101"
+      }
+    },
+    {
+      "id": "PCS_AC_BUS_L_2L_3VOLTAGE",
+      "description": "Voltage L2-L3",
+      "category": "Inverter",
+      "function": "HRUS",
+      "address": 185,
+      "pollClass": "fast",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "VL2L3",
+        "model": "40101"
+      }
+    },
+    {
+      "id": "PCS_AC_BUS_L_3L_1VOLTAGE",
+      "description": "Voltage L3-L1",
+      "category": "Inverter",
+      "function": "HRUS",
+      "address": 186,
+      "pollClass": "fast",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "VL3L1",
+        "model": "40101"
+      }
+    },
+    {
+      "id": "PCS_AC_BUS_L_1N_VOLTAGE",
+      "description": "Voltage L1-N",
+      "category": "Inverter",
+      "function": "HRUS",
+      "address": 187,
+      "pollClass": "fast",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "VL1",
+        "model": "40101"
+      }
+    },
+    {
+      "id": "PCS_AC_BUS_L_2N_VOLTAGE",
+      "description": "Voltage L2-N",
+      "category": "Inverter",
+      "function": "HRUS",
+      "address": 188,
+      "pollClass": "fast",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "VL2",
+        "model": "40101"
+      }
+    },
+    {
+      "id": "PCS_AC_BUS_L_3N_VOLTAGE",
+      "description": "Voltage L3-N",
+      "category": "Inverter",
+      "function": "HRUS",
+      "address": 189,
+      "pollClass": "fast",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "VL3",
+        "model": "40101"
+      }
+    },
+    {
+      "id": "PCS_CONTROL_MODE",
+      "description": "Control Mode",
+      "category": "ControlMode",
+      "function": "HRUS",
+      "address": 1211,
+      "pollClass": "fast",
+      "enumStatus": {
+        "0": "Local Manual",
+        "1": "Local Auto",
+        "2": "Remote"
+      }
+    },
+    {
+      "id": "PCS_ACTIVE_POWER_CONTROL_MODE",
+      "description": "Active Power Control Mode",
+      "category": "ControlMode",
+      "function": "HRUS",
+      "address": 1022,
+      "pollClass": "fast",
+      "enumStatus": {
+        "0": "Fixed Watt",
+        "1": "Volt-Watt",
+        "2": "Freq-Watt",
+        "3": "W&F-W"
+      }
+    },
+    {
+      "id": "PCS_REACTIVE_POWER_CONTROL_MODE",
+      "description": "Reactive Power Control Mode",
+      "category": "ControlMode",
+      "function": "HRUS",
+      "address": 1023,
+      "pollClass": "fast",
+      "enumStatus": {
+        "0": "Disabled",
+        "1": "Fixed Var",
+        "2": "Fixed PF",
+        "3": "Volt-Var",
+        "4": "Watt-PF",
+        "5": "Watt-Var"
+      }
+    },
+    {
+      "id": "PCS_GRID_REGULATION",
+      "description": "Grid Regulation",
+      "category": "GridSupport",
+      "function": "HRUS",
+      "address": 2816,
+      "pollClass": "fast",
+      "enumStatus": {
+        "20": "IEEE1547",
+        "21": "Rule14H (Molokai, Lanai)",
+        "22": "Rule14H (Oahu, Maui, Hawaii-Island)",
+        "23": "Rule21"
+      },
+      "ss40k": {
+        "name": "GridRegulation",
+        "model": "40104"
+      }
+    },
+    {
+      "id": "PCS_POWER_CHANGE_MODE",
+      "description": "Power Change Mode",
+      "category": "Certification",
+      "function": "HRUS",
+      "address": 1301,
+      "pollClass": "fast",
+      "enumStatus": {
+        "0": "Step",
+        "1": "Ramp"
+      }
+    },
+    {
+      "id": "PCS_PERMIT_SERVICE",
+      "description": "Permit Service",
+      "category": "Certification",
+      "function": "HRUS",
+      "address": 1307,
+      "pollClass": "fast",
+      "enumStatus": {
+        "0": "Disabled",
+        "1": "Enabled"
+      },
+      "ss40k": {
+        "name": "PermitServiceStatus",
+        "model": "40104"
+      }
+    },
+    {
+      "id": "PCS_GRID_RECONNECTION_DELAY",
+      "description": "Grid Reconnection Delay",
+      "category": "GridSupport",
+      "function": "HRUS",
+      "address": 1304,
+      "pollClass": "startup",
+      "ss40k": {
+        "name": "ReconnectionDelayTime",
+        "model": "40104"
+      }
+    },
+    {
+      "id": "PCS_OVER_VOLT_REGION_1BOUNDARY",
+      "description": "Over Volt Region 1Boundary",
+      "category": "GridSupport",
+      "function": "HRUS",
+      "address": 1341,
+      "pollClass": "startup",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1000,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "PCS_OVER_VOLT_REGION_1TRIP_TIME",
+      "description": "Over Volt Region 1Trip Time",
+      "category": "GridSupport",
+      "function": "HRUS",
+      "address": 1342,
+      "pollClass": "startup"
+    },
+    {
+      "id": "PCS_OVER_VOLT_REGION_2BOUNDARY",
+      "description": "Over Volt Region 2Boundary",
+      "category": "GridSupport",
+      "function": "HRUS",
+      "address": 1343,
+      "pollClass": "startup",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1000,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "PCS_OVER_VOLT_REGION_2TRIP_TIME",
+      "description": "Over Volt Region 2Trip Time",
+      "category": "GridSupport",
+      "function": "HRUS",
+      "address": 1344,
+      "pollClass": "startup"
+    },
+    {
+      "id": "PCS_UNDER_VOLT_REGION_1BOUNDARY",
+      "description": "Under Volt Region 1Boundary",
+      "category": "GridSupport",
+      "function": "HRUS",
+      "address": 1345,
+      "pollClass": "startup",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1000,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "PCS_UNDER_VOLT_REGION_1TRIP_TIME",
+      "description": "Under Volt Region 1Trip Time",
+      "category": "GridSupport",
+      "function": "HRUS",
+      "address": 1346,
+      "pollClass": "startup"
+    },
+    {
+      "id": "PCS_UNDER_VOLT_REGION_2BOUNDARY",
+      "description": "Under Volt Region 2Boundary",
+      "category": "GridSupport",
+      "function": "HRUS",
+      "address": 1347,
+      "pollClass": "startup",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1000,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "PCS_UNDER_VOLT_REGION_2TRIP_TIME",
+      "description": "Under Volt Region 2Trip Time",
+      "category": "GridSupport",
+      "function": "HRUS",
+      "address": 1348,
+      "pollClass": "startup"
+    },
+    {
+      "id": "PCS_GRID_RECONNECTION_UPPER_VOLTAGE_LIMIT",
+      "description": "Grid Reconnection Upper Voltage Limit",
+      "category": "GridSupport",
+      "function": "HRUS",
+      "address": 1352,
+      "pollClass": "startup",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1000,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "PCS_GRID_RECONNECTION_LOWER_VOLTAGE_LIMIT",
+      "description": "Grid Reconnection Lower Voltage Limit",
+      "category": "GridSupport",
+      "function": "HRUS",
+      "address": 1353,
+      "pollClass": "startup",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1000,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "PCS_GRID_RECONNECT_FREQUENCY_UPPER_LIMIT",
+      "description": "Grid Reconnect Frequency Upper Limit",
+      "category": "GridSupport",
+      "function": "HRUS",
+      "address": 1369,
+      "pollClass": "startup",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1000,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "PCS_GRID_RECONNECT_FREQUENCY_LOWER_LIMIT",
+      "description": "Grid Reconnect Frequency Lower Limit",
+      "category": "GridSupport",
+      "function": "HRUS",
+      "address": 1370,
+      "pollClass": "startup",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1000,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "PCS_OVER_FREQUENCY_REGION_1BOUNDARY",
+      "description": "Over Frequency Region 1Boundary",
+      "category": "GridSupport",
+      "function": "HRUS",
+      "address": 1361,
+      "pollClass": "startup",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1000,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "PCS_OVER_FREQUENCY_REGION_1TRIP_TIME",
+      "description": "Over Frequency Region 1Trip Time",
+      "category": "GridSupport",
+      "function": "HRUS",
+      "address": 1362,
+      "pollClass": "startup",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "PCS_OVER_FREQUENCY_REGION_2BOUNDARY",
+      "description": "Over Frequency Region 2Boundary",
+      "category": "GridSupport",
+      "function": "HRUS",
+      "address": 1363,
+      "pollClass": "startup",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1000,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "PCS_OVER_FREQUENCY_REGION_2TRIP_TIME",
+      "description": "Over Frequency Region 2Trip Time",
+      "category": "GridSupport",
+      "function": "HRUS",
+      "address": 1364,
+      "pollClass": "startup",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "PCS_UNDER_FREQUENCY_REGION_1BOUNDARY",
+      "description": "Under Frequency Region 1Boundary",
+      "category": "GridSupport",
+      "function": "HRUS",
+      "address": 1365,
+      "pollClass": "startup",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1000,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "PCS_UNDER_FREQUENCY_REGION_1TRIP_TIME",
+      "description": "Under Frequency Region 1Trip Time",
+      "category": "GridSupport",
+      "function": "HRUS",
+      "address": 1366,
+      "pollClass": "startup",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "PCS_UNDER_FREQUENCY_REGION_2BOUNDARY",
+      "description": "Under Frequency Region 2Boundary",
+      "category": "GridSupport",
+      "function": "HRUS",
+      "address": 1367,
+      "pollClass": "startup",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1000,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "PCS_UNDER_FREQUENCY_REGION_2TRIP_TIME",
+      "description": "Under Frequency Region 2Trip Time",
+      "category": "GridSupport",
+      "function": "HRUS",
+      "address": 1368,
+      "pollClass": "startup",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "PCS_VOLT_VAR_V_1",
+      "description": "Volt Var V 1",
+      "category": "GridSupport",
+      "function": "HRUS",
+      "address": 1381,
+      "pollClass": "startup",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1000,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "PCS_VOLT_VAR_V_2",
+      "description": "Volt Var V 2",
+      "category": "GridSupport",
+      "function": "HRUS",
+      "address": 1382,
+      "pollClass": "startup",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1000,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "PCS_VOLT_VAR_V_3",
+      "description": "Volt Var V 3",
+      "category": "GridSupport",
+      "function": "HRUS",
+      "address": 1383,
+      "pollClass": "startup",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1000,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "PCS_VOLT_VAR_V_4",
+      "description": "Volt Var V 4",
+      "category": "GridSupport",
+      "function": "HRUS",
+      "address": 1384,
+      "pollClass": "startup",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1000,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "PCS_MAXIMUM_CAPACITIVE_REACTIVE_Q_1",
+      "description": "Maximum Capacitive Reactive Q 1",
+      "category": "GridSupport",
+      "function": "HRUS",
+      "address": 1385,
+      "pollClass": "startup",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 100,
+        "scaledLow": 0,
+        "scaledHigh": 0
+      }
+    },
+    {
+      "id": "PCS_INITIAL_CAPACITIVE_REACTIVE_Q_2",
+      "description": "Initial Capacitive Reactive Q 2",
+      "category": "GridSupport",
+      "function": "HRUS",
+      "address": 1386,
+      "pollClass": "startup",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 100,
+        "scaledLow": 0,
+        "scaledHigh": 0
+      }
+    },
+    {
+      "id": "PCS_INITIAL_INDUCTIVE_REACTIVE_Q_3",
+      "description": "Initial Inductive Reactive Q 3",
+      "category": "GridSupport",
+      "function": "HRUS",
+      "address": 1385,
+      "pollClass": "startup",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 100,
+        "scaledLow": 0,
+        "scaledHigh": 0
+      }
+    },
+    {
+      "id": "PCS_MAXIMUM_INDUCTIVE_REACTIVE_Q_4",
+      "description": "Maximum Inductive Reactive Q 4",
+      "category": "GridSupport",
+      "function": "HRUS",
+      "address": 1386,
+      "pollClass": "startup",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 100,
+        "scaledLow": 0,
+        "scaledHigh": 0
+      }
+    },
+    {
+      "id": "PCS_VOLT_WATT_START_V_1",
+      "description": "Volt Watt Start V 1",
+      "category": "GridSupport",
+      "function": "HRUS",
+      "address": 1411,
+      "pollClass": "startup",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1000,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "PCS_VOLT_WATT_END_V_2",
+      "description": "Volt Watt End V 2",
+      "category": "GridSupport",
+      "function": "HRUS",
+      "address": 1412,
+      "pollClass": "startup",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1000,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "PCS_VOLT_WATT_START_P_1",
+      "description": "Volt Watt Start P 1",
+      "category": "GridSupport",
+      "function": "HRUS",
+      "address": 1413,
+      "pollClass": "startup",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1000,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "PCS_VOLT_WATT_END_P_2",
+      "description": "Volt Watt End P 2",
+      "category": "GridSupport",
+      "function": "HRUS",
+      "address": 1414,
+      "pollClass": "startup",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1000,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "PCS_HIGH_START_FREQUENCY_POINT",
+      "description": "High Start Frequency Point",
+      "category": "GridSupport",
+      "function": "HRUS",
+      "address": 1431,
+      "pollClass": "startup",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1000,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "PCS_HIGH_FREQUENCY_RAMP_RATE",
+      "description": "High Frequency Ramp Rate",
+      "category": "GridSupport",
+      "function": "HRUS",
+      "address": 1433,
+      "pollClass": "startup",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1000,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "PCS_LOW_FREQUENCY_START_POINT",
+      "description": "Low Frequency Start Point",
+      "category": "GridSupport",
+      "function": "HR",
+      "address": 1441,
+      "pollClass": "startup",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1000,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "PCS_LOW_FREQUENCY_RAMP_RATE",
+      "description": "Low Frequency Ramp Rate",
+      "category": "GridSupport",
+      "function": "HRUS",
+      "address": 1433,
+      "pollClass": "startup",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1000,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "PCS_RC_TIME_CONSTANT",
+      "description": "RC Time Constant",
+      "category": "GridSupport",
+      "function": "HRUS",
+      "address": 1446,
+      "pollClass": "startup",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 10,
+        "rawHigh": 0,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "PCS_WATT_VAR_GENERATION_P_1",
+      "description": "Watt Var Generation P 1",
+      "category": "GridSupport",
+      "function": "HR",
+      "address": 1471,
+      "pollClass": "startup",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 100,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "PCS_WATT_VAR_GENERATION_Q_1",
+      "description": "Watt Var Generation Q 1",
+      "category": "GridSupport",
+      "function": "HR",
+      "address": 1472,
+      "pollClass": "startup",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 100,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "PCS_WATT_VAR_GENERATION_P_2",
+      "description": "Watt Var Generation P 2",
+      "category": "GridSupport",
+      "function": "HR",
+      "address": 1473,
+      "pollClass": "startup",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 100,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "PCS_WATT_VAR_GENERATION_Q_2",
+      "description": "Watt Var Generation Q 2",
+      "category": "GridSupport",
+      "function": "HR",
+      "address": 1474,
+      "pollClass": "startup",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 100,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "PCS_WATT_VAR_GENERATION_P_3",
+      "description": "Watt Var Generation P 3",
+      "category": "GridSupport",
+      "function": "HR",
+      "address": 1475,
+      "pollClass": "startup",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 100,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "PCS_WATT_VAR_GENERATION_Q_3",
+      "description": "Watt Var Generation Q 3",
+      "category": "GridSupport",
+      "function": "HR",
+      "address": 1476,
+      "pollClass": "startup",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 100,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "PCS_WATT_VAR_ABSORPTION_P_1",
+      "description": "Watt Var Absorption P 1",
+      "category": "GridSupport",
+      "function": "HR",
+      "address": 1477,
+      "pollClass": "startup",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 100,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "PCS_WATT_VAR_ABSORPTION_Q_1",
+      "description": "Watt Var Absorption Q 1",
+      "category": "GridSupport",
+      "function": "HR",
+      "address": 1478,
+      "pollClass": "startup",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 100,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "PCS_WATT_VAR_ABSORPTION_P_2",
+      "description": "Watt Var Absorption P 2",
+      "category": "GridSupport",
+      "function": "HR",
+      "address": 1479,
+      "pollClass": "startup",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 100,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "PCS_WATT_VAR_ABSORPTION_Q_2",
+      "description": "Watt Var Absorption Q 2",
+      "category": "GridSupport",
+      "function": "HR",
+      "address": 1480,
+      "pollClass": "startup",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 100,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "PCS_WATT_VAR_ABSORPTION_P_3",
+      "description": "Watt Var Absorption P 3",
+      "category": "GridSupport",
+      "function": "HR",
+      "address": 1481,
+      "pollClass": "startup",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 100,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "PCS_WATT_VAR_ABSORPTION_Q_3",
+      "description": "Watt Var Absorption Q 3",
+      "category": "GridSupport",
+      "function": "HR",
+      "address": 1482,
+      "pollClass": "startup",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 100,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    }
+  ],
+  "commands": [
+    {
+      "id": "CMD_PCS_START",
+      "description": "Start PCS",
+      "category": "RunControl",
+      "function": "HRUS",
+      "address": 1001,
+      "dataType": "uint16"
+    },
+    {
+      "id": "CMD_PCS_STOP",
+      "description": "Stop PCS",
+      "category": "RunControl",
+      "function": "HRUS",
+      "address": 1002,
+      "dataType": "uint16"
+    },
+    {
+      "id": "CMD_PCS_CLEAR_FAULT",
+      "description": "Clear PCS fault",
+      "category": "RunControl",
+      "function": "HRUS",
+      "address": 1003,
+      "dataType": "uint16"
+    },
+    {
+      "id": "CMD_PCS_ON_OFF_GRID_SWITCH",
+      "description": "On/off-grid switch",
+      "category": "RunControl",
+      "function": "HRUS",
+      "address": 1006,
+      "dataType": "uint16"
+    }
+  ]
+}

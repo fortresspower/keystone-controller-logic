@@ -1,0 +1,399 @@
+{
+  "name": "faultmap_Sinexcel_Mini_PCS_40103_v1",
+  "ss40k": {
+    "model": 40103
+  },
+  "equipment": {
+    "vendor": "Sinexcel",
+    "product": "Mini PCS",
+    "protocol": "Sinexcel Mini fault bitfield PDF"
+  },
+  "inputs": {
+    "MINI_W0036": { "function": "HRUS", "address": 36, "aggregate": "SINGLE" },
+    "MINI_W0037": { "function": "HRUS", "address": 37, "aggregate": "SINGLE" },
+    "MINI_W0106": { "function": "HRUS", "address": 106, "aggregate": "SINGLE" },
+    "MINI_W0107": { "function": "HRUS", "address": 107, "aggregate": "SINGLE" },
+    "MINI_W0108": { "function": "HRUS", "address": 108, "aggregate": "SINGLE" },
+    "MINI_W0109": { "function": "HRUS", "address": 109, "aggregate": "SINGLE" },
+    "MINI_W0110": { "function": "HRUS", "address": 110, "aggregate": "SINGLE" },
+    "MINI_W0112": { "function": "HRUS", "address": 112, "aggregate": "SINGLE" },
+    "MINI_W0113": { "function": "HRUS", "address": 113, "aggregate": "SINGLE" },
+    "MINI_W0114": { "function": "HRUS", "address": 114, "aggregate": "SINGLE" },
+    "MINI_W0115": { "function": "HRUS", "address": 115, "aggregate": "SINGLE" },
+    "MINI_W0118": { "function": "HRUS", "address": 118, "aggregate": "SINGLE" },
+    "MINI_W0119": { "function": "HRUS", "address": 119, "aggregate": "SINGLE" },
+    "MINI_W0120": { "function": "HRUS", "address": 120, "aggregate": "SINGLE" },
+    "MINI_W0121": { "function": "HRUS", "address": 121, "aggregate": "SINGLE" }
+  },
+  "outputs": {
+    "pcsWarning": {
+      "type": "bitfield32",
+      "bits": {
+        "0": {
+          "label": "Fan abnormal",
+          "expr": {
+            "anyOf": [
+              { "in": "MINI_W0036", "bits": [5, 6] },
+              { "in": "MINI_W0108", "bit": 1 }
+            ]
+          }
+        },
+        "1": {
+          "label": "LCD communication fault",
+          "expr": {
+            "anyOf": []
+          },
+          "notes": "Unmapped from the current Mini fault PDF."
+        },
+        "2": {
+          "label": "Auto test failure",
+          "expr": {
+            "anyOf": []
+          },
+          "notes": "Unmapped from the current Mini fault PDF."
+        }
+      }
+    },
+    "pcsFault": {
+      "type": "bitfield32",
+      "bits": {
+        "0": {
+          "label": "Soft-start abnormal",
+          "expr": {
+            "anyOf": [
+              { "in": "MINI_W0114", "bit": 5 },
+              { "in": "MINI_W0115", "bit": 3 },
+              { "in": "MINI_W0121", "bit": 7 }
+            ]
+          }
+        },
+        "1": {
+          "label": "DC bus short circuit",
+          "expr": {
+            "anyOf": []
+          },
+          "notes": "No explicit DC-bus short-circuit bit was found in the Mini PDF."
+        },
+        "2": {
+          "label": "DC link unbalance/undervoltage",
+          "expr": {
+            "anyOf": [
+              { "in": "MINI_W0115", "bits": [1, 2] }
+            ]
+          }
+        },
+        "3": {
+          "label": "DC link overvoltage",
+          "expr": {
+            "anyOf": [
+              { "in": "MINI_W0115", "bit": 0 }
+            ]
+          }
+        },
+        "4": {
+          "label": "DCDC abnormal",
+          "expr": {
+            "anyOf": [
+              { "in": "MINI_W0114", "bits": [4, 6, 7, 9] }
+            ]
+          },
+          "notes": "Mapped from DC overload timeout and DC-input switch/soft-start fault conditions as the closest DCDC-equivalent failures."
+        },
+        "5": {
+          "label": "Inverter over temperature",
+          "expr": {
+            "anyOf": [
+              { "in": "MINI_W0109", "bits": [1, 2, 9] }
+            ]
+          }
+        },
+        "6": {
+          "label": "Hardware over-current protection",
+          "expr": {
+            "anyOf": [
+              { "in": "MINI_W0113", "bits": [1, 2, 3, 4, 5, 6, 7] },
+              { "in": "MINI_W0114", "bit": 4 }
+            ]
+          }
+        },
+        "7": {
+          "label": "Inverter relay abnormal",
+          "expr": {
+            "anyOf": [
+              { "in": "MINI_W0114", "bits": [6, 7, 9] },
+              { "in": "MINI_W0119", "bits": [4, 5] },
+              { "in": "MINI_W0121", "bits": [8, 9] }
+            ]
+          }
+        },
+        "8": {
+          "label": "Internal power supply abnormal",
+          "expr": {
+            "anyOf": [
+              { "in": "MINI_W0108", "bits": [11, 12, 13] }
+            ]
+          }
+        },
+        "9": {
+          "label": "Software version incompatibility",
+          "expr": {
+            "anyOf": [
+              { "in": "MINI_W0106", "bits": [6, 7, 8] }
+            ]
+          }
+        },
+        "10": {
+          "label": "Internal DSP communication lost",
+          "expr": {
+            "anyOf": [
+              { "in": "MINI_W0107", "bits": [1, 2, 3, 4, 6, 7] }
+            ]
+          }
+        },
+        "11": {
+          "label": "Internal communication loss EMS to master DSP",
+          "expr": {
+            "anyOf": [
+              { "in": "MINI_W0107", "bit": 8 }
+            ]
+          }
+        },
+        "12": {
+          "label": "Internal storage error",
+          "expr": {
+            "anyOf": [
+              { "in": "MINI_W0106", "bit": 3 }
+            ]
+          }
+        },
+        "13": {
+          "label": "M3 Microprocessor TX failure",
+          "expr": {
+            "anyOf": []
+          },
+          "notes": "Unmapped from the current Mini fault PDF."
+        },
+        "14": {
+          "label": "M3 Microprocessor RX failure",
+          "expr": {
+            "anyOf": []
+          },
+          "notes": "Unmapped from the current Mini fault PDF."
+        },
+        "15": {
+          "label": "M8 Microprocessor TX failure",
+          "expr": {
+            "anyOf": []
+          },
+          "notes": "Unmapped from the current Mini fault PDF."
+        },
+        "16": {
+          "label": "M8 Microprocessor RX failure",
+          "expr": {
+            "anyOf": []
+          },
+          "notes": "Unmapped from the current Mini fault PDF."
+        },
+        "17": {
+          "label": "US/European Model detection error",
+          "expr": {
+            "anyOf": []
+          },
+          "notes": "Unmapped from the current Mini fault PDF."
+        }
+      }
+    },
+    "batWarning": {
+      "type": "bitfield32",
+      "bits": {
+        "0": {
+          "label": "No battery detected",
+          "expr": {
+            "anyOf": []
+          },
+          "notes": "No explicit no-battery-detected bit was found in the Mini PDF."
+        },
+        "1": {
+          "label": "Battery charge/discharge fault",
+          "expr": {
+            "anyOf": [
+              { "in": "MINI_W0115", "bit": 9 }
+            ]
+          },
+          "notes": "Mapped from BMS shutdown fault."
+        },
+        "2": {
+          "label": "BMS communication fault",
+          "expr": {
+            "anyOf": [
+              { "in": "MINI_W0107", "bit": 9 }
+            ]
+          }
+        },
+        "3": {
+          "label": "Battery discharge over-current",
+          "expr": {
+            "anyOf": []
+          },
+          "notes": "Unmapped from the current Mini fault PDF."
+        },
+        "4": {
+          "label": "Battery over-temperature",
+          "expr": {
+            "anyOf": []
+          },
+          "notes": "No explicit battery over-temperature bit was found in the Mini PDF."
+        },
+        "5": {
+          "label": "Battery under-temperature",
+          "expr": {
+            "anyOf": []
+          },
+          "notes": "No explicit battery under-temperature bit was found in the Mini PDF."
+        },
+        "6": {
+          "label": "Battery  Reversed",
+          "expr": {
+            "anyOf": []
+          },
+          "notes": "Unmapped from the current Mini fault PDF."
+        }
+      }
+    },
+    "batFault": {
+      "type": "bitfield32",
+      "bits": {
+        "0": {
+          "label": "Battery over-voltage",
+          "expr": {
+            "anyOf": []
+          },
+          "notes": "Left unmapped to avoid conflating generic DC-input faults with confirmed battery over-voltage."
+        },
+        "1": {
+          "label": "Battery under-voltage",
+          "expr": {
+            "anyOf": []
+          },
+          "notes": "Left unmapped to avoid conflating generic DC-input faults with confirmed battery under-voltage."
+        }
+      }
+    },
+    "gridWarning": {
+      "type": "bitfield32",
+      "bits": {
+        "0": {
+          "label": "No grid detected",
+          "expr": {
+            "anyOf": [
+              { "in": "MINI_W0118", "bits": [7, 9, 10] }
+            ]
+          },
+          "notes": "Uses phase-loss / power-down / connection-forbidden as the closest operational no-grid conditions."
+        },
+        "1": {
+          "label": "Grid abnormal",
+          "expr": {
+            "anyOf": [
+              { "in": "MINI_W0118", "bits": [4, 5, 6, 7, 8, 9, 10] },
+              { "in": "MINI_W0119", "bits": [0, 1, 2, 3] }
+            ]
+          }
+        },
+        "2": {
+          "label": "VAC abnormal",
+          "expr": {
+            "anyOf": [
+              { "in": "MINI_W0120", "bits": [0, 1, 4, 5, 6, 7, 13, 14] }
+            ]
+          },
+          "notes": "Mapped from AC-bus-side voltage/phase abnormalities as the nearest vendor equivalent."
+        },
+        "3": {
+          "label": "Grid over-voltage",
+          "expr": {
+            "anyOf": [
+              { "in": "MINI_W0118", "bit": 0 }
+            ]
+          }
+        },
+        "4": {
+          "label": "Grid under-voltage",
+          "expr": {
+            "anyOf": [
+              { "in": "MINI_W0118", "bit": 1 }
+            ]
+          }
+        },
+        "5": {
+          "label": "Grid frequency fault",
+          "expr": {
+            "anyOf": [
+              { "in": "MINI_W0118", "bits": [2, 3] }
+            ]
+          }
+        },
+        "6": {
+          "label": "Grid over-frequency",
+          "expr": {
+            "anyOf": [
+              { "in": "MINI_W0118", "bit": 2 }
+            ]
+          }
+        },
+        "7": {
+          "label": "Grid under-frequency",
+          "expr": {
+            "anyOf": [
+              { "in": "MINI_W0118", "bit": 3 }
+            ]
+          }
+        }
+      }
+    },
+    "gridFault": {
+      "type": "bitfield32",
+      "bits": {
+        "0": {
+          "label": "Inverter DC-bias over-current",
+          "expr": {
+            "anyOf": []
+          },
+          "notes": "Unmapped from the current Mini fault PDF."
+        },
+        "1": {
+          "label": "AC moving-average voltage high",
+          "expr": {
+            "anyOf": []
+          },
+          "notes": "Unmapped from the current Mini fault PDF."
+        },
+        "2": {
+          "label": "Grid neutral abnormal",
+          "expr": {
+            "anyOf": [
+              { "in": "MINI_W0118", "bit": 8 }
+            ]
+          }
+        },
+        "3": {
+          "label": "DSP-MCU grid-voltage fault",
+          "expr": {
+            "anyOf": []
+          },
+          "notes": "Unmapped from the current Mini fault PDF."
+        },
+        "4": {
+          "label": "DC-bus UV sampling fault",
+          "expr": {
+            "anyOf": [
+              { "in": "MINI_W0106", "bit": 2 },
+              { "in": "MINI_W0110", "bit": 10 }
+            ]
+          },
+          "notes": "Mapped from sampling-zero abnormal and controller sampling difference as the closest Mini sampling-fault indicators."
+        }
+      }
+    }
+  }
+}
