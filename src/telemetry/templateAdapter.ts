@@ -27,13 +27,16 @@ export interface TelemetryTemplateEntry {
   calc?: TelemetryTemplateCalc;
   scale?: TelemetryTemplateScale;
   alarmFlag?: boolean;
+  alarm?: boolean;
   supporting?: boolean;
+  supportingTag?: boolean;
   statusFlag?: boolean;
   enumStatus?: Record<string, string>;
   bitfieldStatus?: boolean | Record<string, string>;
   status?: {
     enum?: Record<string, string>;
     bitfieldStatus?: boolean | Record<string, string>;
+    flag?: boolean;
   };
   enum?: Record<string, string>;
 }
@@ -198,9 +201,9 @@ function adaptTelemetryEntry(
 ): NormalizedTelemetryTag {
   const normalized: NormalizedTelemetryTag = {
     name: entry.id,
-    alarm: entry.alarmFlag ? "Yes" : "No",
-    supportingTag: entry.supporting ? "Yes" : "No",
-    status: entry.statusFlag ? "Yes" : "No",
+    alarm: (entry.alarmFlag ?? entry.alarm) ? "Yes" : "No",
+    supportingTag: (entry.supporting ?? entry.supportingTag) ? "Yes" : "No",
+    status: (entry.statusFlag ?? entry.status?.flag) ? "Yes" : "No",
   };
   const enumStatus = normalizeEnumStatus(entry);
   if (enumStatus) {
