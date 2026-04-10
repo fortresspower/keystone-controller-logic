@@ -20,6 +20,16 @@ This task list was rebuilt on April 3, 2026 from:
   - startup polling class
   - enum status decoding
   - bitfield status decoding
+- [x] Added Modbus reader logic for telemetry templates:
+  - function/address handling
+  - poll-class-driven read planning
+  - status/bitfield decoding inputs
+- [x] Added Modbus writer/command handling foundation:
+  - command-spec-driven write shape
+  - dtype-aware value coercion and validation
+- [x] Added template support for derived/static points:
+  - `calc` expression handling
+  - `constant` value handling
 - [x] Added/expanded ingestion tests in:
   - `src/__tests__/telemetryIngestion.spec.ts`
 - [x] Updated TS config for test globals:
@@ -37,6 +47,10 @@ This task list was rebuilt on April 3, 2026 from:
   - migrated legacy `status.bitfieldStatus` -> `bitfieldStatus`
 - [x] `src/templates/eGauge_280_ss40k.json`
   - local diff appears mostly formatting/line-ending churn
+- [x] Added Mini Sinexcel templates:
+  - `src/templates/Sinexcel_Mini_ss40k.json`
+  - `src/templates/Sinexcel_Mini_Fault_Map_ss40k.json`
+  - Mini fault map aligned to SS40K model `40103`
 
 ## Active Tasks (Next)
 
@@ -52,6 +66,17 @@ This task list was rebuilt on April 3, 2026 from:
 - [ ] Validate Node-RED flow end-to-end against target meter:
   - compile -> start -> poll -> parse -> diagnostics
   - confirm tag IDs and sample values in debug output
+- [ ] Add `Configurations` task set based on `src/coreControl/keystone_ci_addition.yaml`:
+  - verify every YAML point is represented in controller config ingestion/apply coverage
+  - confirm section/subsection grouping matches intended SiteConfig UX
+  - validate enum/range handling for site, microgrid, battery, AC-coupled PV, protection, metering, and generator settings
+  - add or update tests for YAML-backed config points and expected diagnostics
+- [ ] Add core control logic for both product lines:
+  - `280`
+  - `Mini`
+  - define product-specific control behavior and shared abstractions
+  - confirm command routing, limits, and operating-mode handling per product
+  - add or update tests covering both product control paths
 - [ ] Add commit checkpoints once green:
   1. runtime + adapter + reader/compiler changes
   2. templates + tests
@@ -70,6 +95,18 @@ This task list was rebuilt on April 3, 2026 from:
   - `src/__tests__/configIngestion.spec.ts`
   - fixture: `src/__tests__/fixtures/cloudConfigUpdates.json`
 - [x] Added telemetry baseline lock test group in `src/__tests__/telemetryIngestion.spec.ts`
+
+## Cloud Integration And Testing
+
+- [ ] Validate cloud config ingestion against every point in `src/coreControl/keystone_ci_addition.yaml`.
+- [ ] Verify Cloud -> `SiteConfig` mapping for both `280` and `Mini`.
+- [ ] Confirm `hot` vs `restart-required` apply behavior per cloud-driven command.
+- [ ] Add product capability gating so cloud updates expose only valid settings per site profile.
+- [ ] Validate controller diagnostics returned to cloud for invalid enum, range, type, and missing-field cases.
+- [ ] Add end-to-end tests for cloud payload -> validation -> apply plan -> resulting `SiteConfig`.
+- [ ] Add cloud config fixture sets for both `280` and `Mini`.
+- [ ] Add negative/regression tests for invalid cloud payloads and YAML-backed command changes.
+- [ ] Add integration tests proving cloud config changes do not break telemetry/runtime flows.
 
 ## Optional Hardening
 

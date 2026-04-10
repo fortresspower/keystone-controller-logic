@@ -27,6 +27,26 @@ npm run check:local
 ## Deploy
 ./scripts/deploy.sh NodeRedModule /data-internal/dist
 
+## Node-RED Smoke Flows
+- `flows/egauge_template_smoke_test.json`
+  - live eGauge compile/start/stop flow with Modbus polling
+- `flows/telemetry_calc_constant_smoke_test.json`
+  - self-contained smoke flow for `constant` and `calc` tags
+  - stores merged results in `flow` context under:
+    - `calcConstantTelemetryState`
+    - `calcConstantSnapshot`
+    - `calcConstantLastReport`
+  - recommended sequence:
+    1. `Compile Smoke Profile`
+    2. `Start Smoke Profile`
+    3. `Simulate RAW_POWER = 1234`
+    4. `Simulate SCALE_EXP = -1`
+  - expected merged result:
+    - `CONST_SITE_ID = 280`
+    - `RAW_POWER = 1234`
+    - `SCALE_EXP = -1`
+    - `SITE_POWER = 123.4`
+
 ## Device Runtime Layout (Confirmed on 10.253.1.16)
 - Container: `NodeRedModule`
 - Active compiled library path: `/data-internal/dist`
