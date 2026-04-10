@@ -6,6 +6,8 @@ interface Runtime {
   timers: NodeJS.Timeout[];
   inflight: number;
   values: Record<string, any>;
+  pending: Set<string>;
+  nextReqId: number;
 }
 
 const RUNTIMES = new Map<EquipId, Runtime>();
@@ -17,7 +19,13 @@ export function start(
   send: (o1?: any, o2?: any, o3?: any) => void
 ) {
   stop(plan.equipmentId);
-  const rt: Runtime = { timers: [], inflight: 0, values: {} };
+  const rt: Runtime = {
+    timers: [],
+    inflight: 0,
+    values: {},
+    pending: new Set<string>(),
+    nextReqId: 1,
+  };
   const mkAddr = (s: number) => (env.MODBUS_ZERO_BASED ? s - 1 : s);
   const constants = Array.isArray((plan as any).constants)
     ? (plan as any).constants
@@ -70,9 +78,16 @@ export function start(
 
   const poll = (i: number, blk: ReadPlan["blocks"][number]) => {
     if (rt.inflight >= (env.MAX_IN_FLIGHT ?? 1)) return;
+    const reqKey = `${i}:${rt.nextReqId++}`;
     rt.inflight++;
+    rt.pending.add(reqKey);
     const req = {
-      _reader: { equipmentId: plan.equipmentId, blockIdx: i, sentAt: Date.now() },
+      _reader: {
+        equipmentId: plan.equipmentId,
+        blockIdx: i,
+        sentAt: Date.now(),
+        reqKey,
+      },
       serverKey: plan.serverKey,
       unitId: plan.unitId,
       fc: blk.fc,
@@ -95,18 +110,37 @@ export function start(
       },
     });
     setTimeout(() => {
-      rt.inflight = Math.max(0, rt.inflight - 1);
+      if (rt.pending.delete(reqKey)) {
+        rt.inflight = Math.max(0, rt.inflight - 1);
+      }
     }, (env.REQUEST_TIMEOUT_MS ?? 1500) + 10);
   };
+
+  const recurringCounts = new Map<number, number>();
+  for (const blk of plan.blocks) {
+    if ((blk as any).startupOnly) continue;
+    const period = Math.max(1, Number(blk.pollMs || 1000));
+    recurringCounts.set(period, (recurringCounts.get(period) || 0) + 1);
+  }
+  const recurringSlots = new Map<number, number>();
 
   for (let i = 0; i < plan.blocks.length; i++) {
     const blk = plan.blocks[i];
     const period = Math.max(1, Number(blk.pollMs || 1000));
     const jitter = Math.max(0, Number(env.JITTER_MS || 0));
-    const delay = jitter ? Math.floor(Math.random() * jitter) : 0;
+    const slotCount = recurringCounts.get(period) || 1;
+    const slotIndex = recurringSlots.get(period) || 0;
+    if (!(blk as any).startupOnly) {
+      recurringSlots.set(period, slotIndex + 1);
+    }
+    const baseDelay = (blk as any).startupOnly
+      ? 0
+      : Math.floor((period * slotIndex) / slotCount);
+    const jitterDelay = jitter ? Math.floor(Math.random() * jitter) : 0;
+    const delay = baseDelay + jitterDelay;
     const t0 = setTimeout(() => {
+      poll(i, blk);
       if ((blk as any).startupOnly) {
-        poll(i, blk);
         return;
       }
       const t = setInterval(() => poll(i, blk), period);
@@ -271,6 +305,10 @@ function applyScale(rawVal: any, item: TagMapItem, env: ReaderEnv): any {
     engLow +
     ((rawVal - rawLow) / (rawHigh - rawLow)) * (engHigh - engLow);
 
+  // Trim binary floating-point noise so scaled values like 1 do not surface as
+  // 1.000000000003638 in telemetry payloads.
+  out = Number(out.toFixed(9));
+
   const doClamp = env.RESPECT_TAG_CLAMP ? !!s.clamp : !!env.SCALE_CLAMP_DEFAULT;
   if (!doClamp) return out;
 
@@ -321,6 +359,29 @@ function decodeStatusMeta(value: any, item: TagMapItem) {
   return out;
 }
 
+function buildStatusTextSample(tagID: string, value: any, statusMeta: Record<string, any>) {
+  let textValue: string | undefined;
+
+  if (typeof statusMeta.enumLabel === "string" && statusMeta.enumLabel.trim()) {
+    textValue = statusMeta.enumLabel;
+  } else if (Array.isArray(statusMeta.activeLabels) && statusMeta.activeLabels.length) {
+    textValue = statusMeta.activeLabels.join(", ");
+  } else if (Array.isArray(statusMeta.activeBits)) {
+    textValue = statusMeta.activeBits.length ? statusMeta.activeBits.join(",") : "";
+  }
+
+  if (textValue === undefined) {
+    return undefined;
+  }
+
+  return {
+    tagID: `${tagID}_str`,
+    value: textValue,
+    rawValue: value,
+    supportingTag: "No",
+  };
+}
+
 
 
 
@@ -345,6 +406,11 @@ export function onReply(
   }
 
   const blk = plan.blocks[idx];
+  const rt = RUNTIMES.get(plan.equipmentId);
+  const reqKey = msg?._reader?.reqKey;
+  if (rt && typeof reqKey === "string" && rt.pending.delete(reqKey)) {
+    rt.inflight = Math.max(0, rt.inflight - 1);
+  }
   if (!blk) {
     return {
       out3: diag({
@@ -375,18 +441,25 @@ export function onReply(
     const tagID = (item as any).tagID || item.name || "";
     if (!env.SKIP_EMPTY_SAMPLES || value !== null) {
       const statusMeta = decodeStatusMeta(value, item);
+      const timestamp = Date.now();
       samples.push({
         tagID,
         value,
-        timestamp: Date.now(),
+        timestamp,
         alarm: (item as any).alarm || "No",
         supportingTag: (item as any).supportingTag || "No",
         ...statusMeta,
       });
+      const statusTextSample = buildStatusTextSample(tagID, value, statusMeta);
+      if (statusTextSample) {
+        samples.push({
+          ...statusTextSample,
+          timestamp,
+        });
+      }
     }
   }
 
-  const rt = RUNTIMES.get(plan.equipmentId);
   if (rt) {
     for (const sample of samples) {
       rt.values[sample.tagID] = sample.value;

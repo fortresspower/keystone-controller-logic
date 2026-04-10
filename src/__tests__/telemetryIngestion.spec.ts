@@ -189,6 +189,70 @@ describe("Modbus function semantics", () => {
     jest.useRealTimers();
   });
 
+  test("reader staggers same-period blocks so later blocks are not starved", () => {
+    jest.useFakeTimers();
+
+    const profile = {
+      profileId: "stagger_profile",
+      defaults: {
+        byteOrder: "BE",
+        wordOrder32: "ABCD",
+      },
+      tags: [
+        { name: "tag_a", function: "HRUS", address: 100, pollClass: "fast" },
+        { name: "tag_b", function: "HRUS", address: 200, pollClass: "fast" },
+        { name: "tag_c", function: "HRUS", address: 300, pollClass: "fast" },
+      ],
+    };
+
+    const plan = buildReadPlan(profile, instance, {
+      ...compilerEnv,
+      maxSpan: 10,
+      CompilerMaxSpan: 10,
+      maxHole: 0,
+      CompilerMaxHole: 0,
+      pollFast: 90,
+      PollFastMs: 90,
+    } as any);
+
+    const requestedBlocks: number[] = [];
+    const send = jest.fn((o1?: any) => {
+      if (!o1?._reader) return;
+      requestedBlocks.push(o1._reader.blockIdx);
+      setTimeout(() => {
+        reader.onReply(
+          {
+            _reader: o1._reader,
+            payload: [123],
+          },
+          plan,
+          {
+            ...readerEnv,
+            MAX_IN_FLIGHT: 1,
+            REQUEST_TIMEOUT_MS: 1000,
+          } as any
+        );
+      }, 10);
+    });
+
+    reader.start(
+      plan,
+      {
+        ...readerEnv,
+        MAX_IN_FLIGHT: 1,
+        REQUEST_TIMEOUT_MS: 1000,
+      } as any,
+      send
+    );
+
+    jest.advanceTimersByTime(120);
+
+    expect(Array.from(new Set(requestedBlocks)).sort()).toEqual([0, 1, 2]);
+
+    reader.stop(plan.equipmentId);
+    jest.useRealTimers();
+  });
+
   test("constant tags compile outside Modbus blocks", () => {
     const plan = makePlanForTag({
       name: "const_tag",
@@ -464,6 +528,14 @@ describe("Modbus function semantics", () => {
         enumLabel: "AuxPowerLose",
       })
     );
+    expect(res.out2[1]).toEqual(
+      expect.objectContaining({
+        tagID: "BMS_AUX_POWER_STATE_str",
+        value: "AuxPowerLose",
+        supportingTag: "No",
+        rawValue: 1,
+      })
+    );
   });
 
   test("bitfieldStatus mapping decodes active bits and labels", () => {
@@ -507,6 +579,14 @@ describe("Modbus function semantics", () => {
         activeLabels: ["OverVoltage", "OverTemp"],
       })
     );
+    expect(res.out2[1]).toEqual(
+      expect.objectContaining({
+        tagID: "BMS_ALARM_WORD_0_str",
+        value: "OverVoltage, OverTemp",
+        supportingTag: "No",
+        rawValue: 5,
+      })
+    );
   });
 
   test("bitfieldStatus true decodes active bits without labels", () => {
@@ -546,6 +626,106 @@ describe("Modbus function semantics", () => {
       })
     );
     expect(res.out2[0].activeLabels).toBeUndefined();
+    expect(res.out2[1]).toEqual(
+      expect.objectContaining({
+        tagID: "BMS_ALARM_WORD_0_str",
+        value: "0,2",
+        supportingTag: "No",
+        rawValue: 5,
+      })
+    );
+  });
+
+  test("commands with readback true are compiled into the read plan", () => {
+    const profile = adaptTelemetryTemplateToReadProfile("command_readback_test", {
+      version: "2",
+      device: {
+        vendor: "Sinexcel",
+        model: "PCS",
+        protocol: "modbus-tcp",
+      },
+      telemetry: [],
+      commands: [
+        {
+          id: "Start",
+          function: "HRUS",
+          address: 100,
+          readback: true,
+          enumStatus: {
+            "0": "Stop",
+            "1": "Start",
+          },
+        },
+      ],
+    } as any);
+
+    expect(profile.tags).toHaveLength(1);
+    expect(profile.tags[0]).toEqual(
+      expect.objectContaining({
+        name: "Start",
+        function: "HRUS",
+        address: 100,
+        pollClass: "normal",
+        enumStatus: {
+          "0": "Stop",
+          "1": "Start",
+        },
+      })
+    );
+
+    const plan = buildReadPlan(profile, instance, compilerEnv);
+    expect(plan.blocks).toHaveLength(1);
+    expect(plan.blocks[0].pollMs).toBe(1000);
+  });
+
+  test("legacy command enum is normalized for readback status decoding", () => {
+    const profile = adaptTelemetryTemplateToReadProfile("command_enum_compat_test", {
+      version: "2",
+      device: {
+        vendor: "Sinexcel",
+        model: "PCS",
+        protocol: "modbus-tcp",
+      },
+      telemetry: [],
+      commands: [
+        {
+          id: "OnOffGridSwitch",
+          function: "HRUS",
+          address: 200,
+          pollClass: "normal",
+          readback: true,
+          enum: {
+            "2": "GT",
+            "6": "SA",
+          },
+        },
+      ],
+    } as any);
+
+    const plan = buildReadPlan(profile, instance, compilerEnv);
+    const res = reader.onReply(
+      {
+        _reader: { equipmentId: plan.equipmentId, blockIdx: 0 },
+        payload: [6],
+      },
+      plan,
+      readerEnv
+    );
+
+    expect(res.out2[0]).toEqual(
+      expect.objectContaining({
+        tagID: "OnOffGridSwitch",
+        value: 6,
+        enumLabel: "SA",
+      })
+    );
+    expect(res.out2[1]).toEqual(
+      expect.objectContaining({
+        tagID: "OnOffGridSwitch_str",
+        value: "SA",
+        rawValue: 6,
+      })
+    );
   });
 
   test("HR (S16)", () => {
@@ -772,28 +952,36 @@ describe("Modbus function semantics", () => {
 });
 
 describe("Telemetry baseline lock", () => {
-  test("MBMU template keeps calc/status normalization contracts", () => {
+  test("MBMU template keeps status/readback normalization contracts", () => {
     const template = resolveTelemetryTemplate("MBMU_280_ss40k");
     const profile = adaptTelemetryTemplateToReadProfile(
       "MBMU_280_ss40k",
       template
     );
 
-    const chargeCalc = profile.tags.find((tag) => tag.name === "BMS_P_BAT_CHG");
-    expect(chargeCalc?.calc).toEqual({
-      inputs: { x: "BMS_P_SYS" },
-      expr: "max(0, -x)",
-    });
-
-    const auxState = profile.tags.find(
-      (tag) => tag.name === "BMS_AUX_POWER_STATE"
+    const powerOnState = profile.tags.find(
+      (tag) => tag.name === "BMS_PowerOn_State"
     );
-    expect(auxState?.enumStatus).toEqual({
-      "0": "Normal",
-      "1": "AuxPowerLose",
+    expect(powerOnState?.enumStatus).toEqual({
+      "0": "Power off ready",
+      "1": "Power on ready",
+      "2": "Power on fault",
+      "3": "Power off fault",
     });
 
-    const alarmWord = profile.tags.find((tag) => tag.name === "BMS_ALARM_WORD_0");
-    expect(alarmWord?.bitfieldStatus).toBe(true);
+    const warningWord = profile.tags.find(
+      (tag) => tag.name === "MBMU_Warnings_Word0000"
+    );
+    expect(warningWord?.alarm).toBe("Yes");
+    expect(warningWord?.supportingTag).toBe("No");
+
+    const readbackCommand = profile.tags.find((tag) => tag.name === "EMS_Cmd");
+    expect(readbackCommand?.pollClass).toBe("normal");
+    expect(readbackCommand?.enumStatus).toBeUndefined();
+
+    const rackDisable = profile.tags.find(
+      (tag) => tag.name === "Racks_disable_Command"
+    );
+    expect(rackDisable).toBeUndefined();
   });
 });

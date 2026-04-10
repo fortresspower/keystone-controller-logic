@@ -35,6 +35,11 @@ export interface TelemetryTemplateEntry {
     enum?: Record<string, string>;
     bitfieldStatus?: boolean | Record<string, string>;
   };
+  enum?: Record<string, string>;
+}
+
+export interface TelemetryTemplateCommandEntry extends TelemetryTemplateEntry {
+  readback?: boolean;
 }
 
 export interface TelemetryTemplateDocument {
@@ -47,6 +52,7 @@ export interface TelemetryTemplateDocument {
     defaultWordOrder32?: "ABCD" | "CDAB" | "BADC" | "DCBA";
   };
   telemetry: TelemetryTemplateEntry[];
+  commands?: TelemetryTemplateCommandEntry[];
 }
 
 export interface NormalizedTelemetryScale {
@@ -146,48 +152,17 @@ function validateTelemetryTemplate(
   }
 
   maybeDoc.telemetry.forEach((entry, index) => {
-    if (!entry || typeof entry !== "object") {
-      fail(`profile "${profileName}" telemetry[${index}] is not an object`);
-    }
-    if (typeof entry.id !== "string" || !entry.id.trim()) {
-      fail(`profile "${profileName}" telemetry[${index}] is missing id`);
-    }
-    const hasConstant = Object.prototype.hasOwnProperty.call(entry, "constant");
-    const hasCalc = !!entry.calc;
-    const hasFunction = typeof entry.function === "string" && !!entry.function.trim();
-    const hasAddress = typeof entry.address === "number" && Number.isFinite(entry.address);
-    const hasPhysical = hasFunction && hasAddress;
-    const isVirtualPlaceholder =
-      entry.function == null &&
-      entry.address == null &&
-      !hasConstant &&
-      !hasCalc;
-    const sourceCount =
-      Number(hasConstant) + Number(hasCalc) + Number(hasPhysical) + Number(isVirtualPlaceholder);
-
-    if (sourceCount === 0) {
-      fail(`profile "${profileName}" telemetry[${index}] is missing function/address, constant, or calc`);
-    }
-    if (sourceCount > 1) {
-      fail(`profile "${profileName}" telemetry[${index}] mixes multiple source types`);
-    }
-    if (hasCalc) {
-      const inputs = normalizeCalcInputs(entry.calc!);
-      const expr = entry.calc?.expr;
-      if (!Object.keys(inputs).length || typeof expr !== "string" || !expr.trim()) {
-        fail(`profile "${profileName}" telemetry[${index}] has malformed calc`);
-      }
-    }
-    if (!hasConstant && !hasCalc && !hasAddress && !isVirtualPlaceholder) {
-      fail(`profile "${profileName}" telemetry[${index}] has invalid address`);
-    }
-    if (
-      entry.scale !== undefined &&
-      (!entry.scale || typeof entry.scale !== "object")
-    ) {
-      fail(`profile "${profileName}" telemetry[${index}] has invalid scale`);
-    }
+    validateTemplateEntry(profileName, "telemetry", index, entry);
   });
+
+  if (maybeDoc.commands !== undefined) {
+    if (!Array.isArray(maybeDoc.commands)) {
+      fail(`profile "${profileName}" commands is not an array`);
+    }
+    maybeDoc.commands.forEach((entry, index) => {
+      validateTemplateEntry(profileName, "commands", index, entry);
+    });
+  }
 
   return maybeDoc as TelemetryTemplateDocument;
 }
@@ -202,16 +177,24 @@ export function adaptTelemetryTemplateToReadProfile(
       byteOrder: template.device.defaultByteOrder ?? "BE",
       wordOrder32: template.device.defaultWordOrder32 ?? "ABCD",
     },
-    tags: template.telemetry.map((entry, index) =>
-      adaptTelemetryEntry(profileName, entry, index)
-    ),
+    tags: [
+      ...template.telemetry.map((entry, index) =>
+        adaptTelemetryEntry(profileName, entry, index)
+      ),
+      ...((template.commands || [])
+        .filter((entry) => entry.readback === true)
+        .map((entry, index) =>
+          adaptTelemetryEntry(profileName, entry, index, "commands")
+        )),
+    ],
   };
 }
 
 function adaptTelemetryEntry(
   profileName: string,
   entry: TelemetryTemplateEntry,
-  index: number
+  index: number,
+  section: "telemetry" | "commands" = "telemetry"
 ): NormalizedTelemetryTag {
   const normalized: NormalizedTelemetryTag = {
     name: entry.id,
@@ -245,9 +228,11 @@ function adaptTelemetryEntry(
 
   if (entry.pollClass) {
     normalized.pollClass = entry.pollClass;
+  } else if (section === "commands") {
+    normalized.pollClass = "normal";
   }
 
-  const scale = normalizeScale(profileName, entry.scale, index);
+  const scale = normalizeScale(profileName, section, entry.scale, index);
   if (scale) {
     normalized.scale = scale;
   }
@@ -257,6 +242,7 @@ function adaptTelemetryEntry(
 
 function normalizeScale(
   profileName: string,
+  section: "telemetry" | "commands",
   scale: TelemetryTemplateScale | undefined,
   index: number
 ): NormalizedTelemetryScale | undefined {
@@ -266,7 +252,7 @@ function normalizeScale(
 
   if (scale.mode !== "Linear") {
     fail(
-      `profile "${profileName}" telemetry[${index}] uses unsupported scale mode "${scale.mode}"`
+      `profile "${profileName}" ${section}[${index}] uses unsupported scale mode "${scale.mode}"`
     );
   }
 
@@ -282,7 +268,7 @@ function normalizeScale(
     !Number.isFinite(engHigh)
   ) {
     fail(
-      `profile "${profileName}" telemetry[${index}] has malformed Linear scale`
+      `profile "${profileName}" ${section}[${index}] has malformed Linear scale`
     );
   }
 
@@ -317,9 +303,9 @@ function normalizeCalcInputs(calc: TelemetryTemplateCalc): Record<string, string
 }
 
 function normalizeEnumStatus(
-  entry: TelemetryTemplateEntry
+  entry: TelemetryTemplateEntry | TelemetryTemplateCommandEntry
 ): Record<string, string> | undefined {
-  const candidate = entry.enumStatus ?? entry.status?.enum;
+  const candidate = entry.enumStatus ?? entry.enum ?? entry.status?.enum;
   if (!candidate || typeof candidate !== "object") {
     return undefined;
   }
@@ -338,7 +324,7 @@ function normalizeEnumStatus(
 }
 
 function normalizeBitfieldStatus(
-  entry: TelemetryTemplateEntry
+  entry: TelemetryTemplateEntry | TelemetryTemplateCommandEntry
 ): boolean | Record<string, string> | undefined {
   const candidate = entry.bitfieldStatus ?? entry.status?.bitfieldStatus;
   if (candidate === true) {
@@ -359,4 +345,53 @@ function normalizeBitfieldStatus(
   );
 
   return Object.keys(normalized).length ? normalized : undefined;
+}
+
+function validateTemplateEntry(
+  profileName: string,
+  section: "telemetry" | "commands",
+  index: number,
+  entry: TelemetryTemplateEntry | TelemetryTemplateCommandEntry
+) {
+  if (!entry || typeof entry !== "object") {
+    fail(`profile "${profileName}" ${section}[${index}] is not an object`);
+  }
+  if (typeof entry.id !== "string" || !entry.id.trim()) {
+    fail(`profile "${profileName}" ${section}[${index}] is missing id`);
+  }
+  const hasConstant = Object.prototype.hasOwnProperty.call(entry, "constant");
+  const hasCalc = !!entry.calc;
+  const hasFunction = typeof entry.function === "string" && !!entry.function.trim();
+  const hasAddress = typeof entry.address === "number" && Number.isFinite(entry.address);
+  const hasPhysical = hasFunction && hasAddress;
+  const isVirtualPlaceholder =
+    entry.function == null &&
+    entry.address == null &&
+    !hasConstant &&
+    !hasCalc;
+  const sourceCount =
+    Number(hasConstant) + Number(hasCalc) + Number(hasPhysical) + Number(isVirtualPlaceholder);
+
+  if (sourceCount === 0) {
+    fail(`profile "${profileName}" ${section}[${index}] is missing function/address, constant, or calc`);
+  }
+  if (sourceCount > 1) {
+    fail(`profile "${profileName}" ${section}[${index}] mixes multiple source types`);
+  }
+  if (hasCalc) {
+    const inputs = normalizeCalcInputs(entry.calc!);
+    const expr = entry.calc?.expr;
+    if (!Object.keys(inputs).length || typeof expr !== "string" || !expr.trim()) {
+      fail(`profile "${profileName}" ${section}[${index}] has malformed calc`);
+    }
+  }
+  if (!hasConstant && !hasCalc && !hasAddress && !isVirtualPlaceholder) {
+    fail(`profile "${profileName}" ${section}[${index}] has invalid address`);
+  }
+  if (
+    entry.scale !== undefined &&
+    (!entry.scale || typeof entry.scale !== "object")
+  ) {
+    fail(`profile "${profileName}" ${section}[${index}] has invalid scale`);
+  }
 }

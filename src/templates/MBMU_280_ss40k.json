@@ -9,99 +9,224 @@
   },
   "telemetry": [
     {
-      "id": "BMS_CAP_BAT",
-      "description": "Battery capacity (constant for now)",
-      "category": "BMS",
-      "pollClass": "startup",
-      "constant": 280,
-      "ss40k": {
-        "name": "capBat",
-        "model": "40101"
-      }
-    },
-
-    {
-      "id": "BMS_SOC",
-      "description": "Battery state of charge (SOC)",
-      "category": "BMS",
+      "id": "MBMU_Warnings_Word0000",
+      "description": "Raw MBMU warning word 0000",
+      "category": "Warnings",
       "function": "HRUS",
-      "address": 34,
-      "pollClass": "fast",
-      "ss40k": {
-        "name": "socBat",
-        "model": "40101"
-      }
+      "address": 0,
+      "pollClass": "normal",
+      "alarm": true,
+      "supportingTag": false
     },
-
     {
-      "id": "BMS_V_BAT",
+      "id": "MBMU_Warnings_Word0001",
+      "description": "Raw MBMU warning word 0001",
+      "category": "Warnings",
+      "function": "HRUS",
+      "address": 1,
+      "pollClass": "normal",
+      "alarm": true,
+      "supportingTag": false
+    },
+    {
+      "id": "MBMU_Warnings_Word0002",
+      "description": "Raw MBMU warning word 0002",
+      "category": "Warnings",
+      "function": "HRUS",
+      "address": 2,
+      "pollClass": "normal",
+      "alarm": true,
+      "supportingTag": false
+    },
+    {
+      "id": "MBMU_Warnings_Word0003",
+      "description": "Raw MBMU warning word 0003",
+      "category": "Warnings",
+      "function": "HRUS",
+      "address": 3,
+      "pollClass": "normal",
+      "alarm": true,
+      "supportingTag": false
+    },
+    {
+      "id": "MBMU_Warnings_Word0004",
+      "description": "Raw MBMU warning word 0004",
+      "category": "Warnings",
+      "function": "HRUS",
+      "address": 4,
+      "pollClass": "normal",
+      "alarm": true,
+      "supportingTag": false
+    },
+    {
+      "id": "MBMU_Warnings_Word0005",
+      "description": "Raw MBMU warning word 0005",
+      "category": "Warnings",
+      "function": "HRUS",
+      "address": 5,
+      "pollClass": "normal",
+      "alarm": true,
+      "supportingTag": false
+    },
+    {
+      "id": "MBMU_Warnings_Word0006",
+      "description": "Raw MBMU warning word 0006",
+      "category": "Warnings",
+      "function": "HRUS",
+      "address": 6,
+      "pollClass": "normal",
+      "alarm": true,
+      "supportingTag": false
+    },
+    {
+      "id": "MBMU_Warnings_Word0007",
+      "description": "Raw MBMU warning word 0007",
+      "category": "Warnings",
+      "function": "HRUS",
+      "address": 7,
+      "pollClass": "normal",
+      "alarm": true,
+      "supportingTag": false
+    },
+    {
+      "id": "MBMU_Warnings_Word0008",
+      "description": "Raw MBMU warning word 0008",
+      "category": "Warnings",
+      "function": "HRUS",
+      "address": 8,
+      "pollClass": "normal",
+      "alarm": true,
+      "supportingTag": false
+    },
+    {
+      "id": "MBMU_Warnings_Word0009",
+      "description": "Raw MBMU warning word 0009",
+      "category": "Warnings",
+      "function": "HRUS",
+      "address": 9,
+      "pollClass": "normal",
+      "alarm": true,
+      "supportingTag": false
+    },
+    {
+      "id": "MBMU_Warnings_Word0010",
+      "description": "Raw MBMU warning word 0010",
+      "category": "Warnings",
+      "function": "HRUS",
+      "address": 16,
+      "pollClass": "normal",
+      "alarm": true,
+      "supportingTag": false
+    },
+    {
+      "id": "MBMU_Warnings_Word0011",
+      "description": "Raw MBMU warning word 0011",
+      "category": "Warnings",
+      "function": "HRUS",
+      "address": 17,
+      "pollClass": "normal",
+      "alarm": true,
+      "supportingTag": false
+    },
+    {
+      "id": "MBMU_Warnings_Word0013",
+      "description": "Raw MBMU warning word 0013",
+      "category": "Warnings",
+      "function": "HRUS",
+      "address": 19,
+      "pollClass": "normal",
+      "alarm": true,
+      "supportingTag": false
+    },
+    {
+      "id": "System_Voltage_V",
       "description": "System voltage",
-      "category": "BMS",
+      "category": "Summary",
       "function": "HRUS",
       "address": 32,
-      "pollClass": "fast",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 15000,
+        "scaledLow": 0,
+        "scaledHigh": 1500
+      },
+      "pollClass": "normal",
       "ss40k": {
         "name": "vBat",
         "model": "40101"
       }
     },
     {
-      "id": "BMS_I_BAT",
+      "id": "System_Current_A",
       "description": "System current",
-      "category": "BMS",
-      "function": "HR",
+      "category": "Summary",
+      "function": "HRUS",
       "address": 33,
-      "pollClass": "fast",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 40000,
+        "scaledLow": -20000,
+        "scaledHigh": 20000
+      },
+      "pollClass": "normal",
       "ss40k": {
         "name": "iBat",
         "model": "40101"
       }
     },
-
     {
-      "id": "BMS_P_SYS",
-      "description": "System power (+ discharging, - charging)",
-      "category": "BMS",
-      "function": "HR",
-      "address": 46,
-      "pollClass": "fast"
-    },
-
-    {
-      "id": "BMS_P_BAT_CHG",
-      "description": "Battery charge power (derived from system power; positive magnitude when charging)",
-      "category": "BMS",
-      "pollClass": "fast",
-      "calc": {
-        "from": "BMS_P_SYS",
-        "expr": "max(0, -x)"
+      "id": "System_SOC_pct",
+      "description": "System state of charge",
+      "category": "Summary",
+      "function": "HRUS",
+      "address": 34,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1000,
+        "scaledLow": 0,
+        "scaledHigh": 1
       },
+      "pollClass": "normal",
       "ss40k": {
-        "name": "pBatChg",
+        "name": "socBat",
         "model": "40101"
       }
     },
     {
-      "id": "BMS_P_BAT_DISCHG",
-      "description": "Battery discharge power (derived from system power; positive magnitude when discharging)",
-      "category": "BMS",
-      "pollClass": "fast",
-      "calc": {
-        "from": "BMS_P_SYS",
-        "expr": "max(0, x)"
+      "id": "System_SOH_pct",
+      "description": "System state of health",
+      "category": "Summary",
+      "function": "HRUS",
+      "address": 35,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1000,
+        "scaledLow": 0,
+        "scaledHigh": 1
       },
+      "pollClass": "normal",
       "ss40k": {
-        "name": "pBatDischg",
+        "name": "sohBat",
         "model": "40101"
       }
     },
-
     {
-      "id": "BMS_V_CELL_MAX",
+      "id": "Max_Cell_Voltage_V",
       "description": "Maximum cell voltage",
-      "category": "BMS",
+      "category": "Summary",
       "function": "HRUS",
       "address": 36,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 5000,
+        "scaledLow": 0,
+        "scaledHigh": 5
+      },
       "pollClass": "normal",
       "ss40k": {
         "name": "vBatCellMax",
@@ -109,36 +234,52 @@
       }
     },
     {
-      "id": "BMS_V_CELL_MIN",
+      "id": "Min_Cell_Voltage_V",
       "description": "Minimum cell voltage",
-      "category": "BMS",
+      "category": "Summary",
       "function": "HRUS",
       "address": 37,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 5000,
+        "scaledLow": 0,
+        "scaledHigh": 5
+      },
       "pollClass": "normal",
       "ss40k": {
         "name": "vBatCellMin",
         "model": "40101"
       }
     },
-
     {
-      "id": "BMS_TEMP_CELL_AVG",
-      "description": "Average cell temperature",
-      "category": "BMS",
-      "function": null,
-      "address": null,
-      "pollClass": "normal",
-      "ss40k": {
-        "name": "tempBatCellAvg",
-        "model": "40101"
-      }
+      "id": "Avg_Cell_Voltage_V",
+      "description": "Average cell voltage",
+      "category": "Summary",
+      "function": "HRUS",
+      "address": 38,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 5000,
+        "scaledLow": 0,
+        "scaledHigh": 5
+      },
+      "pollClass": "normal"
     },
     {
-      "id": "BMS_TEMP_CELL_MAX",
+      "id": "Max_Cell_Temp_C",
       "description": "Maximum cell temperature",
-      "category": "BMS",
-      "function": null,
-      "address": null,
+      "category": "Summary",
+      "function": "HRUS",
+      "address": 39,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 255,
+        "scaledLow": -50,
+        "scaledHigh": 205
+      },
       "pollClass": "normal",
       "ss40k": {
         "name": "tempBatCellMax",
@@ -146,215 +287,191 @@
       }
     },
     {
-      "id": "BMS_TEMP_CELL_MIN",
+      "id": "Min_Cell_Temp_C",
       "description": "Minimum cell temperature",
-      "category": "BMS",
-      "function": null,
-      "address": null,
+      "category": "Summary",
+      "function": "HRUS",
+      "address": 40,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 255,
+        "scaledLow": -50,
+        "scaledHigh": 205
+      },
       "pollClass": "normal",
       "ss40k": {
         "name": "tempBatCellMin",
         "model": "40101"
       }
     },
-
     {
-      "id": "BMS_ALARM_WORD_0",
-      "description": "BMS alarm/fault bitfield word 0 (vendor specific)",
-      "category": "BMSFaultRaw",
-      "function": null,
-      "address": null,
-      "pollClass": "fast",
-      "bitfieldStatus": true
-    },
-    {
-      "id": "BMS_WARN_WORD_0",
-      "description": "BMS warning bitfield word 0 (vendor specific)",
-      "category": "BMSWarnRaw",
-      "function": null,
-      "address": null,
-      "pollClass": "fast",
-      "bitfieldStatus": true
-    },
-
-    {
-      "id": "BMS_AUX_POWER_STATE",
-      "description": "Aux power supply state (0 normal, 1 aux power lose)",
-      "category": "BMSStatus",
+      "id": "Avg_Cell_Temp_C",
+      "description": "Average cell temperature",
+      "category": "Summary",
       "function": "HRUS",
-      "address": 898,
-      "pollClass": "fast",
-      "enumStatus": {
-        "0": "Normal",
-        "1": "AuxPowerLose"
+      "address": 41,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 255,
+        "scaledLow": -50,
+        "scaledHigh": 205
+      },
+      "pollClass": "normal",
+      "ss40k": {
+        "name": "tempBatCellAvg",
+        "model": "40101"
       }
+    },
+    {
+      "id": "Max_Charge_Current_Allowed_A",
+      "description": "Maximum allowed charge current",
+      "category": "Summary",
+      "function": "HRUS",
+      "address": 42,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 40000,
+        "scaledLow": -20000,
+        "scaledHigh": 20000
+      },
+      "pollClass": "normal"
+    },
+    {
+      "id": "Max_Discharge_Current_Allowed_A",
+      "description": "Maximum allowed discharge current",
+      "category": "Summary",
+      "function": "HRUS",
+      "address": 43,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 40000,
+        "scaledLow": -20000,
+        "scaledHigh": 20000
+      },
+      "pollClass": "normal"
+    },
+    {
+      "id": "Max_Charge_Power_Allowed_kW",
+      "description": "Maximum allowed charge power",
+      "category": "Summary",
+      "function": "HRUS",
+      "address": 44,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 40000,
+        "scaledLow": -20000,
+        "scaledHigh": 20000
+      },
+      "pollClass": "normal"
+    },
+    {
+      "id": "Max_Discharge_Power_Allowed_kW",
+      "description": "Maximum allowed discharge power",
+      "category": "Summary",
+      "function": "HRUS",
+      "address": 45,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 40000,
+        "scaledLow": -20000,
+        "scaledHigh": 20000
+      },
+      "pollClass": "normal"
+    },
+    {
+      "id": "System_Power_kW",
+      "description": "System power",
+      "category": "Summary",
+      "function": "HRUS",
+      "address": 46,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 40000,
+        "scaledLow": -20000,
+        "scaledHigh": 20000
+      },
+      "pollClass": "normal"
+    },
+    {
+      "id": "BMS_PowerOn_State",
+      "description": "BMS power-on state",
+      "category": "BMSRead",
+      "function": "HRUS",
+      "address": 769,
+      "pollClass": "normal",
+      "enumStatus": {
+        "0": "Power off ready",
+        "1": "Power on ready",
+        "2": "Power on fault",
+        "3": "Power off fault"
+      }
+    },
+    {
+      "id": "BMS_Status",
+      "description": "BMS status",
+      "category": "BMSRead",
+      "function": "HRUS",
+      "address": 770,
+      "pollClass": "normal",
+      "enumStatus": {
+        "0": "Initial",
+        "1": "Normal",
+        "2": "Full charge",
+        "3": "Full discharge",
+        "4": "Warning",
+        "5": "Fault"
+      }
+    },
+    {
+      "id": "Number_of_HV_Connected_Racks",
+      "description": "Number of connected HV racks",
+      "category": "BMSRead",
+      "function": "HRUS",
+      "address": 772,
+      "pollClass": "normal"
     }
   ],
   "commands": [
     {
-      "id": "CMD_EMS_HEARTBEAT",
-      "description": "EMS heartbeat (0-255; update every 1s)",
+      "id": "EMS_Heartbeat",
+      "description": "EMS heartbeat",
       "category": "BMSControl",
       "function": "HRUS",
-      "address": 896
+      "address": 896,
+      "readback": true,
+      "pollClass": "normal"
     },
     {
-      "id": "CMD_EMS_RELAY_CONTROL",
-      "description": "Relay control command",
+      "id": "EMS_Cmd",
+      "description": "EMS command",
       "category": "BMSControl",
       "function": "HRUS",
       "address": 897,
-      "enum": {
-        "0": "Initial",
-        "1": "Stay",
-        "2": "PowerOnCmd",
-        "3": "PowerOffCmd"
-      }
+      "readback": true,
+      "pollClass": "normal"
     },
     {
-      "id": "CMD_EMS_RTC_YEAR",
-      "description": "EMS RTC year (base 2000)",
-      "category": "BMSRTC",
-      "function": "HRUS",
-      "address": 900
-    },
-    {
-      "id": "CMD_EMS_RTC_MONTH",
-      "description": "EMS RTC month",
-      "category": "BMSRTC",
-      "function": "HRUS",
-      "address": 901
-    },
-    {
-      "id": "CMD_EMS_RTC_DAY",
-      "description": "EMS RTC day",
-      "category": "BMSRTC",
-      "function": "HRUS",
-      "address": 902
-    },
-    {
-      "id": "CMD_EMS_RTC_HOUR",
-      "description": "EMS RTC hour",
-      "category": "BMSRTC",
-      "function": "HRUS",
-      "address": 903
-    },
-    {
-      "id": "CMD_EMS_RTC_MINUTE",
-      "description": "EMS RTC minute",
-      "category": "BMSRTC",
-      "function": "HRUS",
-      "address": 904
-    },
-    {
-      "id": "CMD_EMS_RTC_SECOND",
-      "description": "EMS RTC second",
-      "category": "BMSRTC",
-      "function": "HRUS",
-      "address": 905
-    },
-    {
-      "id": "CMD_EMS_RTC_CMD",
-      "description": "RTC command",
-      "category": "BMSRTC",
-      "function": "HRUS",
-      "address": 906,
-      "enum": {
-        "0": "Reserved",
-        "1": "WriteRTC",
-        "2": "ReadRTC"
-      }
-    },
-    {
-      "id": "CMD_INSULATION_SWITCH",
-      "description": "Insulation detection control",
-      "category": "BMSControl",
-      "function": "HRUS",
-      "address": 907,
-      "enum": {
-        "0": "Reserved",
-        "1": "TurnOn",
-        "2": "TurnOff"
-      }
-    },
-    {
-      "id": "CMD_FAULT_CLEAR",
-      "description": "Fault clear command",
+      "id": "EMS_Fault_Clear_Cmd",
+      "description": "EMS fault clear command",
       "category": "BMSControl",
       "function": "HRUS",
       "address": 908,
-      "enum": {
-        "0": "Normal",
-        "1": "FaultClearCmd"
-      }
+      "readback": true,
+      "pollClass": "normal"
     },
     {
-      "id": "CMD_RACK_DISABLE_1",
-      "description": "Rack disable bits (Racks 1-16): bit=1 disable, bit=0 enable",
-      "category": "BMSRackControl",
+      "id": "Racks_disable_Command",
+      "description": "Rack disable command",
+      "category": "BMSControl",
       "function": "HRUS",
       "address": 909
-    },
-    {
-      "id": "CMD_RACK_DISABLE_2",
-      "description": "Rack disable bits (Racks 17-32): bit=1 disable, bit=0 enable",
-      "category": "BMSRackControl",
-      "function": "HRUS",
-      "address": 910
-    },
-    {
-      "id": "CMD_RACK_DISABLE_3",
-      "description": "Rack disable bits (Racks 33-48): bit=1 disable, bit=0 enable",
-      "category": "BMSRackControl",
-      "function": "HRUS",
-      "address": 911
-    },
-    {
-      "id": "CMD_STEP_CHARGE_SWITCH",
-      "description": "Step-charge switch",
-      "category": "BMSControl",
-      "function": "HRUS",
-      "address": 912,
-      "enum": {
-        "0": "Initialize",
-        "1": "Disable",
-        "2": "Enable"
-      }
-    },
-    {
-      "id": "CMD_BLACK_START",
-      "description": "Black-start command",
-      "category": "BMSControl",
-      "function": "HRUS",
-      "address": 913,
-      "enum": {
-        "0": "Normal",
-        "3": "BlackStart"
-      }
-    },
-    {
-      "id": "CMD_PROD_DATE_TARGET_SBMU",
-      "description": "Target SBMU selector for production date reading",
-      "category": "BMSMaintenance",
-      "function": "HRUS",
-      "address": 914
-    },
-    {
-      "id": "CMD_PROD_DATE_READ_CMD",
-      "description": "Command for reading production date",
-      "category": "BMSMaintenance",
-      "function": "HRUS",
-      "address": 915,
-      "enum": {
-        "1": "Read"
-      }
-    },
-    {
-      "id": "CMD_PROD_DATE_ATTRIBUTE",
-      "description": "Data attribute requested (0x11 = Battery production date)",
-      "category": "BMSMaintenance",
-      "function": "HRUS",
-      "address": 916
     }
   ]
 }

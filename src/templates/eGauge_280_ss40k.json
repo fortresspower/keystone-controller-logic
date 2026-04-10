@@ -368,7 +368,7 @@
       "description": "Load P total",
       "category": "Load",
       "function": "IRF",
-      "address": 9030,
+      "address": 9024,
       "scale": {
         "mode": "Linear",
         "rawLow": 0,
@@ -385,7 +385,7 @@
       "description": "Load Q total",
       "category": "Load",
       "function": "IRF",
-      "address": 9032,
+      "address": 9026,
       "scale": {
         "mode": "Linear",
         "rawLow": 0,
@@ -402,7 +402,7 @@
       "description": "Load S total",
       "category": "Load",
       "function": "IRF",
-      "address": 9034,
+      "address": 9028,
       "scale": {
         "mode": "Linear",
         "rawLow": 0,
@@ -419,7 +419,7 @@
       "description": "Load PF total",
       "category": "Load",
       "function": "IRF",
-      "address": 9036,
+      "address": 9030,
       "pollClass": "fast",
       "ss40k": { "name": "pfLoadTot", "model": "40101" }
     },
@@ -429,7 +429,7 @@
       "description": "Load I total",
       "category": "Load",
       "function": "IRF",
-      "address": 9038,
+      "address": 9032,
       "pollClass": "fast",
       "ss40k": { "name": "iLoadTot", "model": "40101" }
     },
@@ -439,7 +439,7 @@
       "description": "Load P L1",
       "category": "Load",
       "function": "IRF",
-      "address": 9046,
+      "address": 9034,
       "scale": {
         "mode": "Linear",
         "rawLow": 0,
@@ -456,7 +456,7 @@
       "description": "Load P L2",
       "category": "Load",
       "function": "IRF",
-      "address": 9048,
+      "address": 9036,
       "scale": {
         "mode": "Linear",
         "rawLow": 0,
@@ -473,7 +473,7 @@
       "description": "Load P L3",
       "category": "Load",
       "function": "IRF",
-      "address": 9050,
+      "address": 9038,
       "scale": {
         "mode": "Linear",
         "rawLow": 0,
@@ -490,7 +490,7 @@
       "description": "Gen P total",
       "category": "Gen",
       "function": "IRF",
-      "address": 9060,
+      "address": 9040,
       "scale": {
         "mode": "Linear",
         "rawLow": 0,
@@ -507,7 +507,7 @@
       "description": "Gen Q total",
       "category": "Gen",
       "function": "IRF",
-      "address": 9062,
+      "address": 9042,
       "scale": {
         "mode": "Linear",
         "rawLow": 0,
@@ -524,7 +524,7 @@
       "description": "Gen S total",
       "category": "Gen",
       "function": "IRF",
-      "address": 9064,
+      "address": 9044,
       "scale": {
         "mode": "Linear",
         "rawLow": 0,
@@ -541,7 +541,7 @@
       "description": "Gen PF total",
       "category": "Gen",
       "function": "IRF",
-      "address": 9066,
+      "address": 9046,
       "pollClass": "fast",
       "ss40k": { "name": "pfGenTot", "model": "40101" }
     },
@@ -551,7 +551,7 @@
       "description": "Gen I total",
       "category": "Gen",
       "function": "IRF",
-      "address": 9068,
+      "address": 9048,
       "pollClass": "fast",
       "ss40k": { "name": "iGenTot", "model": "40101" }
     },
@@ -561,7 +561,7 @@
       "description": "Gen P L1",
       "category": "Gen",
       "function": "IRF",
-      "address": 9076,
+      "address": 9050,
       "scale": {
         "mode": "Linear",
         "rawLow": 0,
@@ -578,7 +578,7 @@
       "description": "Gen P L2",
       "category": "Gen",
       "function": "IRF",
-      "address": 9078,
+      "address": 9052,
       "scale": {
         "mode": "Linear",
         "rawLow": 0,
@@ -595,7 +595,7 @@
       "description": "Gen P L3",
       "category": "Gen",
       "function": "IRF",
-      "address": 9080,
+      "address": 9054,
       "scale": {
         "mode": "Linear",
         "rawLow": 0,
@@ -612,7 +612,7 @@
       "description": "AcCp P total",
       "category": "AcCp",
       "function": "IRF",
-      "address": 9090,
+      "address": 9056,
       "scale": {
         "mode": "Linear",
         "rawLow": 0,
@@ -629,7 +629,7 @@
       "description": "AcCp Q total",
       "category": "AcCp",
       "function": "IRF",
-      "address": 9092,
+      "address": 9058,
       "scale": {
         "mode": "Linear",
         "rawLow": 0,
@@ -646,7 +646,7 @@
       "description": "AcCp S total",
       "category": "AcCp",
       "function": "IRF",
-      "address": 9094,
+      "address": 9060,
       "scale": {
         "mode": "Linear",
         "rawLow": 0,
@@ -663,7 +663,7 @@
       "description": "AcCp PF total",
       "category": "AcCp",
       "function": "IRF",
-      "address": 9096,
+      "address": 9062,
       "pollClass": "fast",
       "ss40k": { "name": "pfAcCplTot", "model": "40101" }
     },
@@ -673,7 +673,7 @@
       "description": "AcCp I total",
       "category": "AcCp",
       "function": "IRF",
-      "address": 9098,
+      "address": 9064,
       "pollClass": "fast",
       "ss40k": { "name": "iAcCplTot", "model": "40101" }
     },
@@ -683,7 +683,7 @@
       "description": "AcCp P L1",
       "category": "AcCp",
       "function": "IRF",
-      "address": 9106,
+      "address": 9066,
       "scale": {
         "mode": "Linear",
         "rawLow": 0,
@@ -700,7 +700,7 @@
       "description": "AcCp P L2",
       "category": "AcCp",
       "function": "IRF",
-      "address": 9108,
+      "address": 9068,
       "scale": {
         "mode": "Linear",
         "rawLow": 0,
@@ -717,7 +717,7 @@
       "description": "AcCp P L3",
       "category": "AcCp",
       "function": "IRF",
-      "address": 9110,
+      "address": 9070,
       "scale": {
         "mode": "Linear",
         "rawLow": 0,
