@@ -18,6 +18,12 @@ export interface TelemetryTemplateCalc {
   expr: string;
 }
 
+export interface TelemetryTemplateSs40k {
+  name: string;
+  model: string | number;
+  exportMultiplier?: number;
+}
+
 export interface TelemetryTemplateEntry {
   id: string;
   function?: string | null;
@@ -39,6 +45,7 @@ export interface TelemetryTemplateEntry {
     flag?: boolean;
   };
   enum?: Record<string, string>;
+  ss40k?: TelemetryTemplateSs40k;
 }
 
 export interface TelemetryTemplateCommandEntry extends TelemetryTemplateEntry {
@@ -396,5 +403,18 @@ function validateTemplateEntry(
     (!entry.scale || typeof entry.scale !== "object")
   ) {
     fail(`profile "${profileName}" ${section}[${index}] has invalid scale`);
+  }
+  if (
+    entry.ss40k !== undefined &&
+    (!entry.ss40k ||
+      typeof entry.ss40k !== "object" ||
+      typeof entry.ss40k.name !== "string" ||
+      (typeof entry.ss40k.model !== "string" &&
+        typeof entry.ss40k.model !== "number") ||
+      (entry.ss40k.exportMultiplier !== undefined &&
+        (typeof entry.ss40k.exportMultiplier !== "number" ||
+          !Number.isFinite(entry.ss40k.exportMultiplier))))
+  ) {
+    fail(`profile "${profileName}" ${section}[${index}] has invalid ss40k metadata`);
   }
 }

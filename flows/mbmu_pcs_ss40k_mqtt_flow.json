@@ -1,0 +1,681 @@
+[
+  {
+    "id": "7ca3963342311c2b",
+    "type": "tab",
+    "label": "Keystone Telemetry Runtime",
+    "disabled": false,
+    "info": "Compile/start/stop MBMU and PCS telemetry runtimes, store merged samples in global.NEW_telemetry.{equipment}, and publish SS40K MQTT payloads. Update the Modbus client host/port/unitId before use."
+  },
+  {
+    "id": "19ec1814cdbb86da",
+    "type": "inject",
+    "z": "7ca3963342311c2b",
+    "name": "Compile MBMU",
+    "props": [
+      {
+        "p": "payload"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": true,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "{\"cmd\":\"compile\",\"profileName\":\"MBMU_280_ss40k\",\"instance\":{\"equipmentId\":\"MBMU\",\"serverKey\":\"MBMU\",\"unitId\":1}}",
+    "payloadType": "json",
+    "x": 150,
+    "y": 100,
+    "wires": [
+      [
+        "f8e2bf0ae352b693"
+      ]
+    ]
+  },
+  {
+    "id": "14116e994bfd22b5",
+    "type": "inject",
+    "z": "7ca3963342311c2b",
+    "name": "Start MBMU",
+    "props": [
+      {
+        "p": "payload"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": true,
+    "onceDelay": "0.5",
+    "topic": "",
+    "payload": "{\"cmd\":\"start\",\"equipmentId\":\"MBMU\"}",
+    "payloadType": "json",
+    "x": 150,
+    "y": 160,
+    "wires": [
+      [
+        "f8e2bf0ae352b693"
+      ]
+    ]
+  },
+  {
+    "id": "7b26c61d81a1eb3c",
+    "type": "inject",
+    "z": "7ca3963342311c2b",
+    "name": "Stop MBMU",
+    "props": [
+      {
+        "p": "payload"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "{\"cmd\":\"stop\",\"equipmentId\":\"MBMU\"}",
+    "payloadType": "json",
+    "x": 140,
+    "y": 220,
+    "wires": [
+      [
+        "f8e2bf0ae352b693"
+      ]
+    ]
+  },
+  {
+    "id": "3bf68ced6b2e4994",
+    "type": "inject",
+    "z": "7ca3963342311c2b",
+    "name": "Show NEW_telemetry.MBMU",
+    "props": [
+      {
+        "p": "payload"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "{\"equipment\":\"MBMU\"}",
+    "payloadType": "json",
+    "x": 480,
+    "y": 340,
+    "wires": [
+      [
+        "7d33896833d13e48"
+      ]
+    ]
+  },
+  {
+    "id": "f8e2bf0ae352b693",
+    "type": "function",
+    "z": "7ca3963342311c2b",
+    "name": "Telemetry Runtime",
+    "func": "const lib = global.get('lib');\nif (!lib || !lib.telemetry || typeof lib.telemetry.handleTelemetryMessage !== 'function') {\n  node.status({ fill: 'red', shape: 'ring', text: 'telemetry API missing' });\n  return [null, null, { payload: { error: 'TELEMETRY_API_MISSING' } }];\n}\n\nconst telemetry = lib.telemetry;\nconst incoming = msg.payload && typeof msg.payload === 'object' && !Array.isArray(msg.payload)\n  ? { ...msg, ...msg.payload }\n  : msg;\nconst equipmentId = incoming.equipmentId || incoming.instance?.equipmentId || incoming._reader?.equipmentId || msg.equipmentId;\nconst stateKey = equipmentId ? `telemetryState:${equipmentId}` : null;\nconst state = stateKey ? (flow.get(stateKey) || telemetry.createTelemetryRuntimeState()) : telemetry.createTelemetryRuntimeState();\n\nif (incoming.error && !equipmentId) {\n  node.status({ fill: 'yellow', shape: 'ring', text: 'modbus transport error' });\n  return [null, null, { payload: { error: incoming.error, source: 'modbus', incoming } }];\n}\n\nif (!equipmentId) {\n  node.status({ fill: 'red', shape: 'ring', text: 'equipment missing' });\n  return [null, null, { payload: { error: 'EQUIPMENT_ID_MISSING', incoming } }];\n}\n\nconst asNodeRedMsg = (value) => {\n  if (value == null) return null;\n  if (typeof value === 'object' && !Array.isArray(value) && Object.prototype.hasOwnProperty.call(value, 'payload')) {\n    return value;\n  }\n  return { payload: value };\n};\n\nconst decorate = (value) => {\n  const out = asNodeRedMsg(value);\n  if (!out) return null;\n  out.equipmentId = out.equipmentId || equipmentId;\n  out.serverKey = out.serverKey || incoming.serverKey || incoming.instance?.serverKey || equipmentId;\n  return out;\n};\n\nconst envCfg = {\n  CompilerMaxQty: 120,\n  CompilerMaxSpan: 80,\n  CompilerMaxHole: 4,\n  PollFastMs: 250,\n  PollNormalMs: 1000,\n  PollSlowMs: 5000,\n  MAX_IN_FLIGHT: 8,\n  REQUEST_TIMEOUT_MS: 1500,\n  MODBUS_ZERO_BASED: false,\n  JITTER_MS: 0,\n  RESPECT_TAG_CLAMP: true,\n  SCALE_CLAMP_DEFAULT: false,\n  SKIP_EMPTY_SAMPLES: false\n};\n\ntry {\n  const result = telemetry.handleTelemetryMessage(\n    incoming,\n    envCfg,\n    state,\n    (o1, o2, o3) => node.send([decorate(o1), decorate(o2), decorate(o3)])\n  );\n\n  if (stateKey) {\n    flow.set(stateKey, result.state);\n  }\n\n  const statusText = `${equipmentId}:${incoming.cmd || (incoming._reader ? 'reply' : 'start')}`;\n  node.status({ fill: 'green', shape: 'dot', text: statusText });\n\n  return [decorate(result.out1), decorate(result.out2), decorate(result.out3)];\n} catch (err) {\n  node.status({ fill: 'red', shape: 'ring', text: `${equipmentId}:runtime threw` });\n  return [null, null, { payload: { error: String(err), equipmentId } }];\n}\n",
+    "outputs": 3,
+    "timeout": "",
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 400,
+    "y": 160,
+    "wires": [
+      [
+        "12039951d2f5ddd4"
+      ],
+      [
+        "4cb2410f0743124e"
+      ],
+      [
+        "ce50d22d168b9e7a"
+      ]
+    ]
+  },
+  {
+    "id": "6c9f5a521214c4dc",
+    "type": "modbus-flex-getter",
+    "z": "7ca3963342311c2b",
+    "name": "MBMU Modbus Getter",
+    "showStatusActivities": false,
+    "showErrors": true,
+    "showWarnings": true,
+    "logIOActivities": false,
+    "server": "75829146.02452",
+    "useIOFile": false,
+    "ioFile": "",
+    "useIOForPayload": false,
+    "emptyMsgOnFail": false,
+    "keepMsgProperties": true,
+    "delayOnStart": false,
+    "startDelayTime": "",
+    "x": 1020,
+    "y": 100,
+    "wires": [
+      [
+        "f8e2bf0ae352b693"
+      ],
+      [
+        "ce50d22d168b9e7a"
+      ]
+    ]
+  },
+  {
+    "id": "4cb2410f0743124e",
+    "type": "function",
+    "z": "7ca3963342311c2b",
+    "name": "Store NEW_telemetry",
+    "func": "const incoming = Array.isArray(msg.payload) ? msg.payload : [];\nconst inferEquipment = () => {\n  if (msg.equipmentId) return msg.equipmentId;\n  if (msg.payload && typeof msg.payload === 'object' && msg.payload.equipment) return msg.payload.equipment;\n  for (const sample of incoming) {\n    if (sample && typeof sample.tagID === 'string' && sample.tagID.includes('.')) {\n      return sample.tagID.split('.')[0];\n    }\n  }\n  return 'UNKNOWN';\n};\n\nconst equipmentName = inferEquipment();\nconst legacyStore = global.get('NEW_telemetry') || {};\nconst modernStore = global.get('telemetry') || {};\nconst store = { ...legacyStore, ...modernStore };\nconst current = Array.isArray(store[equipmentName]) ? store[equipmentName] : [];\nconst byTag = {};\n\nconst toIsoTs = (value) => {\n  if (typeof value === 'string' && value.trim()) {\n    const parsed = new Date(value);\n    if (!Number.isNaN(parsed.getTime())) return parsed.toISOString();\n  }\n  if (typeof value === 'number' && Number.isFinite(value)) {\n    return new Date(value).toISOString();\n  }\n  return new Date().toISOString();\n};\n\nconst normalizeFlag = (value) => {\n  if (value === true) return 'Yes';\n  if (value === false) return 'No';\n  if (typeof value === 'string') {\n    const norm = value.trim().toLowerCase();\n    if (norm === 'yes' || norm === 'true') return 'Yes';\n    if (norm === 'no' || norm === 'false' || norm === '') return 'No';\n  }\n  return 'No';\n};\n\nfor (const sample of current) {\n  if (sample && sample.tagID) byTag[sample.tagID] = sample;\n}\n\nfor (const sample of incoming) {\n  if (!sample || !sample.tagID) continue;\n  const tagID = sample.tagID.includes('.')\n    ? sample.tagID\n    : `${equipmentName}.${sample.tagID}`;\n\n  byTag[tagID] = {\n    tagID,\n    value: sample.value,\n    timestamp: toIsoTs(sample.timestamp),\n    alarm: normalizeFlag(sample.alarm),\n    supportingTag: normalizeFlag(sample.supportingTag)\n  };\n\n  if (sample.enumLabel !== undefined) byTag[tagID].enumLabel = sample.enumLabel;\n  if (sample.activeBits !== undefined) byTag[tagID].activeBits = sample.activeBits;\n  if (sample.activeLabels !== undefined) byTag[tagID].activeLabels = sample.activeLabels;\n  if (sample.rawValue !== undefined) byTag[tagID].rawValue = sample.rawValue;\n}\n\nstore[equipmentName] = Object.values(byTag).sort((a, b) => a.tagID.localeCompare(b.tagID));\nglobal.set('telemetry', store);\nglobal.set('NEW_telemetry', store);\n\nmsg.payload = {\n  equipment: equipmentName,\n  count: store[equipmentName].length,\n  NEW_telemetry: store[equipmentName]\n};\nreturn msg;\n",
+    "outputs": 1,
+    "timeout": "",
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 720,
+    "y": 160,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "7d33896833d13e48",
+    "type": "function",
+    "z": "7ca3963342311c2b",
+    "name": "Read NEW_telemetry",
+    "func": "const requested = msg.equipmentId || msg.payload?.equipment || 'MBMU';\nconst store = global.get('NEW_telemetry') || global.get('telemetry') || {};\nmsg.payload = {\n  equipment: requested,\n  NEW_telemetry: Array.isArray(store[requested]) ? store[requested] : []\n};\nreturn msg;\n",
+    "outputs": 1,
+    "timeout": "",
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 580,
+    "y": 460,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "487ae3658b16e366",
+    "type": "inject",
+    "z": "7ca3963342311c2b",
+    "name": "Build SS40K Lookup",
+    "props": [
+      {
+        "p": "payload"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "",
+    "payloadType": "date",
+    "x": 150,
+    "y": 700,
+    "wires": [
+      [
+        "c613dcc89f6c2cd6"
+      ]
+    ]
+  },
+  {
+    "id": "fe878bd342163748",
+    "type": "inject",
+    "z": "7ca3963342311c2b",
+    "name": "Build SS40K MQTT Payloads",
+    "props": [
+      {
+        "p": "payload"
+      }
+    ],
+    "repeat": "60",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "",
+    "payloadType": "date",
+    "x": 175,
+    "y": 780,
+    "wires": [
+      [
+        "4b77a587fe5e3aa2"
+      ]
+    ]
+  },
+  {
+    "id": "a6e60b921e2975d9",
+    "type": "inject",
+    "z": "7ca3963342311c2b",
+    "name": "Show Lookup Cache",
+    "props": [
+      {
+        "p": "payload"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "",
+    "payloadType": "date",
+    "x": 140,
+    "y": 860,
+    "wires": [
+      [
+        "eafa9673a8c93ecf"
+      ]
+    ]
+  },
+  {
+    "id": "c613dcc89f6c2cd6",
+    "type": "function",
+    "z": "7ca3963342311c2b",
+    "name": "Build Template Lookup",
+    "func": "const lib = global.get('lib');\nif (!lib || !lib.telemetry || typeof lib.telemetry.buildSs40kLookup !== 'function') {\n  node.status({ fill: 'red', shape: 'ring', text: 'ss40k API missing' });\n  return { payload: { error: 'SS40K_API_MISSING' } };\n}\n\nconst equipmentConfig = {\n  PCS: { profileName: 'Delta_280_ss40k', route: 'PCS' },\n  MBMU: { profileName: 'MBMU_280_ss40k', route: 'MBMU' },\n  Meter: { profileName: 'eGauge_280_ss40k', route: 'METER' },\n  Meter2: { profileName: 'eGauge_280_ss40k', route: 'METER' }\n};\n\nconst result = lib.telemetry.buildSs40kLookup(equipmentConfig);\n\nglobal.set('ss40kLookup', result.lookup);\nglobal.set('ss40kEquipmentToProfile', result.equipmentToProfile);\nglobal.set('ss40kModelIndexMap', result.modelIndexMap);\nflow.set('telemetryRouteMap', result.routeMap);\nflow.set('telemetryEquipmentConfig', equipmentConfig);\n\nnode.status({ fill: 'green', shape: 'dot', text: `${Object.keys(result.lookup).length} mapped tags` });\nmsg.payload = {\n  lookupCount: Object.keys(result.lookup).length,\n  equipmentToProfile: result.equipmentToProfile,\n  routeMap: result.routeMap,\n  modelIndexMap: result.modelIndexMap,\n  sample: Object.fromEntries(Object.entries(result.lookup).slice(0, 10))\n};\nreturn msg;\n",
+    "outputs": 1,
+    "timeout": "",
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 430,
+    "y": 700,
+    "wires": [
+      [
+        "3f4bfc4238dd291b"
+      ]
+    ]
+  },
+  {
+    "id": "4b77a587fe5e3aa2",
+    "type": "function",
+    "z": "7ca3963342311c2b",
+    "name": "Build Fixed Payloads",
+    "func": "const lib = global.get('lib');\nif (!lib || !lib.telemetry || typeof lib.telemetry.buildSs40kFixedPayloads !== 'function') {\n  node.status({ fill: 'red', shape: 'ring', text: 'ss40k API missing' });\n  return [null, { payload: { error: 'SS40K_API_MISSING' } }, null];\n}\n\nconst lookup = global.get('ss40kLookup') || {};\nconst telemetry = global.get('NEW_telemetry') || global.get('telemetry') || {};\nif (!Object.keys(lookup).length) {\n  node.status({ fill: 'yellow', shape: 'ring', text: 'lookup missing' });\n  return [null, { payload: { error: 'SS40K_LOOKUP_MISSING' } }, null];\n}\n\nconst messages = lib.telemetry.buildSs40kFixedPayloads({\n  lookup,\n  telemetry,\n  topic: 'fort/v1/things/25000761/telem',\n  version: '3.0'\n});\n\nnode.status({ fill: 'green', shape: 'dot', text: `${messages.length} payloads` });\nreturn [messages, null, { payload: messages.map((msg) => msg.ss40k) }];\n",
+    "outputs": 3,
+    "timeout": "",
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 420,
+    "y": 780,
+    "wires": [
+      [
+        "7df47cc90e9610f0",
+        "061164a9c2cd8714"
+      ],
+      [
+        "ce50d22d168b9e7a"
+      ],
+      [
+        "4258744e65d85a20"
+      ]
+    ]
+  },
+  {
+    "id": "3f4bfc4238dd291b",
+    "type": "debug",
+    "z": "7ca3963342311c2b",
+    "name": "Lookup Build Result",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "payload",
+    "targetType": "msg",
+    "statusVal": "",
+    "statusType": "auto",
+    "x": 740,
+    "y": 700,
+    "wires": []
+  },
+  {
+    "id": "7df47cc90e9610f0",
+    "type": "debug",
+    "z": "7ca3963342311c2b",
+    "name": "MQTT Payloads",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "true",
+    "targetType": "full",
+    "statusVal": "",
+    "statusType": "auto",
+    "x": 740,
+    "y": 760,
+    "wires": []
+  },
+  {
+    "id": "eafa9673a8c93ecf",
+    "type": "function",
+    "z": "7ca3963342311c2b",
+    "name": "Read Lookup Cache",
+    "func": "msg.payload = {\n  equipmentToProfile: global.get('ss40kEquipmentToProfile') || {},\n  modelIndexMap: global.get('ss40kModelIndexMap') || {},\n  lookup: global.get('ss40kLookup') || {}\n};\nreturn msg;\n",
+    "outputs": 1,
+    "timeout": "",
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 410,
+    "y": 860,
+    "wires": [
+      [
+        "3f4bfc4238dd291b"
+      ]
+    ]
+  },
+  {
+    "id": "4258744e65d85a20",
+    "type": "debug",
+    "z": "7ca3963342311c2b",
+    "name": "Payload Summary",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "payload",
+    "targetType": "msg",
+    "statusVal": "",
+    "statusType": "auto",
+    "x": 760,
+    "y": 900,
+    "wires": []
+  },
+  {
+    "id": "061164a9c2cd8714",
+    "type": "mqtt out",
+    "z": "7ca3963342311c2b",
+    "name": "",
+    "topic": "",
+    "qos": "",
+    "retain": "",
+    "respTopic": "",
+    "contentType": "",
+    "userProps": "",
+    "correl": "",
+    "expiry": "",
+    "broker": "4329c8458d98e7b6",
+    "x": 730,
+    "y": 820,
+    "wires": []
+  },
+  {
+    "id": "12039951d2f5ddd4",
+    "type": "function",
+    "z": "7ca3963342311c2b",
+    "name": "Route Modbus Requests",
+    "func": "const routing = Object.assign({ MBMU: 'MBMU', PCS: 'PCS' }, flow.get('telemetryRouteMap') || {});\nconst routeKey = msg.serverKey || msg.equipmentId || msg._reader?.equipmentId;\nconst target = routeKey ? routing[routeKey] : null;\nif (target === 'MBMU') return [msg, null, null];\nif (target === 'PCS') return [null, msg, null];\nnode.status({ fill: 'yellow', shape: 'ring', text: `no route ${routeKey || '?'}` });\nreturn [null, null, { payload: { error: 'NO_MODBUS_ROUTE', routeKey, routing } }];\n",
+    "outputs": 3,
+    "timeout": "",
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 590,
+    "y": 100,
+    "wires": [
+      [
+        "6c9f5a521214c4dc"
+      ],
+      [
+        "f294fc0c69bbaa6f"
+      ],
+      [
+        "ce50d22d168b9e7a"
+      ]
+    ]
+  },
+  {
+    "id": "f294fc0c69bbaa6f",
+    "type": "modbus-flex-getter",
+    "z": "7ca3963342311c2b",
+    "name": "PCS Modbus Getter",
+    "showStatusActivities": false,
+    "showErrors": true,
+    "showWarnings": true,
+    "logIOActivities": false,
+    "server": "81abe2e8.b9365",
+    "useIOFile": false,
+    "ioFile": "",
+    "useIOForPayload": false,
+    "emptyMsgOnFail": false,
+    "keepMsgProperties": true,
+    "delayOnStart": false,
+    "startDelayTime": "",
+    "x": 1020,
+    "y": 280,
+    "wires": [
+      [
+        "f8e2bf0ae352b693"
+      ],
+      [
+        "ce50d22d168b9e7a"
+      ]
+    ]
+  },
+  {
+    "id": "955529c4c6e0c40c",
+    "type": "inject",
+    "z": "7ca3963342311c2b",
+    "name": "Compile PCS",
+    "props": [
+      {
+        "p": "payload"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": true,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "{\"cmd\":\"compile\",\"profileName\":\"Delta_280_ss40k\",\"instance\":{\"equipmentId\":\"PCS\",\"serverKey\":\"PCS\",\"unitId\":1}}",
+    "payloadType": "json",
+    "x": 160,
+    "y": 300,
+    "wires": [
+      [
+        "f8e2bf0ae352b693"
+      ]
+    ]
+  },
+  {
+    "id": "dd0fb79d1ed668ba",
+    "type": "inject",
+    "z": "7ca3963342311c2b",
+    "name": "Start PCS",
+    "props": [
+      {
+        "p": "payload"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": true,
+    "onceDelay": "0.5",
+    "topic": "",
+    "payload": "{\"cmd\":\"start\",\"equipmentId\":\"PCS\"}",
+    "payloadType": "json",
+    "x": 150,
+    "y": 360,
+    "wires": [
+      [
+        "f8e2bf0ae352b693"
+      ]
+    ]
+  },
+  {
+    "id": "2a317dd4eb2b041c",
+    "type": "inject",
+    "z": "7ca3963342311c2b",
+    "name": "Stop PCS",
+    "props": [
+      {
+        "p": "payload"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "{\"cmd\":\"stop\",\"equipmentId\":\"PCS\"}",
+    "payloadType": "json",
+    "x": 135,
+    "y": 420,
+    "wires": [
+      [
+        "f8e2bf0ae352b693"
+      ]
+    ]
+  },
+  {
+    "id": "ca0e2f2fa67e45c4",
+    "type": "inject",
+    "z": "7ca3963342311c2b",
+    "name": "Show NEW_telemetry.PCS",
+    "props": [
+      {
+        "p": "payload"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "{\"equipment\":\"PCS\"}",
+    "payloadType": "json",
+    "x": 450,
+    "y": 580,
+    "wires": [
+      [
+        "7d33896833d13e48"
+      ]
+    ]
+  },
+  {
+    "id": "75829146.02452",
+    "type": "modbus-client",
+    "name": "server_18",
+    "clienttype": "tcp",
+    "bufferCommands": true,
+    "stateLogEnabled": false,
+    "queueLogEnabled": false,
+    "failureLogEnabled": false,
+    "tcpHost": "192.168.1.51",
+    "tcpPort": "502",
+    "tcpType": "DEFAULT",
+    "serialPort": "/dev/ttyUSB",
+    "serialType": "RTU-BUFFERD",
+    "serialBaudrate": "9600",
+    "serialDatabits": "8",
+    "serialStopbits": "1",
+    "serialParity": "none",
+    "serialConnectionDelay": "100",
+    "serialAsciiResponseStartDelimiter": "",
+    "unit_id": 1,
+    "commandDelay": 1,
+    "clientTimeout": 1000,
+    "reconnectOnTimeout": true,
+    "reconnectTimeout": 2000,
+    "parallelUnitIdsAllowed": true
+  },
+  {
+    "id": "4329c8458d98e7b6",
+    "type": "mqtt-broker",
+    "name": "",
+    "broker": "a2dvukkk0ml2iu-ats.iot.us-east-1.amazonaws.com",
+    "port": "8883",
+    "tls": "535fecb73ad59bf6",
+    "clientid": "25000761",
+    "autoConnect": true,
+    "usetls": true,
+    "protocolVersion": "4",
+    "keepalive": "60",
+    "cleansession": true,
+    "autoUnsubscribe": true,
+    "birthTopic": "",
+    "birthQos": "0",
+    "birthRetain": "false",
+    "birthPayload": "",
+    "birthMsg": {},
+    "closeTopic": "",
+    "closeQos": "0",
+    "closeRetain": "false",
+    "closePayload": "",
+    "closeMsg": {},
+    "willTopic": "",
+    "willQos": "0",
+    "willRetain": "false",
+    "willPayload": "",
+    "willMsg": {},
+    "userProps": "",
+    "sessionExpiry": ""
+  },
+  {
+    "id": "81abe2e8.b9365",
+    "type": "modbus-client",
+    "name": "server_2",
+    "clienttype": "tcp",
+    "bufferCommands": true,
+    "stateLogEnabled": false,
+    "queueLogEnabled": false,
+    "failureLogEnabled": false,
+    "tcpHost": "192.168.1.136",
+    "tcpPort": "502",
+    "tcpType": "DEFAULT",
+    "serialPort": "/dev/ttyUSB",
+    "serialType": "RTU-BUFFERD",
+    "serialBaudrate": "9600",
+    "serialDatabits": "8",
+    "serialStopbits": "1",
+    "serialParity": "none",
+    "serialConnectionDelay": "100",
+    "serialAsciiResponseStartDelimiter": "",
+    "unit_id": 1,
+    "commandDelay": 1,
+    "clientTimeout": 3000,
+    "reconnectOnTimeout": true,
+    "reconnectTimeout": 2000,
+    "parallelUnitIdsAllowed": true
+  },
+  {
+    "id": "535fecb73ad59bf6",
+    "type": "tls-config",
+    "name": "AWS IoT TLS",
+    "cert": "",
+    "key": "",
+    "ca": "",
+    "certname": "ce86d3c7c6b5b0bae4f8d9a37fae69ad303392ce298c01d16d665c8261c1010c-certificate.pem.crt",
+    "keyname": "ce86d3c7c6b5b0bae4f8d9a37fae69ad303392ce298c01d16d665c8261c1010c-private.pem.key",
+    "caname": "AmazonRootCA1 (1).pem",
+    "servername": "",
+    "verifyservercert": true,
+    "alpnprotocol": ""
+  },
+  {
+    "id": "ce50d22d168b9e7a",
+    "type": "debug",
+    "z": "7ca3963342311c2b",
+    "name": "Errors",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "payload",
+    "targetType": "msg",
+    "statusVal": "",
+    "statusType": "auto",
+    "x": 720,
+    "y": 840,
+    "wires": []
+  }
+]

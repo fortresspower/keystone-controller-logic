@@ -154,7 +154,8 @@
       "pollClass": "normal",
       "ss40k": {
         "name": "vBat",
-        "model": "40101"
+        "model": "40101",
+        "exportMultiplier": 10
       }
     },
     {
@@ -173,7 +174,8 @@
       "pollClass": "normal",
       "ss40k": {
         "name": "iBat",
-        "model": "40101"
+        "model": "40101",
+        "exportMultiplier": 100
       }
     },
     {
@@ -192,7 +194,8 @@
       "pollClass": "normal",
       "ss40k": {
         "name": "socBat",
-        "model": "40101"
+        "model": "40101",
+        "exportMultiplier": 100
       }
     },
     {
@@ -211,7 +214,8 @@
       "pollClass": "normal",
       "ss40k": {
         "name": "sohBat",
-        "model": "40101"
+        "model": "40101",
+        "exportMultiplier": 100
       }
     },
     {
@@ -230,7 +234,8 @@
       "pollClass": "normal",
       "ss40k": {
         "name": "vBatCellMax",
-        "model": "40101"
+        "model": "40101",
+        "exportMultiplier": 1000
       }
     },
     {
@@ -249,7 +254,8 @@
       "pollClass": "normal",
       "ss40k": {
         "name": "vBatCellMin",
-        "model": "40101"
+        "model": "40101",
+        "exportMultiplier": 1000
       }
     },
     {
@@ -283,7 +289,8 @@
       "pollClass": "normal",
       "ss40k": {
         "name": "tempBatCellMax",
-        "model": "40101"
+        "model": "40101",
+        "exportMultiplier": 10
       }
     },
     {
@@ -302,7 +309,8 @@
       "pollClass": "normal",
       "ss40k": {
         "name": "tempBatCellMin",
-        "model": "40101"
+        "model": "40101",
+        "exportMultiplier": 10
       }
     },
     {
@@ -321,7 +329,8 @@
       "pollClass": "normal",
       "ss40k": {
         "name": "tempBatCellAvg",
-        "model": "40101"
+        "model": "40101",
+        "exportMultiplier": 10
       }
     },
     {

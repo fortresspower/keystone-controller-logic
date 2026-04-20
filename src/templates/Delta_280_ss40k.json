@@ -7,104 +7,405 @@
     "defaultByteOrder": "BE",
     "defaultWordOrder32": "ABCD"
   },
-
   "telemetry": [
     {
-      "id": "PCS_SN",
-      "description": "PCS serial number",
-      "category": "PCSInfo",
-      "function": "HRS8",
-      "address": 1537,
-      "pollClass": "startup",
-      "statusFlag": true,
-      "ss40k": { "name": "SN", "model": "40100" }
-    },
-
-    {
-      "id": "PCS_HW_VER",
-      "description": "Hardware version",
-      "category": "PCSInfo",
-      "function": "HRS10",
-      "address": 1600,
-      "pollClass": "startup",
-      "statusFlag": true,
-      "ss40k": { "name": "hwVer", "model": "40100" }
+      "id": "SYS_TIME_MIN_SEC",
+      "description": "Sys Time Min Sec",
+      "category": "Time",
+      "function": "HRUS",
+      "address": 1779,
+      "pollClass": "normal",
+      "supportingTag": false
     },
     {
-      "id": "PCS_VER_DSP_MASTER",
-      "description": "DSP master firmware version",
-      "category": "PCSInfo",
-      "function": "HRS10",
-      "address": 1610,
-      "pollClass": "startup",
-      "statusFlag": true,
-      "ss40k": { "name": "verDspMaster", "model": "40100" }
+      "id": "GRID_AC_FAULT",
+      "description": "Grid Ac Fault",
+      "category": "System",
+      "function": "HRUS",
+      "address": 1784,
+      "pollClass": "fast",
+      "alarm": true,
+      "supportingTag": false
     },
     {
-      "id": "PCS_VER_PROTO",
-      "description": "Protocol version",
-      "category": "PCSInfo",
-      "function": "HRS10",
-      "address": 1620,
-      "pollClass": "startup",
-      "statusFlag": true,
-      "ss40k": { "name": "verProto", "model": "40100" }
+      "id": "AC_SUPPLIMENTAL_FAULT",
+      "description": "Ac Supplimental Fault",
+      "category": "System",
+      "function": "HRUS",
+      "address": 1785,
+      "pollClass": "fast",
+      "alarm": true,
+      "supportingTag": false
     },
-
     {
-      "id": "PCS_W",
-      "description": "Total active power",
-      "category": "Inverter",
-      "function": "HR",
-      "address": 1816,
+      "id": "SYSTEM_AC_FAULT",
+      "description": "System Ac Fault",
+      "category": "System",
+      "function": "HRUS",
+      "address": 1786,
+      "pollClass": "fast",
+      "alarm": true,
+      "supportingTag": false
+    },
+    {
+      "id": "SYSTEM_DC_FAULT",
+      "description": "System Dc Fault",
+      "category": "System",
+      "function": "HRUS",
+      "address": 1787,
+      "pollClass": "fast",
+      "alarm": true,
+      "supportingTag": false
+    },
+    {
+      "id": "SYSTEM_HARDWARE_FAULT",
+      "description": "System Hardware Fault",
+      "category": "System",
+      "function": "HRUS",
+      "address": 1788,
+      "pollClass": "fast",
+      "alarm": true,
+      "supportingTag": false
+    },
+    {
+      "id": "SYSTEM_COMMUNICATION_FAULT",
+      "description": "System Communication Fault",
+      "category": "System",
+      "function": "HRUS",
+      "address": 1789,
+      "pollClass": "fast",
+      "alarm": true,
+      "supportingTag": false
+    },
+    {
+      "id": "SYSTEM_FAULT",
+      "description": "System Fault",
+      "category": "System",
+      "function": "HRUS",
+      "address": 1790,
+      "pollClass": "fast",
+      "alarm": true,
+      "supportingTag": false
+    },
+    {
+      "id": "SYSTEM_GLOBAL_STATE",
+      "description": "System Global State",
+      "category": "System",
+      "function": "HRUS",
+      "address": 1780,
+      "pollClass": "fast",
+      "alarm": true,
+      "supportingTag": false,
+      "statusFlag": true
+    },
+    {
+      "id": "SYSTEM_PRIMARY_OR_SECONDARY",
+      "description": "System Primary Or Secondary",
+      "category": "System",
+      "function": "HRUS",
+      "address": 1782,
+      "pollClass": "fast",
+      "alarm": true,
+      "supportingTag": false
+    },
+    {
+      "id": "SYSTEM_STATE_SWITCH",
+      "description": "System State Switch",
+      "category": "System",
+      "function": "HRUS",
+      "address": 1783,
+      "pollClass": "fast",
+      "alarm": true,
+      "supportingTag": false
+    },
+    {
+      "id": "SYSTEM_GRID_FREQUENCY",
+      "description": "Grid frequency",
+      "category": "Grid",
+      "function": "HRUS",
+      "address": 1791,
       "scale": {
         "mode": "Linear",
         "rawLow": 0,
-        "rawHigh": 1,
+        "rawHigh": 100,
         "scaledLow": 0,
         "scaledHigh": 1
       },
       "pollClass": "fast",
-      "statusFlag": true,
-      "ss40k": { "name": "W", "model": "40101" }
+      "alarm": true,
+      "supportingTag": false,
+      "ss40k": {
+        "name": "fGrid",
+        "model": "40101",
+        "exportMultiplier": 100
+      }
     },
     {
-      "id": "PCS_VAR",
-      "description": "Total reactive power",
-      "category": "Inverter",
-      "function": "HR",
-      "address": 1817,
+      "id": "SYSTEM_GRID_VOLTAGE_RS",
+      "description": "Grid voltage L1-L2",
+      "category": "Grid",
+      "function": "HRUS",
+      "address": 1792,
       "scale": {
         "mode": "Linear",
         "rawLow": 0,
-        "rawHigh": 1,
+        "rawHigh": 10,
         "scaledLow": 0,
         "scaledHigh": 1
       },
       "pollClass": "fast",
-      "statusFlag": true,
-      "ss40k": { "name": "Var", "model": "40101" }
+      "alarm": true,
+      "supportingTag": false,
+      "ss40k": {
+        "name": "vGridL12",
+        "model": "40101",
+        "exportMultiplier": 10
+      }
     },
     {
-      "id": "PCS_VA",
-      "description": "Total apparent power",
-      "category": "Inverter",
-      "function": "HR",
-      "address": 1818,
+      "id": "SYSTEM_GRID_VOLTAGE_ST",
+      "description": "Grid voltage L2-L3",
+      "category": "Grid",
+      "function": "HRUS",
+      "address": 1793,
       "scale": {
         "mode": "Linear",
         "rawLow": 0,
-        "rawHigh": 1,
+        "rawHigh": 10,
         "scaledLow": 0,
         "scaledHigh": 1
       },
       "pollClass": "fast",
-      "statusFlag": true,
-      "ss40k": { "name": "VA", "model": "40101" }
+      "alarm": true,
+      "supportingTag": false,
+      "ss40k": {
+        "name": "vGridL23",
+        "model": "40101",
+        "exportMultiplier": 10
+      }
     },
-
     {
-      "id": "PCS_WL1",
+      "id": "SYSTEM_GRID_VOLTAGE_TR",
+      "description": "Grid voltage L3-L1",
+      "category": "Grid",
+      "function": "HRUS",
+      "address": 1794,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
+      "pollClass": "fast",
+      "alarm": true,
+      "supportingTag": false,
+      "ss40k": {
+        "name": "vGridL31",
+        "model": "40101",
+        "exportMultiplier": 10
+      }
+    },
+    {
+      "id": "SYSTEM_PCS_VOLTAGE_RS",
+      "description": "Voltage L1-L2",
+      "category": "Inverter",
+      "function": "HRUS",
+      "address": 1795,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
+      "pollClass": "fast",
+      "alarm": true,
+      "supportingTag": false,
+      "ss40k": {
+        "name": "VL1L2",
+        "model": "40101",
+        "exportMultiplier": 10
+      }
+    },
+    {
+      "id": "SYSTEM_PCS_VOLTAGE_ST",
+      "description": "Voltage L2-L3",
+      "category": "Inverter",
+      "function": "HRUS",
+      "address": 1796,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
+      "pollClass": "fast",
+      "alarm": true,
+      "supportingTag": false,
+      "ss40k": {
+        "name": "VL2L3",
+        "model": "40101",
+        "exportMultiplier": 10
+      }
+    },
+    {
+      "id": "SYSTEM_PCS_VOLTAGE_TR",
+      "description": "Voltage L3-L1",
+      "category": "Inverter",
+      "function": "HRUS",
+      "address": 1797,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
+      "pollClass": "fast",
+      "alarm": true,
+      "supportingTag": false,
+      "ss40k": {
+        "name": "VL3L1",
+        "model": "40101",
+        "exportMultiplier": 10
+      }
+    },
+    {
+      "id": "SYSTEM_GRID_VOLTAGE_R",
+      "description": "Grid voltage L1-N",
+      "category": "Grid",
+      "function": "HRUS",
+      "address": 1798,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
+      "pollClass": "fast",
+      "alarm": true,
+      "supportingTag": false,
+      "ss40k": {
+        "name": "vGridL1N",
+        "model": "40101",
+        "exportMultiplier": 10
+      }
+    },
+    {
+      "id": "SYSTEM_GRID_VOLTAGE_S",
+      "description": "Grid voltage L2-N",
+      "category": "Grid",
+      "function": "HRUS",
+      "address": 1799,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
+      "pollClass": "fast",
+      "alarm": true,
+      "supportingTag": false,
+      "ss40k": {
+        "name": "vGridL2N",
+        "model": "40101",
+        "exportMultiplier": 10
+      }
+    },
+    {
+      "id": "SYSTEM_GRID_VOLTAGE_T",
+      "description": "Grid voltage L3-N",
+      "category": "Grid",
+      "function": "HRUS",
+      "address": 1800,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
+      "pollClass": "fast",
+      "alarm": true,
+      "supportingTag": false,
+      "ss40k": {
+        "name": "vGridL3N",
+        "model": "40101",
+        "exportMultiplier": 10
+      }
+    },
+    {
+      "id": "SYSTEM_PCS_VOLTAGE_R",
+      "description": "Voltage L1-N",
+      "category": "Inverter",
+      "function": "HRUS",
+      "address": 1801,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
+      "pollClass": "fast",
+      "alarm": true,
+      "supportingTag": false,
+      "ss40k": {
+        "name": "VL1",
+        "model": "40101",
+        "exportMultiplier": 10
+      }
+    },
+    {
+      "id": "SYSTEM_PCS_VOLTAGE_S",
+      "description": "Voltage L2-N",
+      "category": "Inverter",
+      "function": "HRUS",
+      "address": 1802,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
+      "pollClass": "fast",
+      "alarm": true,
+      "supportingTag": false,
+      "ss40k": {
+        "name": "VL2",
+        "model": "40101",
+        "exportMultiplier": 10
+      }
+    },
+    {
+      "id": "SYSTEM_PCS_VOLTAGE_T",
+      "description": "Voltage L3-N",
+      "category": "Inverter",
+      "function": "HRUS",
+      "address": 1803,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
+      "pollClass": "fast",
+      "alarm": true,
+      "supportingTag": false,
+      "ss40k": {
+        "name": "VL3",
+        "model": "40101",
+        "exportMultiplier": 10
+      }
+    },
+    {
+      "id": "SYSTEM_POWER_ACTIVE_R",
       "description": "Active power L1",
       "category": "Inverter",
       "function": "HR",
@@ -112,16 +413,21 @@
       "scale": {
         "mode": "Linear",
         "rawLow": 0,
-        "rawHigh": 1,
+        "rawHigh": 10,
         "scaledLow": 0,
         "scaledHigh": 1
       },
       "pollClass": "fast",
-      "statusFlag": true,
-      "ss40k": { "name": "WL1", "model": "40101" }
+      "alarm": true,
+      "supportingTag": false,
+      "ss40k": {
+        "name": "WL1",
+        "model": "40101",
+        "exportMultiplier": 10000
+      }
     },
     {
-      "id": "PCS_WL2",
+      "id": "SYSTEM_POWER_ACTIVE_S",
       "description": "Active power L2",
       "category": "Inverter",
       "function": "HR",
@@ -129,16 +435,21 @@
       "scale": {
         "mode": "Linear",
         "rawLow": 0,
-        "rawHigh": 1,
+        "rawHigh": 10,
         "scaledLow": 0,
         "scaledHigh": 1
       },
       "pollClass": "fast",
-      "statusFlag": true,
-      "ss40k": { "name": "WL2", "model": "40101" }
+      "alarm": true,
+      "supportingTag": false,
+      "ss40k": {
+        "name": "WL2",
+        "model": "40101",
+        "exportMultiplier": 10000
+      }
     },
     {
-      "id": "PCS_WL3",
+      "id": "SYSTEM_POWER_ACTIVE_T",
       "description": "Active power L3",
       "category": "Inverter",
       "function": "HR",
@@ -146,17 +457,21 @@
       "scale": {
         "mode": "Linear",
         "rawLow": 0,
-        "rawHigh": 1,
+        "rawHigh": 10,
         "scaledLow": 0,
         "scaledHigh": 1
       },
       "pollClass": "fast",
-      "statusFlag": true,
-      "ss40k": { "name": "WL3", "model": "40101" }
+      "alarm": true,
+      "supportingTag": false,
+      "ss40k": {
+        "name": "WL3",
+        "model": "40101",
+        "exportMultiplier": 10000
+      }
     },
-
     {
-      "id": "PCS_VARL1",
+      "id": "SYSTEM_POWER_REACTIVE_R",
       "description": "Reactive power L1",
       "category": "Inverter",
       "function": "HR",
@@ -164,16 +479,21 @@
       "scale": {
         "mode": "Linear",
         "rawLow": 0,
-        "rawHigh": 1,
+        "rawHigh": 10,
         "scaledLow": 0,
         "scaledHigh": 1
       },
       "pollClass": "fast",
-      "statusFlag": true,
-      "ss40k": { "name": "VarL1", "model": "40101" }
+      "alarm": true,
+      "supportingTag": false,
+      "ss40k": {
+        "name": "VarL1",
+        "model": "40101",
+        "exportMultiplier": 10000
+      }
     },
     {
-      "id": "PCS_VARL2",
+      "id": "SYSTEM_POWER_REACTIVE_S",
       "description": "Reactive power L2",
       "category": "Inverter",
       "function": "HR",
@@ -181,16 +501,21 @@
       "scale": {
         "mode": "Linear",
         "rawLow": 0,
-        "rawHigh": 1,
+        "rawHigh": 10,
         "scaledLow": 0,
         "scaledHigh": 1
       },
       "pollClass": "fast",
-      "statusFlag": true,
-      "ss40k": { "name": "VarL2", "model": "40101" }
+      "alarm": true,
+      "supportingTag": false,
+      "ss40k": {
+        "name": "VarL2",
+        "model": "40101",
+        "exportMultiplier": 10000
+      }
     },
     {
-      "id": "PCS_VARL3",
+      "id": "SYSTEM_POWER_REACTIVE_T",
       "description": "Reactive power L3",
       "category": "Inverter",
       "function": "HR",
@@ -198,312 +523,170 @@
       "scale": {
         "mode": "Linear",
         "rawLow": 0,
-        "rawHigh": 1,
+        "rawHigh": 10,
         "scaledLow": 0,
         "scaledHigh": 1
       },
       "pollClass": "fast",
-      "statusFlag": true,
-      "ss40k": { "name": "VarL3", "model": "40101" }
+      "alarm": true,
+      "supportingTag": false,
+      "ss40k": {
+        "name": "VarL3",
+        "model": "40101",
+        "exportMultiplier": 10000
+      }
     },
-
     {
-      "id": "PCS_VAL1",
+      "id": "SYSTEM_POWER_APPARENT_R",
       "description": "Apparent power L1",
       "category": "Inverter",
-      "function": "HR",
+      "function": "HRUS",
       "address": 1813,
       "scale": {
         "mode": "Linear",
         "rawLow": 0,
-        "rawHigh": 1,
+        "rawHigh": 10,
         "scaledLow": 0,
         "scaledHigh": 1
       },
       "pollClass": "fast",
-      "statusFlag": true,
-      "ss40k": { "name": "VAL1", "model": "40101" }
+      "alarm": true,
+      "supportingTag": false,
+      "ss40k": {
+        "name": "VAL1",
+        "model": "40101",
+        "exportMultiplier": 10000
+      }
     },
     {
-      "id": "PCS_VAL2",
+      "id": "SYSTEM_POWER_APPARENT_S",
       "description": "Apparent power L2",
       "category": "Inverter",
-      "function": "HR",
+      "function": "HRUS",
       "address": 1814,
       "scale": {
         "mode": "Linear",
         "rawLow": 0,
-        "rawHigh": 1,
+        "rawHigh": 10,
         "scaledLow": 0,
         "scaledHigh": 1
       },
       "pollClass": "fast",
-      "statusFlag": true,
-      "ss40k": { "name": "VAL2", "model": "40101" }
+      "alarm": true,
+      "supportingTag": false,
+      "ss40k": {
+        "name": "VAL2",
+        "model": "40101",
+        "exportMultiplier": 10000
+      }
     },
     {
-      "id": "PCS_VAL3",
+      "id": "SYSTEM_POWER_APPARENT_T",
       "description": "Apparent power L3",
       "category": "Inverter",
-      "function": "HR",
+      "function": "HRUS",
       "address": 1815,
       "scale": {
         "mode": "Linear",
         "rawLow": 0,
-        "rawHigh": 1,
+        "rawHigh": 10,
         "scaledLow": 0,
         "scaledHigh": 1
       },
       "pollClass": "fast",
-      "statusFlag": true,
-      "ss40k": { "name": "VAL3", "model": "40101" }
+      "alarm": true,
+      "supportingTag": false,
+      "ss40k": {
+        "name": "VAL3",
+        "model": "40101",
+        "exportMultiplier": 10000
+      }
     },
-
     {
-      "id": "PCS_HZ",
-      "description": "AC frequency",
+      "id": "SYSTEM_POWER_ACTIVE_ALL",
+      "description": "Inverter Power",
       "category": "Inverter",
       "function": "HR",
-      "address": 1791,
+      "address": 1816,
       "scale": {
         "mode": "Linear",
         "rawLow": 0,
-        "rawHigh": 1,
+        "rawHigh": 10,
         "scaledLow": 0,
         "scaledHigh": 1
       },
       "pollClass": "fast",
-      "statusFlag": true,
-      "ss40k": { "name": "Hz", "model": "40101" }
+      "alarm": true,
+      "supportingTag": false,
+      "ss40k": {
+        "name": "W",
+        "model": "40101",
+        "exportMultiplier": 10000
+      }
     },
-
     {
-      "id": "PCS_VL1L2",
-      "description": "Voltage L1-L2",
+      "id": "SYSTEM_POWER_REACTIVE_ALL",
+      "description": "Reactive power total",
       "category": "Inverter",
       "function": "HR",
-      "address": 1760,
+      "address": 1817,
       "scale": {
         "mode": "Linear",
         "rawLow": 0,
-        "rawHigh": 1,
+        "rawHigh": 10,
         "scaledLow": 0,
         "scaledHigh": 1
       },
       "pollClass": "fast",
-      "statusFlag": true,
-      "ss40k": { "name": "VL1L2", "model": "40101" }
+      "alarm": true,
+      "supportingTag": false,
+      "ss40k": {
+        "name": "Var",
+        "model": "40101",
+        "exportMultiplier": 10000
+      }
     },
     {
-      "id": "PCS_VL2L3",
-      "description": "Voltage L2-L3",
+      "id": "SYSTEM_POWER_APPARENT_ALL",
+      "description": "Apparent power total",
       "category": "Inverter",
-      "function": "HR",
-      "address": 1761,
+      "function": "HRUS",
+      "address": 1818,
       "scale": {
         "mode": "Linear",
         "rawLow": 0,
-        "rawHigh": 1,
+        "rawHigh": 10,
         "scaledLow": 0,
         "scaledHigh": 1
       },
       "pollClass": "fast",
-      "statusFlag": true,
-      "ss40k": { "name": "VL2L3", "model": "40101" }
+      "alarm": true,
+      "supportingTag": false,
+      "ss40k": {
+        "name": "VA",
+        "model": "40101",
+        "exportMultiplier": 10000
+      }
     },
     {
-      "id": "PCS_VL3L1",
-      "description": "Voltage L3-L1",
-      "category": "Inverter",
-      "function": "HR",
-      "address": 1762,
+      "id": "SYSTEM_INPUT_VOLTAGE",
+      "description": "System Input Voltage",
+      "category": "System",
+      "function": "HRUS",
+      "address": 1819,
       "scale": {
         "mode": "Linear",
         "rawLow": 0,
-        "rawHigh": 1,
+        "rawHigh": 10,
         "scaledLow": 0,
         "scaledHigh": 1
       },
       "pollClass": "fast",
-      "statusFlag": true,
-      "ss40k": { "name": "VL3L1", "model": "40101" }
-    },
-
-    {
-      "id": "PCS_VL1",
-      "description": "Voltage L1-N",
-      "category": "Inverter",
-      "function": "HR",
-      "address": 1763,
-      "scale": {
-        "mode": "Linear",
-        "rawLow": 0,
-        "rawHigh": 1,
-        "scaledLow": 0,
-        "scaledHigh": 1
-      },
-      "pollClass": "fast",
-      "statusFlag": true,
-      "ss40k": { "name": "VL1", "model": "40101" }
+      "alarm": true,
+      "supportingTag": false
     },
     {
-      "id": "PCS_VL2",
-      "description": "Voltage L2-N",
-      "category": "Inverter",
-      "function": "HR",
-      "address": 1764,
-      "scale": {
-        "mode": "Linear",
-        "rawLow": 0,
-        "rawHigh": 1,
-        "scaledLow": 0,
-        "scaledHigh": 1
-      },
-      "pollClass": "fast",
-      "statusFlag": true,
-      "ss40k": { "name": "VL2", "model": "40101" }
-    },
-    {
-      "id": "PCS_VL3",
-      "description": "Voltage L3-N",
-      "category": "Inverter",
-      "function": "HR",
-      "address": 1765,
-      "scale": {
-        "mode": "Linear",
-        "rawLow": 0,
-        "rawHigh": 1,
-        "scaledLow": 0,
-        "scaledHigh": 1
-      },
-      "pollClass": "fast",
-      "statusFlag": true,
-      "ss40k": { "name": "VL3", "model": "40101" }
-    },
-
-    {
-      "id": "PCS_AL1",
-      "description": "Current L1",
-      "category": "Inverter",
-      "function": "HR",
-      "address": 1770,
-      "scale": {
-        "mode": "Linear",
-        "rawLow": 0,
-        "rawHigh": 1,
-        "scaledLow": 0,
-        "scaledHigh": 1
-      },
-      "pollClass": "fast",
-      "statusFlag": true,
-      "ss40k": { "name": "AL1", "model": "40101" }
-    },
-    {
-      "id": "PCS_AL2",
-      "description": "Current L2",
-      "category": "Inverter",
-      "function": "HR",
-      "address": 1771,
-      "scale": {
-        "mode": "Linear",
-        "rawLow": 0,
-        "rawHigh": 1,
-        "scaledLow": 0,
-        "scaledHigh": 1
-      },
-      "pollClass": "fast",
-      "statusFlag": true,
-      "ss40k": { "name": "AL2", "model": "40101" }
-    },
-    {
-      "id": "PCS_AL3",
-      "description": "Current L3",
-      "category": "Inverter",
-      "function": "HR",
-      "address": 1772,
-      "scale": {
-        "mode": "Linear",
-        "rawLow": 0,
-        "rawHigh": 1,
-        "scaledLow": 0,
-        "scaledHigh": 1
-      },
-      "pollClass": "fast",
-      "statusFlag": true,
-      "ss40k": { "name": "AL3", "model": "40101" }
-    },
-
-    {
-      "id": "PCS_PF_TOTAL",
-      "description": "Power factor total",
-      "category": "Inverter",
-      "function": "HR",
-      "address": 1825,
-      "scale": {
-        "mode": "Linear",
-        "rawLow": 0,
-        "rawHigh": 1000,
-        "scaledLow": 0,
-        "scaledHigh": 1
-      },
-      "pollClass": "fast",
-      "statusFlag": true,
-      "ss40k": { "name": "PF", "model": "40101" }
-    },
-    {
-      "id": "PCS_PFL1",
-      "description": "Power factor L1",
-      "category": "Inverter",
-      "function": "HR",
-      "address": 1826,
-      "scale": {
-        "mode": "Linear",
-        "rawLow": 0,
-        "rawHigh": 1000,
-        "scaledLow": 0,
-        "scaledHigh": 1
-      },
-      "pollClass": "fast",
-      "statusFlag": true,
-      "ss40k": { "name": "PFL1", "model": "40101" }
-    },
-    {
-      "id": "PCS_PFL2",
-      "description": "Power factor L2",
-      "category": "Inverter",
-      "function": "HR",
-      "address": 1827,
-      "scale": {
-        "mode": "Linear",
-        "rawLow": 0,
-        "rawHigh": 1000,
-        "scaledLow": 0,
-        "scaledHigh": 1
-      },
-      "pollClass": "fast",
-      "statusFlag": true,
-      "ss40k": { "name": "PFL2", "model": "40101" }
-    },
-    {
-      "id": "PCS_PFL3",
-      "description": "Power factor L3",
-      "category": "Inverter",
-      "function": "HR",
-      "address": 1828,
-      "scale": {
-        "mode": "Linear",
-        "rawLow": 0,
-        "rawHigh": 1000,
-        "scaledLow": 0,
-        "scaledHigh": 1
-      },
-      "pollClass": "fast",
-      "statusFlag": true,
-      "ss40k": { "name": "PFL3", "model": "40101" }
-    },
-
-    {
-      "id": "PCS_TEMP_AMB",
+      "id": "SYSTEM_TEMP_AMBIENT",
       "description": "Ambient temperature",
       "category": "Inverter",
       "function": "HR",
@@ -515,12 +698,17 @@
         "scaledLow": 0,
         "scaledHigh": 1
       },
-      "pollClass": "normal",
-      "statusFlag": true,
-      "ss40k": { "name": "tempAmb", "model": "40101" }
+      "pollClass": "fast",
+      "alarm": true,
+      "supportingTag": false,
+      "ss40k": {
+        "name": "tempAmb",
+        "model": "40101",
+        "exportMultiplier": 10
+      }
     },
     {
-      "id": "PCS_TEMP_INT",
+      "id": "SYSTEM_TEMP_INLET",
       "description": "Internal temperature",
       "category": "Inverter",
       "function": "HR",
@@ -532,16 +720,31 @@
         "scaledLow": 0,
         "scaledHigh": 1
       },
-      "pollClass": "normal",
-      "statusFlag": true,
-      "ss40k": { "name": "tempInt", "model": "40101" }
+      "pollClass": "fast",
+      "alarm": true,
+      "supportingTag": false,
+      "ss40k": {
+        "name": "tempInt",
+        "model": "40101",
+        "exportMultiplier": 10
+      }
     },
     {
-      "id": "PCS_TEMP_LLC",
-      "description": "LLC temperature",
-      "category": "Inverter",
-      "function": "HR",
+      "id": "SYSTEM_ISO",
+      "description": "System Iso",
+      "category": "System",
+      "function": "HRUS",
       "address": 1824,
+      "pollClass": "fast",
+      "alarm": true,
+      "supportingTag": false
+    },
+    {
+      "id": "SYSTEM_MAX_POWER_AVAILABLE",
+      "description": "Nominal active power",
+      "category": "PCS information",
+      "function": "HRUS",
+      "address": 1834,
       "scale": {
         "mode": "Linear",
         "rawLow": 0,
@@ -549,208 +752,93 @@
         "scaledLow": 0,
         "scaledHigh": 1
       },
-      "pollClass": "normal",
-      "statusFlag": true,
-      "ss40k": { "name": "tempLLC", "model": "40101" }
-    },
-    {
-      "id": "PCS_TEMP_INV_STAGE",
-      "description": "Inverter stage temperature",
-      "category": "Inverter",
-      "function": "HR",
-      "address": 1830,
-      "scale": {
-        "mode": "Linear",
-        "rawLow": 0,
-        "rawHigh": 10,
-        "scaledLow": 0,
-        "scaledHigh": 1
-      },
-      "pollClass": "normal",
-      "statusFlag": true,
-      "ss40k": { "name": "tempInv", "model": "40101" }
-    },
-
-    {
-      "id": "PCS_E_INV_TDY",
-      "description": "Inverter energy today",
-      "category": "Inverter",
-      "function": "HRUI_64",
-      "address": 1900,
-      "scale": {
-        "mode": "Linear",
-        "rawLow": 0,
-        "rawHigh": 1,
-        "scaledLow": 0,
-        "scaledHigh": 1
-      },
-      "pollClass": "slow",
-      "statusFlag": true,
-      "ss40k": { "name": "eInvTdy", "model": "40101" }
-    },
-    {
-      "id": "PCS_E_INV_TOT",
-      "description": "Inverter energy total",
-      "category": "Inverter",
-      "function": "HRUI_64",
-      "address": 1904,
-      "scale": {
-        "mode": "Linear",
-        "rawLow": 0,
-        "rawHigh": 1,
-        "scaledLow": 0,
-        "scaledHigh": 1
-      },
-      "pollClass": "slow",
-      "statusFlag": true,
-      "ss40k": { "name": "eInvTot", "model": "40101" }
-    },
-    {
-      "id": "PCS_E_REC_TDY",
-      "description": "Rectifier energy today",
-      "category": "Inverter",
-      "function": "HRUI_64",
-      "address": 1910,
-      "scale": {
-        "mode": "Linear",
-        "rawLow": 0,
-        "rawHigh": 1,
-        "scaledLow": 0,
-        "scaledHigh": 1
-      },
-      "pollClass": "slow",
-      "statusFlag": true,
-      "ss40k": { "name": "eRecTdy", "model": "40101" }
-    },
-    {
-      "id": "PCS_E_REC_TOT",
-      "description": "Rectifier energy total",
-      "category": "Inverter",
-      "function": "HRUI_64",
-      "address": 1914,
-      "scale": {
-        "mode": "Linear",
-        "rawLow": 0,
-        "rawHigh": 1,
-        "scaledLow": 0,
-        "scaledHigh": 1
-      },
-      "pollClass": "slow",
-      "statusFlag": true,
-      "ss40k": { "name": "eRecTot", "model": "40101" }
-    },
-
-    {
-      "id": "PCS_STATE_GLOBAL",
-      "description": "Global PCS state",
-      "category": "GlobalState",
-      "function": "HR",
-      "address": 1780,
       "pollClass": "fast",
-      "statusFlag": true
-    },
-    {
-      "id": "PCS_STATE_SWITCH",
-      "description": "Switch / contactor state bitfield",
-      "category": "GlobalState",
-      "function": "HR",
-      "address": 1783,
-      "pollClass": "fast",
-      "statusFlag": true,
-      "bitfieldStatus": true
-    },
-
-    {
-      "id": "PCS_FAULT_SYS_0",
-      "description": "Fault bitfield 0",
-      "category": "FaultRaw",
-      "function": "HR",
-      "address": 2000,
-      "pollClass": "fast",
-      "alarmFlag": true,
-      "statusFlag": true,
-      "bitfieldStatus": true
-    },
-    {
-      "id": "PCS_FAULT_SYS_1",
-      "description": "Fault bitfield 1",
-      "category": "FaultRaw",
-      "function": "HR",
-      "address": 2001,
-      "pollClass": "fast",
-      "alarmFlag": true,
-      "statusFlag": true,
-      "bitfieldStatus": true
-    },
-    {
-      "id": "PCS_WARN_SYS_0",
-      "description": "Warning bitfield 0",
-      "category": "WarnRaw",
-      "function": "HR",
-      "address": 2010,
-      "pollClass": "fast",
-      "statusFlag": true,
-      "bitfieldStatus": true
+      "alarm": true,
+      "supportingTag": false,
+      "ss40k": {
+        "name": "pNom",
+        "model": "40100",
+        "exportMultiplier": 10000
+      }
     }
   ],
-
   "commands": [
     {
-      "id": "CMD_PCS_RUN_STOP",
-      "description": "Start/Stop PCS",
-      "category": "RunControl",
-      "function": "HR",
-      "address": 1280,
-      "dataType": "uint16",
-      "enum": { "0": "Stop", "1": "Start" }
-    },
-    {
-      "id": "CMD_PCS_OP_MODE",
-      "description": "Operation mode select",
-      "category": "RunControl",
-      "function": "HR",
-      "address": 1281,
-      "dataType": "uint16",
-      "enum": { "2": "GT", "6": "SA", "10": "SA2GC" }
-    },
-    {
-      "id": "CMD_PCS_FAULT_RESET",
-      "description": "Fault reset",
-      "category": "RunControl",
-      "function": "HR",
-      "address": 1290,
-      "dataType": "uint16",
-      "enum": { "1": "Reset" }
-    },
-
-    {
-      "id": "CMD_PCS_P_LIMIT_PCT",
-      "description": "Active power limit (0.1%)",
-      "category": "PowerControl",
+      "id": "SYSTEM_RUN_MODE",
+      "description": "System Run Mode",
+      "category": "Commands",
       "function": "HRUS",
-      "address": 1300,
-      "dataType": "uint16",
-      "min": 0,
-      "max": 1000
+      "address": 4096,
+      "pollClass": "normal",
+      "supportingTag": false
     },
     {
-      "id": "CMD_PCS_Q_MODE",
-      "description": "Reactive power control mode",
-      "category": "PowerControl",
+      "id": "SYSTEM_ON_OFF",
+      "description": "System On Off",
+      "category": "Commands",
+      "function": "HRUS",
+      "address": 4097,
+      "pollClass": "normal",
+      "supportingTag": false
+    },
+    {
+      "id": "SYSTEM_CLEAR_FAULTS",
+      "description": "System Clear Faults",
+      "category": "Commands",
+      "function": "HRUS",
+      "address": 4100,
+      "pollClass": "normal",
+      "supportingTag": false
+    },
+    {
+      "id": "SYSTEM_ACTIVE_POWER_DEMAND",
+      "description": "System Active Power Demand",
+      "category": "Commands",
       "function": "HR",
-      "address": 1301,
-      "dataType": "uint16",
-      "enum": { "0": "FixedPF", "1": "FixedQ", "2": "VoltVAR", "3": "VoltWatt" }
+      "address": 4103,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
+      "pollClass": "normal",
+      "supportingTag": false
     },
     {
-      "id": "CMD_PCS_PF_SET",
-      "description": "PF setpoint (x1000)",
-      "category": "PowerControl",
-      "function": "HRI",
-      "address": 1302,
-      "dataType": "int16",
-      "min": -1000,
-      "max": 1000
+      "id": "SYSTEM_REACTIVE_POWER_DEMAND",
+      "description": "System Reactive Power Demand",
+      "category": "Commands",
+      "function": "HR",
+      "address": 4104,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
+      "pollClass": "normal",
+      "supportingTag": false
+    },
+    {
+      "id": "GRID_WIRE_CONNECTION",
+      "description": "Grid Wire Connection",
+      "category": "wireCommands",
+      "function": "HRUS",
+      "address": 4176,
+      "pollClass": "normal",
+      "supportingTag": false
+    },
+    {
+      "id": "SYSTEM_REBOOT",
+      "description": "System Reboot",
+      "category": "Reboot",
+      "function": "HRUS",
+      "address": 1780,
+      "pollClass": "normal",
+      "supportingTag": false
     }
   ]
 }

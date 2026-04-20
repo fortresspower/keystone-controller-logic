@@ -23,6 +23,11 @@ export {
   createTelemetryRuntimeState,
   handleTelemetryMessage,
 } from "./runtime";
+export {
+  buildSs40kFixedPayloads,
+  buildSs40kLookup,
+  DEFAULT_SS40K_MODEL_INDEX_MAP,
+} from "./ss40k";
 
 export function initTelemetry(config: SiteConfig): {
   caps: SiteCapabilities;
