@@ -191,11 +191,9 @@ export function adaptTelemetryTemplateToReadProfile(
       ...template.telemetry.map((entry, index) =>
         adaptTelemetryEntry(profileName, entry, index)
       ),
-      ...((template.commands || [])
-        .filter((entry) => entry.readback === true)
-        .map((entry, index) =>
-          adaptTelemetryEntry(profileName, entry, index, "commands")
-        )),
+      ...(template.commands || []).map((entry, index) =>
+        adaptTelemetryEntry(profileName, entry, index, "commands")
+      ),
     ],
   };
 }
@@ -206,17 +204,21 @@ function adaptTelemetryEntry(
   index: number,
   section: "telemetry" | "commands" = "telemetry"
 ): NormalizedTelemetryTag {
+  const enumStatus = normalizeEnumStatus(entry);
+  const bitfieldStatus = normalizeBitfieldStatus(entry);
+  const hasImplicitStatus = !!enumStatus || bitfieldStatus !== undefined;
   const normalized: NormalizedTelemetryTag = {
     name: entry.id,
     alarm: (entry.alarmFlag ?? entry.alarm) ? "Yes" : "No",
     supportingTag: (entry.supporting ?? entry.supportingTag) ? "Yes" : "No",
-    status: (entry.statusFlag ?? entry.status?.flag) ? "Yes" : "No",
+    status:
+      (entry.statusFlag ?? entry.status?.flag ?? hasImplicitStatus)
+        ? "Yes"
+        : "No",
   };
-  const enumStatus = normalizeEnumStatus(entry);
   if (enumStatus) {
     normalized.enumStatus = enumStatus;
   }
-  const bitfieldStatus = normalizeBitfieldStatus(entry);
   if (bitfieldStatus !== undefined) {
     normalized.bitfieldStatus = bitfieldStatus;
   }

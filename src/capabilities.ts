@@ -50,6 +50,7 @@ export interface SiteCapabilities {
   hasAcInverterInventory: boolean;
   scheduledControlEnabled: boolean;
   crdRestricted: boolean;
+  siteExportRestricted: boolean;
   pvCurtailmentViaModbus: boolean;
   pvCurtailmentViaFrequencyShift: boolean;
   miniModelInfo: MiniModelInfo | null;
@@ -62,7 +63,7 @@ export function deriveCapabilities(config: SiteConfig): SiteCapabilities {
   const miniModelInfo = parseMiniModel(profile);
   const isMini = !!miniModelInfo;
 
-  const hasPcs = is280 && !!config.pcs;
+  const hasPcs = (is280 && !!config.pcs) || isMini;
   const hasMbmu = is280 && !!config.mbmu;
   const hasGenerator = !!config.generator;
   const hasACPV = config.pv.acInverters?.length > 0;
@@ -80,6 +81,7 @@ export function deriveCapabilities(config: SiteConfig): SiteCapabilities {
   const hasAcInverterInventory = Array.isArray(config.pv?.acInverters) && config.pv.acInverters.length > 0;
   const scheduledControlEnabled = !!config.operation.scheduledControlEnabled;
   const crdRestricted = config.operation.crdMode !== "no-restriction";
+  const siteExportRestricted = config.operation.siteExportMode === "no-export";
   const pvCurtailmentViaModbus = config.pv.curtailmentMethod === "modbus";
   const pvCurtailmentViaFrequencyShift =
     config.pv.curtailmentMethod === "frequency-shifting";
@@ -100,6 +102,7 @@ export function deriveCapabilities(config: SiteConfig): SiteCapabilities {
     hasAcInverterInventory,
     scheduledControlEnabled,
     crdRestricted,
+    siteExportRestricted,
     pvCurtailmentViaModbus,
     pvCurtailmentViaFrequencyShift,
     miniModelInfo,
