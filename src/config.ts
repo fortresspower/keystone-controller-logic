@@ -19,6 +19,8 @@ export type CrdMode =
   | "no-export"
   | "no-exchange";
 
+export type SiteExportMode = "no-restriction" | "no-export";
+
 export type PvCurtailmentMethod =
   | "modbus"
   | "frequency-shifting"
@@ -138,7 +140,14 @@ export interface OperationConfig {
   mode: OperationMode;
   gridCode: GridCode;
   customGridProfile?: CustomGridProfile;
+  /**
+   * PCS/battery-side CRD policy. Site-level PV export limiting is configured
+   * separately with siteExportMode.
+   */
   crdMode: CrdMode;
+  siteExportMode?: SiteExportMode;
+  siteExportTargetImportKw?: number;
+  siteExportDeadbandKw?: number;
   scheduledControlEnabled: boolean;
 }
 
@@ -174,11 +183,21 @@ export interface MbmuConfig {
 export interface BatteryConfig {
   minSoc: number; // 0..1
   maxSoc: number; // 0..1
+  socLow?: number; // 0..1
+  socLowRecover?: number; // 0..1
+  socHigh?: number; // 0..1
+  socHighRecover?: number; // 0..1
+  forceGridChargeSoc?: number; // 0..1
+  forceGridChargeMinCellVoltageV?: number;
+  forceGridChargeKw?: number;
+  powerHeadroomKw?: number;
+  commandRampKwPerSec?: number;
 }
 
 // ---- PV / AC-coupled inverters ----
 
 export interface PvAcInverterConfig {
+  id?: string;
   type: string;           // "Fronius", "SMA", etc.
   model: string;
   ratedKwAc: number;
@@ -207,11 +226,33 @@ export interface MeterReadsConfig {
   load: boolean;
 }
 
+export type MeteringReadingKey = "utilityPowerKw" | "siteLoadKw" | "pvKw";
+
+export interface MeteringDirectReadingCalculation {
+  source: "tag";
+  tagID: string;
+}
+
+export interface MeteringExpressionCalculation {
+  source: "calc";
+  inputs: Record<string, string>;
+  expr: string;
+}
+
+export type MeteringReadingCalculation =
+  | MeteringDirectReadingCalculation
+  | MeteringExpressionCalculation;
+
+export type MeteringCalculationConfig = Partial<
+  Record<MeteringReadingKey, MeteringReadingCalculation>
+>;
+
 export interface MeteringConfig {
   meterType: string;      // "eGauge-4015", "Accuenergy-AcuRev", etc.
   modbusProfile: string;  // "udt_eGauge_V1", "acurev_v1", etc.
   ip: string;
   reads: MeterReadsConfig;
+  calculations?: MeteringCalculationConfig;
 }
 
 // ---- Generator ----

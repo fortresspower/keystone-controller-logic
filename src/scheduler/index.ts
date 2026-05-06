@@ -2,26 +2,518 @@
 
 import { SiteConfig } from "../config";
 
-export interface ScheduleOutput {
-  // generic setpoints the scheduler produces
-  activePowerKwSetpoint?: number;
-  reactivePowerKvarSetpoint?: number;
-  // etc.
+export type ScheduleStrategy = Record<string, unknown>;
+export type ScheduleConstraints = Record<string, unknown>;
+
+export interface ScheduleDuration {
+  unit?: "minute" | "minutes" | "hour" | "hours" | "day" | "days" | string;
+  value?: number | string;
 }
 
-export function initScheduler(config: SiteConfig) {
-  const tz = config.system.controllerTimezone;
-  const crdMode = config.operation.crdMode;
-  const mode = config.operation.mode;
+export interface SchedulePlan {
+  planID?: string;
+  name?: string;
+  description?: string;
+  version?: string;
+  cron?: string;
+  default?: boolean | string;
+  duration?: ScheduleDuration | number | string;
+  start?: string;
+  until?: string;
+  strategy?: ScheduleStrategy;
+  constraints?: ScheduleConstraints;
+  activePowerKwSetpoint?: number;
+  reactivePowerKvarSetpoint?: number;
+  setpoint?: {
+    activePowerKw?: number;
+    reactivePowerKvar?: number;
+  };
+}
 
-  // Use tz, crdMode, mode in your existing scheduling logic.
-  // Wire scheduler to produce a ScheduleOutput stream/message.
+export interface SchedulePlanGroup {
+  timed?: SchedulePlan[];
+  plans?: SchedulePlan[];
+  [key: string]: unknown;
+}
+
+export type SchedulePlanInput =
+  | SchedulePlan[]
+  | SchedulePlanGroup[]
+  | { plans?: SchedulePlan[] | SchedulePlanGroup[]; data?: { plans?: SchedulePlan[] | SchedulePlanGroup[] } }
+  | undefined
+  | null;
+
+export interface ActiveSchedulePlan {
+  plan: SchedulePlan;
+  start: Date | null;
+  end: Date;
+  nowLocal: Date;
+  isFallback?: boolean;
+  via?: "timed" | "default" | "upstream";
+  source: "local" | "upstream";
+  selectedReason?: string;
+  nextTimedStart?: Date | null;
+}
+
+export interface ScheduleSelection {
+  planID?: string;
+  name?: string;
+  reason?: string;
+  via?: ActiveSchedulePlan["via"];
+  isFallback?: boolean;
+  nextTimedStart?: Date | null;
+}
+
+export interface ScheduleOutput {
+  activePowerKwSetpoint?: number;
+  reactivePowerKvarSetpoint?: number;
+  activePlan?: ActiveSchedulePlan;
+  selectedPlan?: ScheduleSelection;
+  strategy?: ScheduleStrategy;
+  constraints?: ScheduleConstraints;
+}
+
+export interface ScheduleMatchOptions {
+  now?: Date | string | number;
+  timezone?: string;
+  upstreamActivePlan?: ActiveSchedulePlan | SchedulePlan | null;
+}
+
+export interface SchedulerOptions extends ScheduleMatchOptions {
+  plans?: SchedulePlanInput;
+}
+
+interface LocalParts {
+  year: number;
+  month: number;
+  day: number;
+  hour: number;
+  minute: number;
+  second: number;
+  weekday: number;
+}
+
+interface CronFields {
+  minute: string;
+  hour: string;
+  dayOfMonth: string;
+  month: string;
+  dayOfWeek: string;
+}
+
+const MONTH_NAMES: Record<string, number> = {
+  JAN: 1,
+  FEB: 2,
+  MAR: 3,
+  APR: 4,
+  MAY: 5,
+  JUN: 6,
+  JUL: 7,
+  AUG: 8,
+  SEP: 9,
+  OCT: 10,
+  NOV: 11,
+  DEC: 12,
+};
+
+const WEEKDAY_NAMES: Record<string, number> = {
+  SUN: 0,
+  MON: 1,
+  TUE: 2,
+  WED: 3,
+  THU: 4,
+  FRI: 5,
+  SAT: 6,
+};
+
+export function initScheduler(config: SiteConfig, options: SchedulerOptions = {}) {
+  const timezone = options.timezone ?? config.system.controllerTimezone;
 
   return {
-    // e.g. a function to compute setpoint for a given timestamp + telemetry
-    getSetpointForNow(): ScheduleOutput {
-      // TODO: plug in your existing implementation
-      return {};
+    getSetpointForNow(input: SchedulerOptions = {}): ScheduleOutput {
+      const activePlan = matchActiveSchedulePlan(input.plans ?? options.plans, {
+        now: input.now ?? options.now,
+        timezone: input.timezone ?? timezone,
+        upstreamActivePlan: input.upstreamActivePlan ?? options.upstreamActivePlan,
+      });
+
+      return activePlan ? scheduleOutputFromActivePlan(activePlan) : {};
     },
   };
+}
+
+export function matchActiveSchedulePlan(
+  plansRaw: SchedulePlanInput,
+  options: ScheduleMatchOptions = {}
+): ActiveSchedulePlan | null {
+  const timezone = options.timezone ?? "America/Los_Angeles";
+  const now = toDate(options.now);
+
+  if (options.upstreamActivePlan) {
+    return normalizeUpstreamActivePlan(options.upstreamActivePlan, now, timezone);
+  }
+
+  const plans = normalizePlans(plansRaw);
+  if (plans.length === 0) return null;
+
+  const nowParts = getLocalParts(now, timezone);
+  const nowLocalMs = localMs(nowParts);
+  const nowLocal = new Date(nowLocalMs);
+
+  for (let index = plans.length - 1; index >= 0; index -= 1) {
+    const plan = plans[index];
+    if (isDefaultPlan(plan)) continue;
+    if (!plan.cron) continue;
+    const active = getActiveWindow(plan, nowParts, nowLocalMs);
+    if (!active) continue;
+    if (!withinPlanBounds(plan, nowLocalMs)) continue;
+
+    return {
+      plan,
+      start: new Date(active.startMs),
+      end: new Date(active.endMs),
+      nowLocal,
+      source: "local",
+      via: "timed",
+      selectedReason: "timed",
+    };
+  }
+
+  const fallback = findDefaultPlan(plans);
+  if (!fallback) return null;
+
+  return {
+    plan: fallback,
+    start: null,
+    end: endOfLocalDay(nowParts),
+    nowLocal,
+    source: "local",
+    via: "default",
+    isFallback: true,
+    selectedReason: "default",
+    nextTimedStart: findNextTimedStart(plans, nowParts, nowLocalMs),
+  };
+}
+
+export function scheduleOutputFromActivePlan(activePlan: ActiveSchedulePlan): ScheduleOutput {
+  const plan = activePlan.plan;
+  const activePowerKwSetpoint = firstFiniteNumber(
+    plan.activePowerKwSetpoint,
+    plan.setpoint?.activePowerKw,
+    readNestedNumber(plan.strategy, ["active_power_kw", "activePowerKw", "pcsSetpointKW"])
+  );
+  const reactivePowerKvarSetpoint = firstFiniteNumber(
+    plan.reactivePowerKvarSetpoint,
+    plan.setpoint?.reactivePowerKvar,
+    readNestedNumber(plan.strategy, ["reactive_power_kvar", "reactivePowerKvar"])
+  );
+
+  return {
+    ...(activePowerKwSetpoint !== undefined ? { activePowerKwSetpoint } : {}),
+    ...(reactivePowerKvarSetpoint !== undefined ? { reactivePowerKvarSetpoint } : {}),
+    activePlan,
+    selectedPlan: {
+      planID: plan.planID,
+      name: plan.name,
+      reason: activePlan.selectedReason,
+      via: activePlan.via,
+      isFallback: activePlan.isFallback,
+      nextTimedStart: activePlan.nextTimedStart ?? null,
+    },
+    strategy: plan.strategy,
+    constraints: plan.constraints,
+  };
+}
+
+function normalizePlans(plansRaw: SchedulePlanInput): SchedulePlan[] {
+  const raw =
+    Array.isArray(plansRaw) ? plansRaw : plansRaw?.data?.plans ?? plansRaw?.plans ?? [];
+  if (!Array.isArray(raw)) return [];
+
+  const plans: SchedulePlan[] = [];
+  for (const item of raw) {
+    if (isSchedulePlanGroup(item)) {
+      const grouped = Array.isArray(item.timed) ? item.timed : item.plans;
+      if (Array.isArray(grouped)) plans.push(...grouped);
+    } else if (isSchedulePlan(item)) {
+      plans.push(item);
+    }
+  }
+  return plans;
+}
+
+function isSchedulePlan(value: unknown): value is SchedulePlan {
+  return Boolean(value && typeof value === "object");
+}
+
+function isSchedulePlanGroup(value: unknown): value is SchedulePlanGroup {
+  return Boolean(
+    value &&
+      typeof value === "object" &&
+      (Array.isArray((value as SchedulePlanGroup).timed) || Array.isArray((value as SchedulePlanGroup).plans)) &&
+      !("cron" in value)
+  );
+}
+
+function normalizeUpstreamActivePlan(
+  upstream: ActiveSchedulePlan | SchedulePlan,
+  now: Date,
+  timezone: string
+): ActiveSchedulePlan {
+  const maybeActivePlan = upstream as Partial<ActiveSchedulePlan>;
+  if (maybeActivePlan.plan) {
+    return { ...maybeActivePlan, source: "upstream", via: maybeActivePlan.via ?? "upstream" } as ActiveSchedulePlan;
+  }
+
+  const nowParts = getLocalParts(now, timezone);
+  return {
+    plan: upstream as SchedulePlan,
+    start: null,
+    end: endOfLocalDay(nowParts),
+    nowLocal: new Date(localMs(nowParts)),
+    source: "upstream",
+    via: "upstream",
+    selectedReason: "upstream",
+  };
+}
+
+function getActiveWindow(
+  plan: SchedulePlan,
+  nowParts: LocalParts,
+  nowLocalMs: number
+): { startMs: number; endMs: number } | null {
+  const cron = parseCron(plan.cron);
+  if (!cron) return null;
+
+  const today = localMs({
+    ...nowParts,
+    hour: cron.hour === "*" ? nowParts.hour : parseNumberToken(cron.hour, "hour") ?? 0,
+    minute: cron.minute === "*" ? nowParts.minute : parseNumberToken(cron.minute, "minute") ?? 0,
+    second: 0,
+  });
+  const yesterdayParts = addLocalDays(nowParts, -1);
+  const yesterday = localMs({
+    ...yesterdayParts,
+    hour: cron.hour === "*" ? nowParts.hour : parseNumberToken(cron.hour, "hour") ?? 0,
+    minute: cron.minute === "*" ? nowParts.minute : parseNumberToken(cron.minute, "minute") ?? 0,
+    second: 0,
+  });
+
+  const durationMinutes = getDurationMinutes(plan.duration);
+  const candidates = [today, yesterday];
+
+  for (const startMs of candidates) {
+    const parts = partsFromLocalMs(startMs);
+    if (!cronMatchesDate(cron, parts)) continue;
+    const endMs = startMs + durationMinutes * 60_000;
+    if (nowLocalMs >= startMs && nowLocalMs < endMs) {
+      return { startMs, endMs };
+    }
+  }
+
+  return null;
+}
+
+function parseCron(cron: string | undefined): CronFields | null {
+  if (!cron) return null;
+  const fields = cron.trim().split(/\s+/);
+  if (fields.length < 5) return null;
+  return {
+    minute: fields[0],
+    hour: fields[1],
+    dayOfMonth: fields[2],
+    month: fields[3],
+    dayOfWeek: fields[4],
+  };
+}
+
+function cronMatchesDate(cron: CronFields, parts: LocalParts): boolean {
+  return (
+    tokenMatches(cron.dayOfMonth, parts.day, "dayOfMonth") &&
+    tokenMatches(cron.month, parts.month, "month") &&
+    tokenMatches(cron.dayOfWeek, parts.weekday, "dayOfWeek")
+  );
+}
+
+function tokenMatches(field: string, value: number, kind: "minute" | "hour" | "dayOfMonth" | "month" | "dayOfWeek"): boolean {
+  if (field === "*") return true;
+  return field.split(",").some((token) => parseNumberToken(token, kind) === value);
+}
+
+function parseNumberToken(
+  token: string,
+  kind: "minute" | "hour" | "dayOfMonth" | "month" | "dayOfWeek"
+): number | undefined {
+  const normalized = token.trim().toUpperCase();
+  if (normalized === "*") return undefined;
+  if (kind === "month" && MONTH_NAMES[normalized] != null) return MONTH_NAMES[normalized];
+  if (kind === "dayOfWeek" && WEEKDAY_NAMES[normalized] != null) return WEEKDAY_NAMES[normalized];
+  const value = Number(normalized);
+  if (!Number.isFinite(value)) return undefined;
+  if (kind === "dayOfWeek" && value === 7) return 0;
+  return value;
+}
+
+function getDurationMinutes(duration: SchedulePlan["duration"]): number {
+  if (duration == null) return 24 * 60;
+  if (typeof duration === "number" || typeof duration === "string") {
+    const value = Number(duration);
+    return Number.isFinite(value) && value > 0 ? value : 24 * 60;
+  }
+
+  const value = Number(duration.value);
+  if (!Number.isFinite(value) || value <= 0) return 24 * 60;
+
+  const unit = String(duration.unit ?? "minutes").toLowerCase();
+  if (unit.startsWith("hour")) return value * 60;
+  if (unit.startsWith("day")) return value * 24 * 60;
+  return value;
+}
+
+function withinPlanBounds(plan: SchedulePlan, nowLocalMs: number): boolean {
+  const startMs = parseLocalDateMs(plan.start);
+  const untilMs = parseLocalDateMs(plan.until);
+  if (startMs != null && nowLocalMs < startMs) return false;
+  if (untilMs != null && nowLocalMs > untilMs) return false;
+  return true;
+}
+
+function findDefaultPlan(plans: SchedulePlan[]): SchedulePlan | null {
+  for (let index = plans.length - 1; index >= 0; index -= 1) {
+    const plan = plans[index];
+    if (isDefaultPlan(plan)) return plan;
+  }
+  return null;
+}
+
+function findNextTimedStart(plans: SchedulePlan[], nowParts: LocalParts, nowLocalMs: number): Date | null {
+  let best: number | null = null;
+
+  for (let dayOffset = 0; dayOffset <= 31; dayOffset += 1) {
+    const dayParts = addLocalDays(nowParts, dayOffset);
+    for (const plan of plans) {
+      if (isDefaultPlan(plan)) continue;
+      if (!plan.cron) continue;
+      const cron = parseCron(plan.cron);
+      if (!cron) continue;
+      const startMs = localMs({
+        ...dayParts,
+        hour: cron.hour === "*" ? 0 : parseNumberToken(cron.hour, "hour") ?? 0,
+        minute: cron.minute === "*" ? 0 : parseNumberToken(cron.minute, "minute") ?? 0,
+        second: 0,
+      });
+      if (startMs <= nowLocalMs) continue;
+      if (!cronMatchesDate(cron, partsFromLocalMs(startMs))) continue;
+      if (!withinPlanBounds(plan, startMs)) continue;
+      if (best == null || startMs < best) best = startMs;
+    }
+    if (best != null) break;
+  }
+
+  return best == null ? null : new Date(best);
+}
+
+function isDefaultPlan(plan: SchedulePlan): boolean {
+  return plan.default === true || String(plan.default).toLowerCase() === "true";
+}
+
+function getLocalParts(date: Date, timezone: string): LocalParts {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: timezone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    weekday: "short",
+    hourCycle: "h23",
+  }).formatToParts(date);
+
+  const value = (type: string) => parts.find((part) => part.type === type)?.value ?? "0";
+  const weekdayName = value("weekday").toUpperCase();
+
+  return {
+    year: Number(value("year")),
+    month: Number(value("month")),
+    day: Number(value("day")),
+    hour: Number(value("hour")),
+    minute: Number(value("minute")),
+    second: Number(value("second")),
+    weekday: WEEKDAY_NAMES[weekdayName] ?? 0,
+  };
+}
+
+function localMs(parts: LocalParts): number {
+  return Date.UTC(parts.year, parts.month - 1, parts.day, parts.hour, parts.minute, parts.second);
+}
+
+function partsFromLocalMs(ms: number): LocalParts {
+  const date = new Date(ms);
+  return {
+    year: date.getUTCFullYear(),
+    month: date.getUTCMonth() + 1,
+    day: date.getUTCDate(),
+    hour: date.getUTCHours(),
+    minute: date.getUTCMinutes(),
+    second: date.getUTCSeconds(),
+    weekday: date.getUTCDay(),
+  };
+}
+
+function addLocalDays(parts: LocalParts, days: number): LocalParts {
+  return partsFromLocalMs(
+    Date.UTC(parts.year, parts.month - 1, parts.day + days, parts.hour, parts.minute, parts.second)
+  );
+}
+
+function endOfLocalDay(parts: LocalParts): Date {
+  return new Date(Date.UTC(parts.year, parts.month - 1, parts.day + 1, 0, 0, 0));
+}
+
+function parseLocalDateMs(value: string | undefined): number | null {
+  if (!value) return null;
+  const match = value.match(
+    /^(\d{4})-(\d{2})-(\d{2})(?:[T\s](\d{2}):(\d{2})(?::(\d{2}))?)?/
+  );
+  if (!match) {
+    const parsed = Date.parse(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+
+  return Date.UTC(
+    Number(match[1]),
+    Number(match[2]) - 1,
+    Number(match[3]),
+    Number(match[4] ?? 0),
+    Number(match[5] ?? 0),
+    Number(match[6] ?? 0)
+  );
+}
+
+function toDate(value: Date | string | number | undefined): Date {
+  if (value instanceof Date) return value;
+  if (value != null) {
+    const date = new Date(value);
+    if (Number.isFinite(date.getTime())) return date;
+  }
+  return new Date();
+}
+
+function firstFiniteNumber(...values: Array<unknown>): number | undefined {
+  for (const value of values) {
+    const numeric = Number(value);
+    if (Number.isFinite(numeric)) return numeric;
+  }
+  return undefined;
+}
+
+function readNestedNumber(source: unknown, keys: string[]): number | undefined {
+  if (!source || typeof source !== "object") return undefined;
+  for (const key of keys) {
+    const value = (source as Record<string, unknown>)[key];
+    const numeric = Number(value);
+    if (Number.isFinite(numeric)) return numeric;
+  }
+  return undefined;
 }

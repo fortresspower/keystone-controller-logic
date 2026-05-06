@@ -96,7 +96,18 @@
       "pollClass": "fast",
       "alarm": true,
       "supportingTag": false,
-      "statusFlag": true
+      "enumStatus": {
+        "0": "Initial",
+        "1": "Standby",
+        "2": "GT Power On",
+        "3": "GT Normal",
+        "4": "SA Power On",
+        "5": "SA Soft-start",
+        "6": "SA Normal",
+        "7": "Fault",
+        "9": "Upgrade",
+        "10": "SA 2 GC"
+      }
     },
     {
       "id": "SYSTEM_PRIMARY_OR_SECONDARY",

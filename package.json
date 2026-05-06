@@ -7,7 +7,7 @@
     "test": "tests"
   },
   "scripts": {
-    "build": "tsc -p .",
+    "build": "tsc -p . && node ./scripts/sync-dist-assets.js",
     "test": "jest --runInBand --verbose",
     "build:local": "./scripts/with-local-node.sh npm run -s build",
     "test:local": "./scripts/with-local-node.sh npm -s test",

@@ -54,10 +54,10 @@ This task list was rebuilt on April 3, 2026 from:
 
 ## Active Tasks (Next)
 
-- [ ] Run full verification in a working Node/TS runtime:
+- [x] Run full verification in a working Node/TS runtime:
   - `npm run build`
   - `npm test`
-  - fix any remaining compile/test failures
+  - passed in this shell on April 30, 2026
 - [ ] Decide whether to keep or revert whitespace-only churn in template/docs/config files.
 - [ ] Reconcile test file move:
   - `src/__tests__/modbusFunctions.spec.ts` is deleted
@@ -74,6 +74,27 @@ This task list was rebuilt on April 3, 2026 from:
 - [ ] Add core control logic for both product lines:
   - `280`
   - `Mini`
+  - added unified YAML-backed control design layer covering all `SITE.*` commands
+  - added product-aware PCS dispatch limits for `280` site config and `Mini` profile-derived limits
+  - completed first YAML option group: `site` profile/timezone/network validation and design projection
+  - completed second YAML option group: `microgrid` grid/custom-profile validation, CRD dispatch behavior, and scheduled-control routing
+  - completed third YAML option group: `battery` 280 topology validation, product-neutral site limits, Mini limit capping, and SOC policy enforcement
+  - completed fourth YAML option group: `ac-coupled-pv` inverter inventory validation, PV design metadata, and curtailment behavior
+  - completed fifth YAML option group: `protection` islanding-device validation and SEL/ATS strategy design
+  - completed sixth YAML option group: `metering` primary meter validation, telemetry source selection, and telemetry requirement gating
+  - completed seventh YAML option group: `generator` policy validation, control routing, start/stop behavior, and generator charging support
+  - all current `keystone_ci_addition.yaml` option groups now have typed config/design/test coverage
+  - added site-specific metering calculation definitions for utility/load/PV readings using direct tags or formulas
+  - added first unified control-cycle runtime layer: design + metering calculations + core dispatch + PCS writer envelope
+  - added Node-RED-facing route plan for product path and optional control paths (`280`, `Mini`, metering, CRD, PV, protection, generator, PCS writer)
+  - added unified control pipeline diagnostics showing per-stage active/skipped/warning/blocked status for Node-RED commissioning
+  - added first hard-gate behavior: safe-zero command for unsupported product, invalid SOC/grid state, unavailable PCS dispatch, and missing required CRD utility feedback in unified cycles
+  - added normalized protection/islanding hard gates for SEL/ATS state, PCS run permission, and SEL remote interlock
+  - added Node-RED flow migration map from `flows (56).json` and first SEL protection adapter extraction
+  - extracted SEL/ATS-driven PCS grid-tie/off-grid mode commands (`SYSTEM_RUN_MODE`, `GRID_WIRE_CONNECTION`) from Node-RED flow behavior
+  - added importable Node-RED dashboard flow for unified SiteConfig editing and route-plan/design preview
+  - started microgrid grid-tie scheduled-control extraction from `eSpire280Gridtie_scheduledcontrol.json`: added scheduler plan matching for timed/default/upstream active plans, timezone-aware cron windows, cross-midnight duration handling, plan bounds, and selected strategy/constraints output
+  - linked scheduled-control strategy inputs to unified config/readings: meter-rule dispatch now uses normalized utility/BESS readings plus config SOC and PCS limits; PV self-consumption uses normalized load/PV readings
   - define product-specific control behavior and shared abstractions
   - confirm command routing, limits, and operating-mode handling per product
   - add or update tests covering both product control paths
@@ -118,4 +139,4 @@ This task list was rebuilt on April 3, 2026 from:
 
 - Current branch `main` is aligned with `origin/main` at last check.
 - Many tracked files are modified locally (expected based on current work-in-progress).
-- Node tooling from this shell environment is currently blocked (WSL/Node runtime issue), so final green checks should be run in your normal VS Code terminal environment.
+- Node tooling is working in this shell as of April 30, 2026; `npm run build` and `npm test -- --runInBand` both passed.

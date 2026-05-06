@@ -510,6 +510,7 @@ describe("Modbus function semantics", () => {
       "0": "Normal",
       "1": "AuxPowerLose",
     });
+    expect(profile.tags[0].status).toBe("Yes");
 
     const plan = buildReadPlan(profile, instance, compilerEnv);
     const res = reader.onReply(
@@ -636,7 +637,7 @@ describe("Modbus function semantics", () => {
     );
   });
 
-  test("commands with readback true are compiled into the read plan", () => {
+  test("commands are compiled into the read plan by default", () => {
     const profile = adaptTelemetryTemplateToReadProfile("command_readback_test", {
       version: "2",
       device: {
@@ -650,7 +651,6 @@ describe("Modbus function semantics", () => {
           id: "Start",
           function: "HRUS",
           address: 100,
-          readback: true,
           enumStatus: {
             "0": "Stop",
             "1": "Start",
@@ -678,7 +678,7 @@ describe("Modbus function semantics", () => {
     expect(plan.blocks[0].pollMs).toBe(1000);
   });
 
-  test("legacy command enum is normalized for readback status decoding", () => {
+  test("legacy command enum is normalized for command status decoding", () => {
     const profile = adaptTelemetryTemplateToReadProfile("command_enum_compat_test", {
       version: "2",
       device: {
@@ -693,7 +693,6 @@ describe("Modbus function semantics", () => {
           function: "HRUS",
           address: 200,
           pollClass: "normal",
-          readback: true,
           enum: {
             "2": "GT",
             "6": "SA",
@@ -982,6 +981,49 @@ describe("Telemetry baseline lock", () => {
     const rackDisable = profile.tags.find(
       (tag) => tag.name === "Racks_disable_Command"
     );
-    expect(rackDisable).toBeUndefined();
+    expect(rackDisable?.pollClass).toBe("normal");
+  });
+
+  test("Delta global state emits a fresh _str sample from enumStatus", () => {
+    const fullProfile = adaptTelemetryTemplateToReadProfile(
+      "Delta_280_ss40k",
+      resolveTelemetryTemplate("Delta_280_ss40k")
+    );
+    const targetTag = fullProfile.tags.find(
+      (tag) => tag.name === "SYSTEM_GLOBAL_STATE"
+    );
+    expect(targetTag).toBeDefined();
+
+    const profile = {
+      profileId: "Delta_280_state_only",
+      defaults: fullProfile.defaults,
+      tags: [targetTag],
+    };
+
+    const plan = buildReadPlan(profile, instance, compilerEnv);
+
+    const res = reader.onReply(
+      {
+        _reader: { equipmentId: plan.equipmentId, blockIdx: 0 },
+        payload: [3],
+      },
+      plan,
+      readerEnv
+    );
+
+    expect(res.out2).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          tagID: "SYSTEM_GLOBAL_STATE",
+          value: 3,
+          enumLabel: "GT Normal",
+        }),
+        expect.objectContaining({
+          tagID: "SYSTEM_GLOBAL_STATE_str",
+          value: "GT Normal",
+          rawValue: 3,
+        }),
+      ])
+    );
   });
 });

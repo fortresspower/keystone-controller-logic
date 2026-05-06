@@ -2,7 +2,11 @@ import * as fs from "fs";
 import * as path from "path";
 import { isDeepStrictEqual } from "util";
 import type { SiteConfig, CustomGridProfile } from "../config";
-import { deriveCapabilities, type SiteCapabilities } from "../capabilities";
+import {
+  deriveCapabilities,
+  parseMiniModel,
+  type SiteCapabilities,
+} from "../capabilities";
 
 const yaml = require("js-yaml") as { load: (src: string) => unknown };
 
@@ -23,6 +27,9 @@ export interface CloudFieldSpec {
 export interface CloudCommandSpec {
   commandId: string;
   title: string;
+  sectionId?: string;
+  subsectionId?: string;
+  access?: string;
   fields: Record<string, CloudFieldSpec>;
 }
 
@@ -74,7 +81,10 @@ type ApplyArgResult = {
 
 type ParsedPoint = {
   command_id?: string;
+  section_id?: string;
+  subsection_id?: string;
   title?: string;
+  access?: string;
   entries?: Array<{
     arg?: string;
     dtype?: string;
@@ -141,6 +151,9 @@ export function loadSiteConfigCommandSpec(forceReload = false): CloudConfigSpec 
     commands[commandId] = {
       commandId,
       title: point.title || commandId,
+      sectionId: point.section_id,
+      subsectionId: point.subsection_id,
+      access: point.access,
       fields,
     };
   }
@@ -349,7 +362,7 @@ function applyArgToSiteConfig(
 ): ApplyArgResult | null {
   switch (arg) {
     case "SystemProfile":
-      return setPath(config, "system.systemProfile", mustString(value), "restart");
+      return applySystemProfile(config, mustString(value));
     case "ControllerTimezone":
       return setPath(config, "system.controllerTimezone", mustString(value), "hot");
     case "ControllerIp":
@@ -360,7 +373,7 @@ function applyArgToSiteConfig(
       return setPath(config, "network.controller.modbusServer.port", mustNumber(value), "hot");
 
     case "GridCode":
-      return setPath(config, "operation.gridCode", mustString(value), "hot");
+      return applyGridCode(config, mustString(value));
 
     case "CustomGridProfileJson": {
       const profile = parseCustomGridProfile(mustString(value));
@@ -369,6 +382,23 @@ function applyArgToSiteConfig(
 
     case "CRDMode":
       return setPath(config, "operation.crdMode", mustString(value), "hot");
+
+    case "SiteExportMode":
+      return setPath(config, "operation.siteExportMode", mustString(value), "hot");
+    case "SiteExportTargetImportKw":
+      return setPath(
+        config,
+        "operation.siteExportTargetImportKw",
+        mustNumber(value),
+        "hot"
+      );
+    case "SiteExportDeadbandKw":
+      return setPath(
+        config,
+        "operation.siteExportDeadbandKw",
+        mustNumber(value),
+        "hot"
+      );
 
     case "ScheduledControlEnabled": {
       const booleanValue = labelToBoolean(mustString(value));
@@ -381,7 +411,8 @@ function applyArgToSiteConfig(
     }
 
     case "PcsDaisyChain": {
-      const chain = parseNumberArrayJson(mustString(value));
+      ensure280TopologyArg(config, "PcsDaisyChain");
+      const chain = parsePositiveIntegerArrayJson(mustString(value));
       if (!config.pcs) {
         config.pcs = {
           pcsDaisyChain: chain,
@@ -408,7 +439,8 @@ function applyArgToSiteConfig(
     }
 
     case "SbmuStrings": {
-      const strings = parseNumberArrayJson(mustString(value));
+      ensure280TopologyArg(config, "SbmuStrings");
+      const strings = parsePositiveIntegerArrayJson(mustString(value));
       if (!config.mbmu) {
         config.mbmu = { sbmuStrings: strings };
         return {
@@ -424,6 +456,29 @@ function applyArgToSiteConfig(
       return setPath(config, "battery.minSoc", mustNumber(value), "hot");
     case "ControllerMaxSOC":
       return setPath(config, "battery.maxSoc", mustNumber(value), "hot");
+    case "ControllerSocLow":
+      return setPath(config, "battery.socLow", mustNumber(value), "hot");
+    case "ControllerSocLowRecover":
+      return setPath(config, "battery.socLowRecover", mustNumber(value), "hot");
+    case "ControllerSocHigh":
+      return setPath(config, "battery.socHigh", mustNumber(value), "hot");
+    case "ControllerSocHighRecover":
+      return setPath(config, "battery.socHighRecover", mustNumber(value), "hot");
+    case "ForceGridChargeSoc":
+      return setPath(config, "battery.forceGridChargeSoc", mustNumber(value), "hot");
+    case "ForceGridChargeMinCellVoltageV":
+      return setPath(
+        config,
+        "battery.forceGridChargeMinCellVoltageV",
+        mustNumber(value),
+        "hot"
+      );
+    case "ForceGridChargeKw":
+      return setPath(config, "battery.forceGridChargeKw", mustNumber(value), "hot");
+    case "BatteryPowerHeadroomKw":
+      return setPath(config, "battery.powerHeadroomKw", mustNumber(value), "hot");
+    case "BatteryCommandRampKwPerSec":
+      return setPath(config, "battery.commandRampKwPerSec", mustNumber(value), "hot");
 
     case "AcInvertersJson": {
       const inverters = parseAcInvertersJson(mustString(value));
@@ -438,22 +493,7 @@ function applyArgToSiteConfig(
 
     case "IslandingDevice": {
       const mode = mustString(value);
-      if (mode === "None") {
-        const had = !!config.islanding;
-        delete config.islanding;
-        return {
-          changed: had,
-          path: "islanding",
-          classification: "hot",
-        };
-      }
-      const prev = config.islanding?.device;
-      config.islanding = { device: mode as any };
-      return {
-        changed: prev !== mode,
-        path: "islanding.device",
-        classification: "hot",
-      };
+      return applyIslandingDevice(config, mode);
     }
 
     case "PrimaryMeterModel":
@@ -517,6 +557,77 @@ function applyArgToSiteConfig(
   }
 }
 
+function applySystemProfile(
+  config: SiteConfig,
+  systemProfile: string
+): ApplyArgResult {
+  const changed = config.system.systemProfile !== systemProfile;
+  config.system.systemProfile = systemProfile;
+
+  if (parseMiniModel(systemProfile)) {
+    delete config.pcs;
+    delete config.mbmu;
+  }
+
+  return {
+    changed,
+    path: "system.systemProfile",
+    classification: "restart",
+  };
+}
+
+function applyGridCode(config: SiteConfig, gridCode: string): ApplyArgResult {
+  const prevGridCode = config.operation.gridCode;
+  const hadCustomProfile = !!config.operation.customGridProfile;
+  config.operation.gridCode = gridCode as SiteConfig["operation"]["gridCode"];
+
+  if (gridCode !== "Custom") {
+    delete config.operation.customGridProfile;
+  }
+
+  return {
+    changed:
+      prevGridCode !== gridCode ||
+      (gridCode !== "Custom" && hadCustomProfile),
+    path: "operation.gridCode",
+    classification: "hot",
+  };
+}
+
+function applyIslandingDevice(
+  config: SiteConfig,
+  mode: string
+): ApplyArgResult {
+  if (mode === "None") {
+    const had = !!config.islanding;
+    delete config.islanding;
+    return {
+      changed: had,
+      path: "islanding",
+      classification: "hot",
+    };
+  }
+
+  const validDevices = new Set([
+    "SEL351",
+    "SEL751",
+    "SEL851",
+    "ASCO-ATS",
+    "EATON-ATS",
+  ]);
+  if (!validDevices.has(mode)) {
+    throw new Error("Unsupported islanding device");
+  }
+
+  const prev = config.islanding?.device;
+  config.islanding = { device: mode as any };
+  return {
+    changed: prev !== mode,
+    path: "islanding.device",
+    classification: "hot",
+  };
+}
+
 function setPath(
   target: any,
   dotPath: string,
@@ -560,7 +671,30 @@ function mustNumber(value: unknown): number {
   return parsed;
 }
 
-function parseNumberArrayJson(value: string): number[] {
+function mustNonEmptyString(value: unknown, label: string): string {
+  if (typeof value !== "string" || !value.trim()) {
+    throw new Error(`${label} is required`);
+  }
+  return value.trim();
+}
+
+function mustPositiveNumber(value: unknown, label: string): number {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    throw new Error(`${label} must be > 0`);
+  }
+  return parsed;
+}
+
+function mustPort(value: unknown, label: string): number {
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed < 1 || parsed > 65535) {
+    throw new Error(`${label} must be 1..65535`);
+  }
+  return parsed;
+}
+
+function parsePositiveIntegerArrayJson(value: string): number[] {
   let parsed: unknown;
   try {
     parsed = JSON.parse(value);
@@ -575,8 +709,8 @@ function parseNumberArrayJson(value: string): number[] {
   const output: number[] = [];
   for (const entry of parsed) {
     const num = Number(entry);
-    if (!Number.isFinite(num)) {
-      throw new Error("JSON array must contain only numbers");
+    if (!Number.isInteger(num) || num <= 0) {
+      throw new Error("JSON array must contain only positive integers");
     }
     output.push(num);
   }
@@ -595,7 +729,35 @@ function parseAcInvertersJson(value: string): SiteConfig["pv"]["acInverters"] {
     throw new Error("Expected JSON array for AC inverters");
   }
 
-  return parsed as SiteConfig["pv"]["acInverters"];
+  return parsed.map((entry, index) => normalizeAcInverter(entry, index));
+}
+
+function normalizeAcInverter(
+  entry: unknown,
+  index: number
+): SiteConfig["pv"]["acInverters"][number] {
+  if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
+    throw new Error(`AC inverter ${index} must be an object`);
+  }
+
+  const raw = entry as Record<string, unknown>;
+  return {
+    ...(raw.id != null
+      ? { id: mustNonEmptyString(raw.id, `AC inverter ${index} id`) }
+      : {}),
+    type: mustNonEmptyString(raw.type, `AC inverter ${index} type`),
+    model: mustNonEmptyString(raw.model, `AC inverter ${index} model`),
+    ratedKwAc: mustPositiveNumber(
+      raw.ratedKwAc,
+      `AC inverter ${index} ratedKwAc`
+    ),
+    ip: mustNonEmptyString(raw.ip, `AC inverter ${index} ip`),
+    port: mustPort(raw.port, `AC inverter ${index} port`),
+    modbusProfile: mustNonEmptyString(
+      raw.modbusProfile,
+      `AC inverter ${index} modbusProfile`
+    ),
+  };
 }
 
 function parseCustomGridProfile(value: string): CustomGridProfile {
@@ -610,7 +772,35 @@ function parseCustomGridProfile(value: string): CustomGridProfile {
     throw new Error("Expected JSON object for custom grid profile");
   }
 
-  return parsed as CustomGridProfile;
+  const profile = parsed as Partial<CustomGridProfile>;
+  const requiredKeys: Array<keyof CustomGridProfile> = [
+    "gridProfile",
+    "voltageRideThrough",
+    "frequencyRideThrough",
+    "voltVar",
+    "freqWatt",
+    "voltWatt",
+    "rampRates",
+    "reconnection",
+  ];
+
+  for (const key of requiredKeys) {
+    if (!(key in profile)) {
+      throw new Error(`custom grid profile missing ${key}`);
+    }
+  }
+
+  if (typeof profile.gridProfile !== "string" || !profile.gridProfile.trim()) {
+    throw new Error("custom grid profile requires gridProfile");
+  }
+  if (!Array.isArray(profile.voltageRideThrough)) {
+    throw new Error("custom grid profile voltageRideThrough must be an array");
+  }
+  if (!Array.isArray(profile.frequencyRideThrough)) {
+    throw new Error("custom grid profile frequencyRideThrough must be an array");
+  }
+
+  return profile as CustomGridProfile;
 }
 
 function labelToBoolean(label: string): boolean {
@@ -635,6 +825,11 @@ function ensurePcs(config: SiteConfig) {
   };
 }
 
+function ensure280TopologyArg(config: SiteConfig, arg: string) {
+  if (config.system.systemProfile === "eSpire280") return;
+  throw new Error(`${arg} is only valid for eSpire280`);
+}
+
 function ensureGenerator(config: SiteConfig) {
   if (config.generator) return;
   config.generator = {
@@ -652,11 +847,24 @@ export function validateSiteConfig(config: SiteConfig): SiteConfigValidationIssu
 
   if (!config.system?.systemProfile) {
     issues.push({ path: "system.systemProfile", message: "systemProfile is required" });
+  } else if (
+    config.system.systemProfile !== "eSpire280" &&
+    !parseMiniModel(config.system.systemProfile)
+  ) {
+    issues.push({
+      path: "system.systemProfile",
+      message: "systemProfile must be eSpire280 or a valid MINI-* profile",
+    });
   }
   if (!config.system?.controllerTimezone) {
     issues.push({
       path: "system.controllerTimezone",
       message: "controllerTimezone is required",
+    });
+  } else if (!isValidTimeZone(config.system.controllerTimezone)) {
+    issues.push({
+      path: "system.controllerTimezone",
+      message: "controllerTimezone must be a valid IANA timezone",
     });
   }
 
@@ -695,10 +903,51 @@ export function validateSiteConfig(config: SiteConfig): SiteConfigValidationIssu
     issues.push({ path: "operation.crdMode", message: "unsupported CRD mode" });
   }
 
+  const validSiteExportModes = new Set([
+    "no-restriction",
+    "no-export",
+    undefined,
+  ]);
+  if (!validSiteExportModes.has(config.operation.siteExportMode)) {
+    issues.push({
+      path: "operation.siteExportMode",
+      message: "unsupported site export mode",
+    });
+  }
+  if (
+    config.operation.siteExportTargetImportKw != null &&
+    (!Number.isFinite(config.operation.siteExportTargetImportKw) ||
+      config.operation.siteExportTargetImportKw < 0)
+  ) {
+    issues.push({
+      path: "operation.siteExportTargetImportKw",
+      message: "siteExportTargetImportKw must be >= 0",
+    });
+  }
+  if (
+    config.operation.siteExportDeadbandKw != null &&
+    (!Number.isFinite(config.operation.siteExportDeadbandKw) ||
+      config.operation.siteExportDeadbandKw < 0)
+  ) {
+    issues.push({
+      path: "operation.siteExportDeadbandKw",
+      message: "siteExportDeadbandKw must be >= 0",
+    });
+  }
+
   if (config.operation.gridCode === "Custom" && !config.operation.customGridProfile) {
     issues.push({
       path: "operation.customGridProfile",
       message: "customGridProfile required when gridCode=Custom",
+    });
+  }
+  if (
+    config.operation.gridCode !== "Custom" &&
+    config.operation.customGridProfile
+  ) {
+    issues.push({
+      path: "operation.customGridProfile",
+      message: "customGridProfile is only valid when gridCode=Custom",
     });
   }
 
@@ -711,13 +960,159 @@ export function validateSiteConfig(config: SiteConfig): SiteConfigValidationIssu
   if (config.battery.minSoc > config.battery.maxSoc) {
     issues.push({ path: "battery", message: "minSoc must be <= maxSoc" });
   }
+  validateOptionalFraction(config.battery.socLow, "battery.socLow", issues);
+  validateOptionalFraction(
+    config.battery.socLowRecover,
+    "battery.socLowRecover",
+    issues
+  );
+  validateOptionalFraction(config.battery.socHigh, "battery.socHigh", issues);
+  validateOptionalFraction(
+    config.battery.socHighRecover,
+    "battery.socHighRecover",
+    issues
+  );
+  validateOptionalFraction(
+    config.battery.forceGridChargeSoc,
+    "battery.forceGridChargeSoc",
+    issues
+  );
+  validateOptionalNonNegativeNumber(
+    config.battery.forceGridChargeMinCellVoltageV,
+    "battery.forceGridChargeMinCellVoltageV",
+    issues
+  );
+  validateOptionalNonNegativeNumber(
+    config.battery.forceGridChargeKw,
+    "battery.forceGridChargeKw",
+    issues
+  );
+  validateOptionalNonNegativeNumber(
+    config.battery.powerHeadroomKw,
+    "battery.powerHeadroomKw",
+    issues
+  );
+  validateOptionalNonNegativeNumber(
+    config.battery.commandRampKwPerSec,
+    "battery.commandRampKwPerSec",
+    issues
+  );
 
   if (config.system.systemProfile === "eSpire280") {
     if (!config.pcs) {
       issues.push({ path: "pcs", message: "pcs required for eSpire280" });
+    } else {
+      validatePositiveIntegerArray(
+        config.pcs.pcsDaisyChain,
+        "pcs.pcsDaisyChain",
+        "pcsDaisyChain must contain positive integer PCS counts",
+        issues
+      );
     }
     if (!config.mbmu) {
       issues.push({ path: "mbmu", message: "mbmu required for eSpire280" });
+    } else {
+      validatePositiveIntegerArray(
+        config.mbmu.sbmuStrings,
+        "mbmu.sbmuStrings",
+        "sbmuStrings must contain positive integer string counts",
+        issues
+      );
+    }
+  }
+
+  if (parseMiniModel(config.system.systemProfile)) {
+    if (config.mbmu) {
+      issues.push({
+        path: "mbmu",
+        message: "mbmu topology is only valid for eSpire280",
+      });
+    }
+    if ((config.pcs?.pcsDaisyChain || []).length > 0) {
+      issues.push({
+        path: "pcs.pcsDaisyChain",
+        message: "pcsDaisyChain is only valid for eSpire280",
+      });
+    }
+  }
+
+  if (config.pcs) {
+    if (!Number.isFinite(config.pcs.maxChargeKw) || config.pcs.maxChargeKw < 0) {
+      issues.push({
+        path: "pcs.maxChargeKw",
+        message: "maxChargeKw must be >= 0",
+      });
+    }
+    if (
+      !Number.isFinite(config.pcs.maxDischargeKw) ||
+      config.pcs.maxDischargeKw < 0
+    ) {
+      issues.push({
+        path: "pcs.maxDischargeKw",
+        message: "maxDischargeKw must be >= 0",
+      });
+    }
+  }
+
+  for (let index = 0; index < (config.pv?.acInverters || []).length; index++) {
+    const inverter = config.pv.acInverters[index];
+    const basePath = `pv.acInverters.${index}`;
+    if (!inverter.type) {
+      issues.push({ path: `${basePath}.type`, message: "type is required" });
+    }
+    if (!inverter.model) {
+      issues.push({ path: `${basePath}.model`, message: "model is required" });
+    }
+    if (!Number.isFinite(inverter.ratedKwAc) || inverter.ratedKwAc <= 0) {
+      issues.push({
+        path: `${basePath}.ratedKwAc`,
+        message: "ratedKwAc must be > 0",
+      });
+    }
+    if (!inverter.ip) {
+      issues.push({ path: `${basePath}.ip`, message: "ip is required" });
+    }
+    if (
+      !Number.isInteger(inverter.port) ||
+      inverter.port < 1 ||
+      inverter.port > 65535
+    ) {
+      issues.push({ path: `${basePath}.port`, message: "port must be 1..65535" });
+    }
+    if (!inverter.modbusProfile) {
+      issues.push({
+        path: `${basePath}.modbusProfile`,
+        message: "modbusProfile is required",
+      });
+    }
+  }
+
+  const validPvCurtailment = new Set([
+    "modbus",
+    "frequency-shifting",
+    null,
+    undefined,
+  ]);
+  if (!validPvCurtailment.has(config.pv?.curtailmentMethod)) {
+    issues.push({
+      path: "pv.curtailmentMethod",
+      message: "unsupported PV curtailment method",
+    });
+  }
+
+  if (config.islanding) {
+    const validIslandingDevices = new Set([
+      "SEL351",
+      "SEL751",
+      "SEL851",
+      "ASCO-ATS",
+      "EATON-ATS",
+    ]);
+    if (!validIslandingDevices.has(config.islanding.device)) {
+      issues.push({
+        path: "islanding.device",
+        message: "unsupported islanding device",
+      });
     }
   }
 
@@ -733,15 +1128,108 @@ export function validateSiteConfig(config: SiteConfig): SiteConfigValidationIssu
   if (!config.metering?.ip) {
     issues.push({ path: "metering.ip", message: "metering.ip is required" });
   }
+  if (!config.metering?.reads) {
+    issues.push({ path: "metering.reads", message: "metering reads are required" });
+  } else {
+    for (const key of ["pv", "pvFromInverter", "utility", "load"] as const) {
+      if (typeof config.metering.reads[key] !== "boolean") {
+        issues.push({
+          path: `metering.reads.${key}`,
+          message: `${key} read flag must be boolean`,
+        });
+      }
+    }
+    if (config.metering.reads.pv && config.metering.reads.pvFromInverter) {
+      issues.push({
+        path: "metering.reads",
+        message: "PV can be sourced from meter or inverter, not both",
+      });
+    }
+  }
 
   if (config.generator) {
+    if (!Number.isFinite(config.generator.maxKw) || config.generator.maxKw < 0) {
+      issues.push({ path: "generator.maxKw", message: "maxKw must be >= 0" });
+    }
+    if (
+      !Number.isFinite(config.generator.chargeKwLimit) ||
+      config.generator.chargeKwLimit < 0
+    ) {
+      issues.push({
+        path: "generator.chargeKwLimit",
+        message: "chargeKwLimit must be >= 0",
+      });
+    }
     if (config.generator.startSoc < 0 || config.generator.startSoc > 1) {
       issues.push({ path: "generator.startSoc", message: "startSoc must be between 0 and 1" });
     }
     if (config.generator.stopSoc < 0 || config.generator.stopSoc > 1) {
       issues.push({ path: "generator.stopSoc", message: "stopSoc must be between 0 and 1" });
     }
+    if (config.generator.startSoc >= config.generator.stopSoc) {
+      issues.push({
+        path: "generator",
+        message: "startSoc must be < stopSoc",
+      });
+    }
+    if (
+      config.generator.controlType !== "RemoteIO" &&
+      config.generator.controlType !== "SEL"
+    ) {
+      issues.push({
+        path: "generator.controlType",
+        message: "unsupported generator control type",
+      });
+    }
   }
 
   return issues;
+}
+
+function validatePositiveIntegerArray(
+  value: unknown,
+  path: string,
+  message: string,
+  issues: SiteConfigValidationIssue[]
+) {
+  if (
+    !Array.isArray(value) ||
+    value.length === 0 ||
+    value.some((entry) => !Number.isInteger(entry) || entry <= 0)
+  ) {
+    issues.push({ path, message });
+  }
+}
+
+function validateOptionalFraction(
+  value: unknown,
+  path: string,
+  issues: SiteConfigValidationIssue[]
+) {
+  if (value == null) return;
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric) || numeric < 0 || numeric > 1) {
+    issues.push({ path, message: `${path} must be between 0 and 1` });
+  }
+}
+
+function validateOptionalNonNegativeNumber(
+  value: unknown,
+  path: string,
+  issues: SiteConfigValidationIssue[]
+) {
+  if (value == null) return;
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric) || numeric < 0) {
+    issues.push({ path, message: `${path} must be >= 0` });
+  }
+}
+
+function isValidTimeZone(timeZone: string): boolean {
+  try {
+    new Intl.DateTimeFormat("en-US", { timeZone }).format(new Date());
+    return true;
+  } catch {
+    return false;
+  }
 }
