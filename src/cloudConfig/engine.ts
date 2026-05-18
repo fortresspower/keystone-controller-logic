@@ -564,9 +564,11 @@ function applySystemProfile(
   const changed = config.system.systemProfile !== systemProfile;
   config.system.systemProfile = systemProfile;
 
-  if (parseMiniModel(systemProfile)) {
+  const miniModel = parseMiniModel(systemProfile);
+  if (miniModel) {
     delete config.pcs;
     delete config.mbmu;
+    config.system.nominal.voltageVll = miniModel.voltageVll;
   }
 
   return {

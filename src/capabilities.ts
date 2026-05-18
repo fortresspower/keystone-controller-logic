@@ -3,35 +3,75 @@
 import { SiteConfig } from "./config";
 
 export interface MiniModelInfo {
+  modelCode: string;
   pcsKw: number;
+  maxChargeKw: number;
+  maxDischargeKw: number;
+  dcPvKw: number;
   pvDcKw: number;
+  hasDcPvConverter: boolean;
+  batteryKwh: number;
   batteryKWh: number;
+  voltageVll: 208 | 480;
   voltage: number;
 }
 
+const MINI_PCS_KW = [30, 50, 60, 90] as const;
+const MINI_DC_PV_KW = [0, 45, 90, 135] as const;
+const MINI_VOLTAGE_VLL = [208, 480] as const;
+
 /**
- * Parse MINI-60-90-163-480 → { pcsKw:60, pvDcKw:90, batteryKWh:163, voltage:480 }
+ * Parse MINI-60-90-163-480 into product capabilities.
+ *
+ * Format: MINI-XX-YY-ZZ-VVV
+ * XX  = PCS kW, one of 30/50/60/90
+ * YY  = DC PV kW, one of 0/45/90/135. 0 means no built-in DC converter.
+ * ZZ  = battery kWh
+ * VVV = AC line-line voltage, 208 or 480
  */
 export function parseMiniModel(systemProfile: string): MiniModelInfo | null {
-  if (!systemProfile.startsWith("MINI-")) return null;
-  const parts = systemProfile.split("-");
-  if (parts.length !== 5) return null;
+  const match = systemProfile
+    .trim()
+    .match(/^MINI-(\d+)-(\d+)-(\d+(?:\.\d+)?)-(\d+)$/i);
+  if (!match) return null;
 
-  const [, pcsStr, pvStr, battStr, voltStr] = parts;
+  const [, pcsStr, pvStr, battStr, voltStr] = match;
   const pcsKw = Number(pcsStr);
-  const pvDcKw = Number(pvStr);
-  const batteryKWh = Number(battStr);
+  const dcPvKw = Number(pvStr);
+  const batteryKwh = Number(battStr);
   const voltage = Number(voltStr);
 
   if (
-    [pcsKw, pvDcKw, batteryKWh, voltage].some(
+    [pcsKw, batteryKwh, voltage].some(
       (v) => !Number.isFinite(v) || v <= 0
-    )
+    ) ||
+    !Number.isFinite(dcPvKw) ||
+    dcPvKw < 0
   ) {
     return null;
   }
+  if (!includesNumber(MINI_PCS_KW, pcsKw)) return null;
+  if (!includesNumber(MINI_DC_PV_KW, dcPvKw)) return null;
+  if (!includesNumber(MINI_VOLTAGE_VLL, voltage)) return null;
 
-  return { pcsKw, pvDcKw, batteryKWh, voltage };
+  const voltageVll = voltage as 208 | 480;
+  return {
+    modelCode: `MINI-${pcsKw}-${dcPvKw}-${batteryKwh}-${voltageVll}`,
+    pcsKw,
+    maxChargeKw: pcsKw,
+    maxDischargeKw: pcsKw,
+    dcPvKw,
+    pvDcKw: dcPvKw,
+    hasDcPvConverter: dcPvKw > 0,
+    batteryKwh,
+    batteryKWh: batteryKwh,
+    voltageVll,
+    voltage: voltageVll,
+  };
+}
+
+function includesNumber(values: readonly number[], value: number): boolean {
+  return values.includes(value);
 }
 
 export interface SiteCapabilities {

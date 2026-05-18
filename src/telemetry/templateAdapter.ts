@@ -46,6 +46,7 @@ export interface TelemetryTemplateEntry {
   };
   enum?: Record<string, string>;
   ss40k?: TelemetryTemplateSs40k;
+  noMerge?: boolean;
 }
 
 export interface TelemetryTemplateCommandEntry extends TelemetryTemplateEntry {
@@ -58,6 +59,9 @@ export interface TelemetryTemplateDocument {
     vendor: string;
     model: string;
     protocol: string;
+    name?: string;
+    sourceFormat?: string;
+    notes?: string;
     defaultByteOrder?: "BE" | "LE";
     defaultWordOrder32?: "ABCD" | "CDAB" | "BADC" | "DCBA";
   };
@@ -91,6 +95,7 @@ export interface NormalizedTelemetryTag {
   status?: string;
   enumStatus?: Record<string, string>;
   bitfieldStatus?: boolean | Record<string, string>;
+  noMerge?: boolean;
 }
 
 export interface NormalizedTelemetryProfile {
@@ -108,6 +113,34 @@ const TEMPLATE_FILE_ALIASES: Record<string, string> = {
   egauge_280: "eGauge_280_ss40k.json",
   egauge: "eGauge_280_ss40k.json",
   udt_eGauge_V1: "eGauge_280_ss40k.json",
+  udt_solarEdge_V1: "udt_solarEdge_V1.json",
+  solarEdge: "udt_solarEdge_V1.json",
+  solaredge: "udt_solarEdge_V1.json",
+  solaredge_ac_v1: "udt_solarEdge_V1.json",
+  AMPACE_Mini_ss40k: "AMPACE_Mini_ss40k.json",
+  AMPACE_Mini: "AMPACE_Mini_ss40k.json",
+  Ampace_BMS_ss40k: "AMPACE_Mini_ss40k.json",
+  Ampace_BMS: "AMPACE_Mini_ss40k.json",
+  udt_Ampace_A_V3: "AMPACE_Mini_ss40k.json",
+  ampace_bms: "AMPACE_Mini_ss40k.json",
+  ampace_mini: "AMPACE_Mini_ss40k.json",
+  Sinexcel_Mini_PCS_ss40k: "Sinexcel_Mini_PCS_ss40k.json",
+  Sinexcel_Mini_PCS: "Sinexcel_Mini_PCS_ss40k.json",
+  udt_Sinexcel_Mini_PCS: "Sinexcel_Mini_PCS_ss40k.json",
+  mini_pcs: "Sinexcel_Mini_PCS_ss40k.json",
+  Sinexcel_Mini_ss40k: "Sinexcel_Mini_PCS_ss40k.json",
+  Sinexcel_Mini_Load: "Sinexcel_Mini_Load_ss40k.json",
+  udt_Sinexcel_Mini_Load: "Sinexcel_Mini_Load_ss40k.json",
+  mini_load: "Sinexcel_Mini_Load_ss40k.json",
+  Sinexcel_Mini_PVDC_Module1: "Sinexcel_Mini_PVDC_Module1_ss40k.json",
+  Sinexcel_Mini_PVDC_Module2: "Sinexcel_Mini_PVDC_Module2_ss40k.json",
+  Sinexcel_Mini_PVDC_Module3: "Sinexcel_Mini_PVDC_Module3_ss40k.json",
+  udt_Sinexcel_PVDC_Module1: "Sinexcel_Mini_PVDC_Module1_ss40k.json",
+  udt_Sinexcel_PVDC_Module2: "Sinexcel_Mini_PVDC_Module2_ss40k.json",
+  udt_Sinexcel_PVDC_Module3: "Sinexcel_Mini_PVDC_Module3_ss40k.json",
+  pvdc_module_1: "Sinexcel_Mini_PVDC_Module1_ss40k.json",
+  pvdc_module_2: "Sinexcel_Mini_PVDC_Module2_ss40k.json",
+  pvdc_module_3: "Sinexcel_Mini_PVDC_Module3_ss40k.json",
 };
 
 function templatesDir() {
@@ -221,6 +254,9 @@ function adaptTelemetryEntry(
   }
   if (bitfieldStatus !== undefined) {
     normalized.bitfieldStatus = bitfieldStatus;
+  }
+  if (entry.noMerge) {
+    normalized.noMerge = true;
   }
 
   if (entry.constant !== undefined) {

@@ -195,6 +195,31 @@ function f64(words: number[]) {
   return dv.getFloat64(0, false);
 }
 
+function u64(words: number[]) {
+  let out = 0n;
+  for (const word of words) {
+    out = (out << 16n) | BigInt((word ?? 0) & 0xffff);
+  }
+  return out;
+}
+
+function formatU64(value: bigint) {
+  return `0x${value.toString(16).padStart(16, "0")}`;
+}
+
+function toBigIntValue(value: any): bigint | undefined {
+  if (typeof value === "bigint") return value;
+  if (typeof value === "number" && Number.isFinite(value)) return BigInt(Math.trunc(value));
+  if (typeof value !== "string") return undefined;
+  const trimmed = value.trim();
+  if (!trimmed) return undefined;
+  try {
+    return BigInt(trimmed);
+  } catch {
+    return undefined;
+  }
+}
+
 type ParserKind =
   | "S16" | "U16"
   | "S32" | "U32"
@@ -252,15 +277,15 @@ function parseValue(regs: number[], base: number, item: TagMapItem) {
         (item as any).wordOrder32 === "CDAB" || (item as any).wordOrder32 === "BADC" ? a : b;
       return f32(hi, lo);
     }
-    case "F64":
+    case "F64": {
+      return f64([rd(off), rd(off + 1), rd(off + 2), rd(off + 3)]);
+    }
     case "U64":
     case "S64": {
-      return f64([
-        rd(off),
-        rd(off + 1),
-        rd(off + 2),
-        rd(off + 3),
-      ]);
+      const raw = u64([rd(off), rd(off + 1), rd(off + 2), rd(off + 3)]);
+      if (parser === "U64") return formatU64(raw);
+      const signed = raw & (1n << 63n) ? raw - (1n << 64n) : raw;
+      return signed.toString();
     }
     case "STR": {
       const chars: number[] = [];
@@ -328,14 +353,14 @@ function decodeStatusMeta(value: any, item: TagMapItem) {
   }
 
   const bitfieldStatus = (item as any).bitfieldStatus;
-  if (typeof value === "number" && Number.isInteger(value) && bitfieldStatus) {
-    const unsignedValue = value >>> 0;
+  const bitfieldValue = toBigIntValue(value);
+  if (bitfieldValue !== undefined && bitfieldStatus) {
     const activeBits: number[] = [];
     const activeLabels: string[] = [];
 
     if (bitfieldStatus === true) {
-      for (let bit = 0; bit < 32; bit++) {
-        if (((unsignedValue >>> bit) & 0x1) === 1) {
+      for (let bit = 0; bit < 64; bit++) {
+        if (((bitfieldValue >> BigInt(bit)) & 0x1n) === 1n) {
           activeBits.push(bit);
         }
       }
@@ -343,8 +368,8 @@ function decodeStatusMeta(value: any, item: TagMapItem) {
     } else if (typeof bitfieldStatus === "object") {
       for (const [bitKey, label] of Object.entries(bitfieldStatus)) {
         const bit = Number(bitKey);
-        if (!Number.isInteger(bit) || bit < 0 || bit > 31) continue;
-        if (((unsignedValue >>> bit) & 0x1) === 1) {
+        if (!Number.isInteger(bit) || bit < 0 || bit > 63) continue;
+        if (((bitfieldValue >> BigInt(bit)) & 0x1n) === 1n) {
           activeBits.push(bit);
           if (typeof label === "string") {
             activeLabels.push(label);
@@ -466,7 +491,10 @@ export function onReply(
     }
   }
 
-  const derived = evaluateCalculatedTags(plan, rt?.values || {});
+  const calcValues =
+    rt?.values ||
+    Object.fromEntries(samples.map((sample) => [sample.tagID, sample.value]));
+  const derived = evaluateCalculatedTags(plan, calcValues);
   if (derived.length) {
     samples.push(...derived);
   }
@@ -501,12 +529,18 @@ function evaluateCalculatedTags(plan: ReadPlan, values: Record<string, any>) {
   const out: any[] = [];
 
   for (const calc of calcs) {
-    const scope: Record<string, number> = {};
+    const scope: Record<string, any> = {};
     let missing = false;
 
     for (const [name, tagID] of Object.entries(calc.inputs || {})) {
       const value = values[tagID as string];
-      if (typeof value !== "number" || !Number.isFinite(value)) {
+      if (
+        !(
+          (typeof value === "number" && Number.isFinite(value)) ||
+          typeof value === "string" ||
+          typeof value === "bigint"
+        )
+      ) {
         missing = true;
         break;
       }
@@ -530,7 +564,24 @@ function evaluateCalculatedTags(plan: ReadPlan, values: Record<string, any>) {
   return out;
 }
 
-function evalCalcExpr(expr: string, scope: Record<string, number>) {
+function hasBit(value: any, bit: number) {
+  const source = toBigIntValue(value);
+  if (source === undefined || !Number.isInteger(bit) || bit < 0 || bit > 63) return 0;
+  return Number((source >> BigInt(bit)) & 0x1n);
+}
+
+function hasMask(value: any, mask: any) {
+  const source = toBigIntValue(value);
+  const maskValue = toBigIntValue(mask);
+  if (source === undefined || maskValue === undefined) return 0;
+  return (source & maskValue) !== 0n ? 1 : 0;
+}
+
+function hasAnyMask(value: any, ...masks: any[]) {
+  return masks.some((mask) => hasMask(value, mask) === 1) ? 1 : 0;
+}
+
+function evalCalcExpr(expr: string, scope: Record<string, any>) {
   const names = Object.keys(scope);
   const vals = names.map((name) => scope[name]);
   const fn = new Function(
@@ -539,8 +590,11 @@ function evalCalcExpr(expr: string, scope: Record<string, number>) {
     "min",
     "max",
     "pow",
+    "bit",
+    "has",
+    "hasAny",
     `return (${expr});`
   ) as (...args: any[]) => number;
 
-  return fn(...vals, Math.abs, Math.min, Math.max, Math.pow);
+  return fn(...vals, Math.abs, Math.min, Math.max, Math.pow, hasBit, hasMask, hasAnyMask);
 }

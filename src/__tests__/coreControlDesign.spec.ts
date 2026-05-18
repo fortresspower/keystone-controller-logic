@@ -137,6 +137,7 @@ describe("Unified core control design", () => {
       acInverterCount: 1,
       totalRatedKwAc: 60,
       curtailmentMethod: "modbus",
+      dcCoupledToMiniPcs: false,
     });
     expect(design.protection).toEqual({
       strategy: "none",
@@ -195,9 +196,23 @@ describe("Unified core control design", () => {
     const design = buildUnifiedControlDesign(miniConfig);
 
     expect(design.productLine).toBe("Mini");
+    expect(design.site.miniModel).toMatchObject({
+      modelCode: "MINI-60-90-163-480",
+      pcsKw: 60,
+      maxChargeKw: 60,
+      maxDischargeKw: 60,
+      dcPvKw: 90,
+      pvDcKw: 90,
+      hasDcPvConverter: true,
+      batteryKwh: 163,
+      batteryKWh: 163,
+      voltageVll: 480,
+      voltage: 480,
+    });
     expect(design.capabilities.hasPcs).toBe(true);
     expect(design.routing.pcsDispatch).toBe("mini-pcs");
     expect(design.routing.pvCurtailment).toBe("none");
+    expect(design.pv.dcCoupledToMiniPcs).toBe(true);
     expect(design.limits.pcs).toEqual({
       maxChargeKw: 60,
       maxDischargeKw: 60,
@@ -209,6 +224,43 @@ describe("Unified core control design", () => {
       pcsCount: 0,
       sbmuStringCount: 0,
     });
+  });
+
+  test("Mini model with zero PV segment is AC PV only", () => {
+    const miniConfig = makeBase280Config();
+    miniConfig.system.systemProfile = "MINI-60-0-163-480";
+    delete miniConfig.pcs;
+    delete miniConfig.mbmu;
+    miniConfig.pv.acInverters = [
+      {
+        id: "PV1",
+        type: "SMA",
+        model: "STP",
+        ratedKwAc: 90,
+        ip: "192.168.1.51",
+        port: 502,
+        modbusProfile: "sma-sunspec",
+      },
+    ];
+
+    const design = buildUnifiedControlDesign(miniConfig);
+
+    expect(design.productLine).toBe("Mini");
+    expect(design.site.miniModel).toEqual(
+      expect.objectContaining({
+        modelCode: "MINI-60-0-163-480",
+        dcPvKw: 0,
+        pvDcKw: 0,
+        hasDcPvConverter: false,
+      })
+    );
+    expect(design.pv).toEqual(
+      expect.objectContaining({
+        acInverterCount: 1,
+        totalRatedKwAc: 90,
+        dcCoupledToMiniPcs: false,
+      })
+    );
   });
 
   test("Mini site limits cap profile-derived PCS capacity", () => {
@@ -233,6 +285,13 @@ describe("Unified core control design", () => {
     const command = initCoreControl(miniConfig).evaluate({
       soc: 0.5,
       gridStatus: "normal",
+      machineStatus: {
+        batteryVoltageV: 500,
+        maxChargeCurrentAllowedA: 100,
+        maxDischargeCurrentAllowedA: 120,
+        maxCellVoltageV: 3.4,
+        minCellVoltageV: 3.2,
+      },
       realtimeActivePowerKwRequest: 55,
     });
 
@@ -252,6 +311,13 @@ describe("Unified core control design", () => {
     const command = controller.evaluate({
       soc: 0.5,
       gridStatus: "normal",
+      machineStatus: {
+        batteryVoltageV: 500,
+        maxChargeCurrentAllowedA: 100,
+        maxDischargeCurrentAllowedA: 120,
+        maxCellVoltageV: 3.4,
+        minCellVoltageV: 3.2,
+      },
       realtimeActivePowerKwRequest: 75,
     });
 

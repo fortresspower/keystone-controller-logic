@@ -198,7 +198,17 @@ describe("Cloud SiteConfig ingestion", () => {
     });
     expect(result.nextConfig.pcs).toBeUndefined();
     expect(result.nextConfig.mbmu).toBeUndefined();
+    expect(result.nextConfig.system.nominal.voltageVll).toBe(480);
     expect(result.nextCapabilities.isMini).toBe(true);
+    expect(result.nextCapabilities.miniModelInfo).toMatchObject({
+      modelCode: "MINI-60-90-163-480",
+      pcsKw: 60,
+      maxChargeKw: 60,
+      maxDischargeKw: 60,
+      dcPvKw: 90,
+      batteryKwh: 163,
+      voltageVll: 480,
+    });
   });
 
   test("rejects invalid site profile and timezone during post-apply validation", () => {
@@ -231,6 +241,39 @@ describe("Cloud SiteConfig ingestion", () => {
         expect.objectContaining({
           path: "system.controllerTimezone",
           status: "rejected",
+        }),
+      ])
+    );
+  });
+
+  test("validates Mini model profile size options", () => {
+    const invalidPcs = makeBaseConfig();
+    invalidPcs.system.systemProfile = "MINI-40-90-163-480";
+    expect(validateSiteConfig(invalidPcs)).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: "system.systemProfile",
+          message: "systemProfile must be eSpire280 or a valid MINI-* profile",
+        }),
+      ])
+    );
+
+    const invalidPv = makeBaseConfig();
+    invalidPv.system.systemProfile = "MINI-60-120-163-480";
+    expect(validateSiteConfig(invalidPv)).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: "system.systemProfile",
+        }),
+      ])
+    );
+
+    const invalidVoltage = makeBaseConfig();
+    invalidVoltage.system.systemProfile = "MINI-60-90-163-240";
+    expect(validateSiteConfig(invalidVoltage)).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: "system.systemProfile",
         }),
       ])
     );

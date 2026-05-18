@@ -209,6 +209,12 @@ export interface PvAcInverterConfig {
 export interface PvConfig {
   acInverters: PvAcInverterConfig[];
   curtailmentMethod?: PvCurtailmentMethod;
+  /**
+   * eSpire Mini only. True when PV is DC-coupled through the Mini PCS, so the
+   * PCS active power setpoint represents DC PV pass-through plus battery power.
+   * False for AC-only PV sites where the Mini PCS command is battery-only.
+   */
+  dcCoupledToMiniPcs?: boolean;
 }
 
 // ---- Islanding ----

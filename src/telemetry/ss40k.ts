@@ -76,6 +76,10 @@ export const DEFAULT_SS40K_MODEL_INDEX_MAP: Record<string, string> = {
   "40102": "2",
   "40103": "3",
   "40104": "4",
+  "40201": "5",
+  "40204": "6",
+  "40211": "7",
+  "40214": "8",
 };
 
 export function buildSs40kLookup(

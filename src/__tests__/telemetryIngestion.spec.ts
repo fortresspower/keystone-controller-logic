@@ -819,7 +819,7 @@ describe("Modbus function semantics", () => {
     expect(Math.abs(sample.value - 1.5)).toBeLessThan(1e-6);
   });
 
-  test("HRI_64 / HRUI_64 decode via F64", () => {
+  test("HRUI_64 reads four registers and preserves the exact U64 bitfield", () => {
     const plan = makePlanForTag({
       name: "hrui_64",
       function: "HRUI_64",
@@ -830,17 +830,36 @@ describe("Modbus function semantics", () => {
     expect(blk.fc).toBe(3);
     expect(blk.quantity).toBe(4);
 
-    const buf = new ArrayBuffer(8);
-    const dv = new DataView(buf);
-    dv.setFloat64(0, 123456.75, false);
-    const w0 = dv.getUint16(0, false);
-    const w1 = dv.getUint16(2, false);
-    const w2 = dv.getUint16(4, false);
-    const w3 = dv.getUint16(6, false);
-
-    const res = simulateReply(plan, 0, [w0, w1, w2, w3]);
+    const res = simulateReply(plan, 0, [0x8000, 0x0000, 0x0000, 0x0001]);
     const sample = res.out2[0];
-    expect(Math.abs(sample.value - 123456.75)).toBeLessThan(1e-6);
+    expect(sample.value).toBe("0x8000000000000001");
+  });
+
+  test("calculated tags can test HRUI_64 values with 64-bit masks", () => {
+    const plan = makePlanForTag({
+      name: "fault_word",
+      function: "HRUI_64",
+      address: 300,
+    });
+    (plan as any).calcs = [
+      {
+        tagID: "fault_calc",
+        inputs: { word: "fault_word" },
+        expr: "has(word, '0x8000000000000000') | (bit(word, 0) << 1)",
+        alarm: "Yes",
+        supportingTag: "No",
+      },
+    ];
+
+    const res = simulateReply(plan, 0, [0x8000, 0x0000, 0x0000, 0x0001]);
+    expect(res.out2).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          tagID: "fault_calc",
+          value: 3,
+        }),
+      ])
+    );
   });
 
   test("C (coil)", () => {
@@ -951,6 +970,261 @@ describe("Modbus function semantics", () => {
 });
 
 describe("Telemetry baseline lock", () => {
+  test("SolarEdge template resolves aliases and keeps raw/SF calc", () => {
+    const template = resolveTelemetryTemplate("udt_solarEdge_V1");
+    const aliasTemplate = resolveTelemetryTemplate("solarEdge");
+    expect(aliasTemplate.device.vendor).toBe("SolarEdge");
+
+    const profile = adaptTelemetryTemplateToReadProfile(
+      "udt_solarEdge_V1",
+      template
+    );
+    const acPower = profile.tags.find((tag) => tag.name === "AC_POWER");
+    const raw = profile.tags.find((tag) => tag.name === "AC_POWER_RAW");
+    const sf = profile.tags.find((tag) => tag.name === "AC_POWER_SF");
+
+    expect(raw?.supportingTag).toBe("Yes");
+    expect(sf?.function).toBe("HR");
+    expect(acPower?.calc).toEqual({
+      inputs: {
+        raw: "AC_POWER_RAW",
+        sf: "AC_POWER_SF",
+      },
+      expr: "raw * pow(10, sf)",
+    });
+
+    const plan = buildReadPlan(profile, instance, compilerEnv);
+    expect(plan.calcs).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          tagID: "AC_POWER",
+          inputs: {
+            raw: "AC_POWER_RAW",
+            sf: "AC_POWER_SF",
+          },
+          expr: "raw * pow(10, sf)",
+        }),
+      ])
+    );
+  });
+
+  test("Sinexcel Mini template includes critical PVDC telemetry", () => {
+    const template = resolveTelemetryTemplate("Sinexcel_Mini_PCS_ss40k");
+    const legacyAliasTemplate = resolveTelemetryTemplate("Sinexcel_Mini_ss40k");
+    const profile = adaptTelemetryTemplateToReadProfile(
+      "Sinexcel_Mini_PCS_ss40k",
+      template
+    );
+
+    expect(legacyAliasTemplate.device.model).toBe(template.device.model);
+    expect(profile.tags).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          name: "PVDCStatusWord",
+          function: "HRUS",
+          address: 34032,
+          bitfieldStatus: true,
+        }),
+        expect.objectContaining({
+          name: "PVSideTotalPower",
+          function: "HR",
+          address: 34053,
+          scale: expect.objectContaining({
+            rawLow: 0,
+            rawHigh: 10,
+            engLow: 0,
+            engHigh: 1,
+          }),
+        }),
+        expect.objectContaining({
+          name: "PVGeneratedEnergy",
+          calc: {
+            inputs: {
+              hi: "PVGeneratedEnergyHighWord",
+              lo: "PVGeneratedEnergyLowWord",
+            },
+            expr: "(hi * 65536 + lo) * 0.1",
+          },
+        }),
+      ])
+    );
+  });
+
+  test("Sinexcel Mini PCS template calculates SS40K 40103 fault fields", () => {
+    const template = resolveTelemetryTemplate("Sinexcel_Mini_PCS_ss40k");
+    const profile = adaptTelemetryTemplateToReadProfile(
+      "Sinexcel_Mini_PCS_ss40k",
+      template
+    );
+
+    expect(profile.tags).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          name: "SinexcelFaultWord106",
+          function: "HRUS",
+          address: 106,
+          alarm: "Yes",
+          supportingTag: "Yes",
+          bitfieldStatus: true,
+        }),
+        expect.objectContaining({
+          name: "SinexcelFaultWord115",
+          function: "HRUS",
+          address: 115,
+        }),
+        expect.objectContaining({
+          name: "pcsFault",
+          calc: expect.objectContaining({
+            inputs: expect.objectContaining({
+              w115: "SinexcelFaultWord115",
+            }),
+          }),
+          alarm: "Yes",
+          bitfieldStatus: true,
+        }),
+        expect.objectContaining({
+          name: "gridWarning",
+          calc: expect.objectContaining({
+            inputs: expect.objectContaining({
+              w118: "SinexcelFaultWord118",
+            }),
+          }),
+        }),
+        expect.objectContaining({
+          name: "rsdEPOFault",
+          calc: expect.objectContaining({
+            inputs: expect.objectContaining({
+              w106: "SinexcelFaultWord106",
+            }),
+          }),
+        }),
+      ])
+    );
+
+    const pcsFault = template.telemetry.find((tag) => tag.id === "pcsFault");
+    expect(pcsFault?.ss40k).toEqual({
+      name: "pcsFault",
+      model: "40103",
+    });
+    expect(pcsFault?.calc?.expr).toContain("w115 >>> 0");
+    expect(pcsFault?.calc?.expr).toContain("<< 3");
+  });
+
+  test("Sinexcel Mini PVDC module templates apply supplier address offsets", () => {
+    const modules = [
+      {
+        profileName: "pvdc_module_1",
+        statusAddress: 34032,
+        powerAddress: 34053,
+        energyHighAddress: 34082,
+      },
+      {
+        profileName: "pvdc_module_2",
+        statusAddress: 34332,
+        powerAddress: 34353,
+        energyHighAddress: 34382,
+      },
+      {
+        profileName: "pvdc_module_3",
+        statusAddress: 34632,
+        powerAddress: 34653,
+        energyHighAddress: 34682,
+      },
+    ];
+
+    for (const module of modules) {
+      const template = resolveTelemetryTemplate(module.profileName);
+      const profile = adaptTelemetryTemplateToReadProfile(
+        module.profileName,
+        template
+      );
+
+      expect(profile.tags).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            name: "PVDCStatusWord",
+            address: module.statusAddress,
+          }),
+          expect.objectContaining({
+            name: "PVSideTotalPower",
+            address: module.powerAddress,
+          }),
+          expect.objectContaining({
+            name: "PVGeneratedEnergyHighWord",
+            address: module.energyHighAddress,
+          }),
+          expect.objectContaining({
+            name: "PVGeneratedEnergy",
+            calc: {
+              inputs: {
+                hi: "PVGeneratedEnergyHighWord",
+                lo: "PVGeneratedEnergyLowWord",
+              },
+              expr: "(hi * 65536 + lo) * 0.1",
+            },
+          }),
+        ])
+      );
+    }
+  });
+
+  test("Sinexcel Mini Load template exposes supplier load telemetry block", () => {
+    const template = resolveTelemetryTemplate("mini_load");
+    const profile = adaptTelemetryTemplateToReadProfile("mini_load", template);
+
+    expect(template.device.vendor).toBe("Sinexcel");
+    expect(template.device.model).toBe("Mini Load");
+    expect(profile.tags).toHaveLength(26);
+    expect(profile.tags).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          name: "LoadTotalPowerFactor",
+          function: "HR",
+          address: 276,
+          scale: expect.objectContaining({
+            rawLow: 0,
+            rawHigh: 100,
+            engLow: 0,
+            engHigh: 1,
+          }),
+        }),
+        expect.objectContaining({
+          name: "LoadTotalActivePower",
+          function: "HR",
+          address: 280,
+          scale: expect.objectContaining({
+            rawLow: 0,
+            rawHigh: 10,
+            engLow: 0,
+            engHigh: 1,
+          }),
+        }),
+        expect.objectContaining({
+          name: "LoadFrequency",
+          function: "HRUS",
+          address: 295,
+          scale: expect.objectContaining({
+            rawLow: 0,
+            rawHigh: 100,
+            engLow: 0,
+            engHigh: 1,
+          }),
+        }),
+        expect.objectContaining({
+          name: "LoadL3NVoltage",
+          function: "HRUS",
+          address: 301,
+          scale: expect.objectContaining({
+            rawLow: 0,
+            rawHigh: 10,
+            engLow: 0,
+            engHigh: 1,
+          }),
+        }),
+      ])
+    );
+  });
+
   test("MBMU template keeps status/readback normalization contracts", () => {
     const template = resolveTelemetryTemplate("MBMU_280_ss40k");
     const profile = adaptTelemetryTemplateToReadProfile(
@@ -982,6 +1256,159 @@ describe("Telemetry baseline lock", () => {
       (tag) => tag.name === "Racks_disable_Command"
     );
     expect(rackDisable?.pollClass).toBe("normal");
+  });
+
+  test("Ampace BMS template exposes Mini control input tags", () => {
+    const template = resolveTelemetryTemplate("AMPACE_Mini_ss40k");
+    const profile = adaptTelemetryTemplateToReadProfile(
+      "AMPACE_Mini_ss40k",
+      template
+    );
+
+    expect(template.device.vendor).toBe("Ampace");
+    expect(template.device.name).toBe("udt_Ampace_A_V3");
+    expect(resolveTelemetryTemplate("udt_Ampace_A_V3").device.model).toBe(
+      "BMS"
+    );
+
+    expect(profile.tags).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          name: "BamsSoc",
+          function: "HRUS",
+          address: 62006,
+          scale: expect.objectContaining({
+            rawLow: 0,
+            rawHigh: 1000,
+            engLow: 0,
+            engHigh: 1,
+          }),
+        }),
+        expect.objectContaining({
+          name: "BamsPermitChgCurrent",
+          function: "HRUI",
+          address: 62012,
+          scale: expect.objectContaining({
+            rawLow: 0,
+            rawHigh: 10,
+            engLow: 0,
+            engHigh: 1,
+          }),
+        }),
+        expect.objectContaining({
+          name: "BamsPermitDsgCurrent",
+          function: "HRUI",
+          address: 62014,
+        }),
+        expect.objectContaining({
+          name: "BamsMaxCellVol",
+          function: "HRUS",
+          address: 62021,
+        }),
+        expect.objectContaining({
+          name: "BamsMinCellVol",
+          function: "HRUS",
+          address: 62024,
+        }),
+        expect.objectContaining({
+          name: "BamsMaxCellT",
+          function: "HR",
+          address: 62029,
+        }),
+        expect.objectContaining({
+          name: "BamsMinCellT",
+          function: "HR",
+          address: 62032,
+        }),
+        expect.objectContaining({
+          name: "BamsProtAlarm0_8",
+          function: "HRUI_64",
+          address: 62122,
+          alarm: "Yes",
+          supportingTag: "Yes",
+          bitfieldStatus: true,
+          noMerge: true,
+        }),
+        expect.objectContaining({
+          name: "BamsSysFaultCode0_8",
+          function: "HRUI_64",
+          address: 62126,
+          alarm: "Yes",
+          supportingTag: "Yes",
+          bitfieldStatus: true,
+        }),
+        expect.objectContaining({
+          name: "BamsOtherErrCode0_8",
+          function: "HRUI_64",
+          address: 62130,
+          alarm: "Yes",
+          supportingTag: "Yes",
+          bitfieldStatus: true,
+        }),
+        expect.objectContaining({
+          name: "BamsHwErrCode0_8",
+          function: "HRUI_64",
+          address: 62134,
+          alarm: "Yes",
+          supportingTag: "Yes",
+          bitfieldStatus: true,
+        }),
+        expect.objectContaining({
+          name: "BamsFaultNotAllowHvFlg",
+          function: "HRUS",
+          address: 62146,
+          alarm: "Yes",
+          supportingTag: "Yes",
+          bitfieldStatus: true,
+        }),
+        expect.objectContaining({
+          name: "batWarning",
+          calc: expect.objectContaining({
+            inputs: expect.objectContaining({
+              p: "BamsProtAlarm0_8",
+              h: "BamsHwErrCode0_8",
+            }),
+          }),
+          alarm: "Yes",
+          bitfieldStatus: true,
+        }),
+        expect.objectContaining({
+          name: "batFault",
+          calc: expect.objectContaining({
+            inputs: expect.objectContaining({
+              p: "BamsProtAlarm0_8",
+              s: "BamsSysFaultCode0_8",
+            }),
+          }),
+          alarm: "Yes",
+          bitfieldStatus: true,
+        }),
+      ])
+    );
+
+    const batWarning = template.telemetry.find((tag) => tag.id === "batWarning");
+    expect(batWarning?.ss40k).toEqual({
+      name: "batWarning",
+      model: "40103",
+    });
+    expect(batWarning?.calc?.expr).toContain("<< 2");
+
+    const batFault = template.telemetry.find((tag) => tag.id === "batFault");
+    expect(batFault?.ss40k).toEqual({
+      name: "batFault",
+      model: "40103",
+    });
+    expect(batFault?.calc?.expr).toContain("<< 1");
+
+    const readPlan = buildReadPlan(profile, instance, compilerEnv);
+    const bamsProtAlarmBlock = readPlan.blocks.find((block: any) =>
+      block.map.some((item: any) => item.name === "BamsProtAlarm0_8")
+    );
+    expect(bamsProtAlarmBlock).toMatchObject({
+      function: "HRUI_64",
+      start: 62122,
+      quantity: 4,
+    });
   });
 
   test("Delta global state emits a fresh _str sample from enumStatus", () => {

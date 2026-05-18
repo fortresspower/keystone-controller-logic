@@ -83,6 +83,8 @@ export interface ESpire280MachineStatus {
   maxDischargeCurrentAllowedA?: number;
   maxCellVoltageV?: number;
   minCellVoltageV?: number;
+  maxCellTemperatureC?: number;
+  minCellTemperatureC?: number;
   bmsStatus?: number;
   pcsGlobalState?: number;
   epoActive?: boolean;
@@ -127,6 +129,10 @@ export interface CoreControlCommand {
   frequencyShiftRequested?: boolean;
   pcsRunMode?: PcsRunMode;
   gridWireConnection?: boolean;
+  pcsActivePowerSetpointEnabled?: boolean;
+  maxChargeCurrentA?: number;
+  maxDischargeCurrentA?: number;
+  batteryActivePowerKw?: number;
   predictedUtilityPowerKw?: number;
   reasons: string[];
 }
@@ -139,6 +145,8 @@ export interface CoreControlState {
     allowDischarge: boolean;
   };
   vcellChargeBlocked?: boolean;
+  miniCellVoltageChargeBlocked?: boolean;
+  miniCellVoltageDischargeBlocked?: boolean;
   pvControl?: {
     lastUpdateMs: number;
     fleetPct: number;
@@ -605,35 +613,77 @@ export function evaluateCoreControl(
     schedule
   );
 
-  let pcsActivePowerKw = requestedActive.targetKw;
+  let batteryActivePowerKw = requestedActive.targetKw;
 
-  pcsActivePowerKw = applyCrdPolicy(ctx, telemetry, pcsActivePowerKw, reasons);
-  pcsActivePowerKw = applySharedBatteryPolicy(
+  batteryActivePowerKw = applySharedBatteryPolicy(
     ctx,
     telemetry,
-    pcsActivePowerKw,
+    batteryActivePowerKw,
     reasons
   );
-  pcsActivePowerKw = applySocPolicy(ctx, telemetry, pcsActivePowerKw, reasons);
-  pcsActivePowerKw = applyESpire280MachineAvailabilityPolicy(
+  batteryActivePowerKw = applySocPolicy(ctx, telemetry, batteryActivePowerKw, reasons);
+  batteryActivePowerKw = applyESpire280MachineAvailabilityPolicy(
     ctx,
     telemetry,
-    pcsActivePowerKw,
+    batteryActivePowerKw,
     reasons
   );
-  pcsActivePowerKw = applyAvailabilityPolicy(
+  batteryActivePowerKw = applyAvailabilityPolicy(
     telemetry,
-    pcsActivePowerKw,
+    batteryActivePowerKw,
     reasons
   );
-  pcsActivePowerKw = applyPcsLimits(ctx, pcsActivePowerKw, reasons);
-  pcsActivePowerKw = applyBatteryCommandRamp(ctx, pcsActivePowerKw, reasons);
+  batteryActivePowerKw = applyPcsLimits(ctx, batteryActivePowerKw, reasons);
+  batteryActivePowerKw = applyBatteryCommandRamp(ctx, batteryActivePowerKw, reasons);
+
+  const isMini = ctx.design.productLine === "Mini";
+  if (isMini && telemetry.gridStatus === "normal") {
+    batteryActivePowerKw = applyCrdPolicy(
+      ctx,
+      telemetry,
+      batteryActivePowerKw,
+      reasons
+    );
+    batteryActivePowerKw = applySharedBatteryPolicy(
+      ctx,
+      telemetry,
+      batteryActivePowerKw,
+      reasons
+    );
+    batteryActivePowerKw = applySocPolicy(ctx, telemetry, batteryActivePowerKw, reasons);
+    batteryActivePowerKw = applyAvailabilityPolicy(
+      telemetry,
+      batteryActivePowerKw,
+      reasons
+    );
+    batteryActivePowerKw = applyPcsLimits(ctx, batteryActivePowerKw, reasons);
+  }
+
+  const miniDispatch = resolveMiniDispatch(ctx, telemetry, batteryActivePowerKw, reasons);
+  let pcsActivePowerKw = miniDispatch
+    ? miniDispatch.pcsActivePowerKw
+    : batteryActivePowerKw;
+
+  if (!isMini && miniDispatch?.pcsActivePowerSetpointEnabled !== false) {
+    pcsActivePowerKw = applyCrdPolicy(ctx, telemetry, pcsActivePowerKw, reasons);
+    if (miniDispatch) {
+      pcsActivePowerKw = applyPcsLimits(ctx, pcsActivePowerKw, reasons);
+    }
+  }
 
   const command: CoreControlCommand = {
     controlMode: requestedActive.mode,
     pcsActivePowerKw,
     reasons,
   };
+
+  if (miniDispatch) {
+    command.batteryActivePowerKw = batteryActivePowerKw;
+    command.pcsActivePowerSetpointEnabled =
+      miniDispatch.pcsActivePowerSetpointEnabled;
+    command.maxChargeCurrentA = miniDispatch.maxChargeCurrentA;
+    command.maxDischargeCurrentA = miniDispatch.maxDischargeCurrentA;
+  }
 
   if (requestedReactive != null) {
     command.pcsReactivePowerKvar = requestedReactive;
@@ -773,40 +823,20 @@ function buildCoreWriterEnvelopes(
   command: CoreControlCommand,
   options: { state?: CoreControlState; nowMs?: number } = {}
 ): ControlEnvelope[] {
-  const pcsPayload: ControlEnvelope["payload"] = [
-    {
-      tagID: "SYSTEM_ACTIVE_POWER_DEMAND",
-      value: command.pcsActivePowerKw,
-    },
-  ];
+  const pcsPayload =
+    config.system.systemProfile.startsWith("MINI-")
+      ? buildMiniPcsPayload(command)
+      : buildESpire280PcsPayload(command);
 
-  if (command.pcsReactivePowerKvar != null) {
-    pcsPayload.push({
-      tagID: "SYSTEM_REACTIVE_POWER_DEMAND",
-      value: command.pcsReactivePowerKvar,
-    });
-  }
-
-  if (command.pcsRunMode != null) {
-    pcsPayload.push({
-      tagID: "SYSTEM_RUN_MODE",
-      value: command.pcsRunMode === "off-grid" ? 1 : 0,
-    });
-  }
-
-  if (command.gridWireConnection != null) {
-    pcsPayload.push({
-      tagID: "GRID_WIRE_CONNECTION",
-      value: command.gridWireConnection ? 1 : 0,
-    });
-  }
-
-  const envelopes: ControlEnvelope[] = [
-    {
-      topic: "PCS",
-      payload: pcsPayload,
-    },
-  ];
+  const envelopes: ControlEnvelope[] =
+    pcsPayload.length > 0
+      ? [
+          {
+            topic: "PCS",
+            payload: pcsPayload,
+          },
+        ]
+      : [];
 
   if (
     config.pv.curtailmentMethod === "modbus" &&
@@ -846,6 +876,70 @@ function buildCoreWriterEnvelopes(
   }
 
   return envelopes;
+}
+
+function buildESpire280PcsPayload(
+  command: CoreControlCommand
+): ControlEnvelope["payload"] {
+  const pcsPayload: ControlEnvelope["payload"] = [
+    {
+      tagID: "SYSTEM_ACTIVE_POWER_DEMAND",
+      value: command.pcsActivePowerKw,
+    },
+  ];
+
+  if (command.pcsReactivePowerKvar != null) {
+    pcsPayload.push({
+      tagID: "SYSTEM_REACTIVE_POWER_DEMAND",
+      value: command.pcsReactivePowerKvar,
+    });
+  }
+
+  if (command.pcsRunMode != null) {
+    pcsPayload.push({
+      tagID: "SYSTEM_RUN_MODE",
+      value: command.pcsRunMode === "off-grid" ? 1 : 0,
+    });
+  }
+
+  if (command.gridWireConnection != null) {
+    pcsPayload.push({
+      tagID: "GRID_WIRE_CONNECTION",
+      value: command.gridWireConnection ? 1 : 0,
+    });
+  }
+
+  return pcsPayload;
+}
+
+function buildMiniPcsPayload(
+  command: CoreControlCommand
+): ControlEnvelope["payload"] {
+  const pcsPayload: ControlEnvelope["payload"] = [];
+
+  if (command.pcsActivePowerSetpointEnabled !== false) {
+    pcsPayload.push({
+      tagID: "ActivePowerSetpoint",
+      value:
+        command.pcsActivePowerKw === 0 ? 0 : -command.pcsActivePowerKw,
+    });
+  }
+
+  if (command.maxChargeCurrentA != null) {
+    pcsPayload.push({
+      tagID: "MaxChgCurrent",
+      value: command.maxChargeCurrentA,
+    });
+  }
+
+  if (command.maxDischargeCurrentA != null) {
+    pcsPayload.push({
+      tagID: "MaxDsgCurrent",
+      value: command.maxDischargeCurrentA,
+    });
+  }
+
+  return pcsPayload;
 }
 
 function shouldWriteSolarEdgeLimit(
@@ -978,9 +1072,7 @@ function resolveScheduledMeterRuleKw(
   }
 
   const deadbandKw = readRuleKw(meterRule, "deadband_kw") ?? 0.5;
-  const bessPowerKw = Number.isFinite(telemetry.pcsActivePowerKw)
-    ? telemetry.pcsActivePowerKw || 0
-    : 0;
+  const bessPowerKw = resolveMeasuredBatteryActivePowerKw(ctx, telemetry);
   const baselineUtilityKw = utilityPowerKw + bessPowerKw;
   const holdAtThreshold =
     readBooleanRule(meterRule, "hold_at_threshold") ?? true;
@@ -1043,6 +1135,21 @@ function resolveScheduledMeterRuleKw(
 
   reasons.push("scheduled-meter-rule-idle");
   return 0;
+}
+
+function resolveMeasuredBatteryActivePowerKw(
+  ctx: CoreControlContext,
+  telemetry: TelemetrySnapshot
+): number {
+  const pcsActivePowerKw = Number.isFinite(telemetry.pcsActivePowerKw)
+    ? telemetry.pcsActivePowerKw || 0
+    : 0;
+  if (!hasMiniDcPvConverter(ctx)) {
+    return pcsActivePowerKw;
+  }
+
+  const dcPvKw = Number.isFinite(telemetry.pvKw) ? telemetry.pvKw || 0 : 0;
+  return pcsActivePowerKw - dcPvKw;
 }
 
 function resolveScheduledPvRuleKw(
@@ -1304,6 +1411,13 @@ const E280_VCELL_MIN_BLOCK_DIS = 2.9;
 const E280_VCELL_TAPER_START = 3.44;
 const E280_VCELL_TAPER_END = E280_VCELL_MAX_BLOCK_CHG_ON;
 const E280_VCELL_TAPER_MIN_FRAC = 0.08;
+const MINI_CHARGE_MIN_TEMP_C = 0;
+const MINI_DISCHARGE_MIN_TEMP_C = -15;
+const MINI_BATTERY_MAX_TEMP_C = 55;
+const MINI_VCELL_MAX_BLOCK_CHG_ON = 3.57;
+const MINI_VCELL_MAX_BLOCK_CHG_OFF = 3.33;
+const MINI_VCELL_MIN_BLOCK_DIS_ON = 2.92;
+const MINI_VCELL_MIN_BLOCK_DIS_OFF = 3.2;
 
 interface BatteryControlPolicy {
   socLow: number;
@@ -1351,9 +1465,20 @@ function applySharedBatteryPolicy(
   const caps = machine
     ? resolveESpire280MachinePowerCaps(machine, batteryPolicy.powerHeadroomKw)
     : {};
-  const maxChargeKw = caps.maxChargeKw;
-  const maxDischargeKw = caps.maxDischargeKw;
+  const maxChargeKw =
+    ctx.design.productLine === "Mini"
+      ? ctx.design.limits.pcs.maxChargeKw
+      : caps.maxChargeKw;
+  const maxDischargeKw =
+    ctx.design.productLine === "Mini"
+      ? ctx.design.limits.pcs.maxDischargeKw
+      : caps.maxDischargeKw;
   const vcellChargeBlocked = resolveVcellChargeBlock(ctx, machine, reasons);
+  const vcellDischargeBlocked = resolveVcellDischargeBlock(
+    ctx,
+    machine,
+    reasons
+  );
   const minCellVoltageV = finiteNumber(machine?.minCellVoltageV);
   const forceGridCharge =
     telemetry.soc <= batteryPolicy.forceGridChargeSoc ||
@@ -1361,6 +1486,10 @@ function applySharedBatteryPolicy(
       minCellVoltageV < batteryPolicy.forceGridChargeMinCellVoltageV);
 
   if (forceGridCharge && maxChargeKw != null && maxChargeKw > 0) {
+    if (!socState.allowCharge || vcellChargeBlocked) {
+      reasons.push("force-grid-charge-blocked");
+      return 0;
+    }
     reasons.push("force-grid-charge");
     return -Math.min(maxChargeKw, batteryPolicy.forceGridChargeKw);
   }
@@ -1371,10 +1500,12 @@ function applySharedBatteryPolicy(
       return 0;
     }
     if (vcellChargeBlocked) {
-      reasons.push("e280-cell-high-charge-block");
+      if (ctx.design.productLine !== "Mini") {
+        reasons.push("e280-cell-high-charge-block");
+      }
       return 0;
     }
-    if (maxChargeKw != null) {
+    if (ctx.design.productLine !== "Mini" && maxChargeKw != null) {
       const clamped = Math.max(targetKw, -maxChargeKw);
       if (clamped !== targetKw) {
         reasons.push("e280-charge-current-limit");
@@ -1388,11 +1519,10 @@ function applySharedBatteryPolicy(
       reasons.push("soc-low-discharge-block");
       return 0;
     }
-    if (minCellVoltageV != null && minCellVoltageV <= E280_VCELL_MIN_BLOCK_DIS) {
-      reasons.push("e280-cell-low-discharge-block");
+    if (vcellDischargeBlocked) {
       return 0;
     }
-    if (maxDischargeKw != null) {
+    if (ctx.design.productLine !== "Mini" && maxDischargeKw != null) {
       const clamped = Math.min(targetKw, maxDischargeKw);
       if (clamped !== targetKw) {
         reasons.push("e280-discharge-current-limit");
@@ -1447,6 +1577,27 @@ function resolveVcellChargeBlock(
   reasons: string[]
 ): boolean {
   const maxCellVoltageV = finiteNumber(machine?.maxCellVoltageV);
+
+  if (ctx.design.productLine === "Mini") {
+    let blocked = ctx.state?.miniCellVoltageChargeBlocked ?? false;
+
+    if (maxCellVoltageV == null) {
+      blocked = true;
+      reasons.push("mini-cell-voltage-max-missing");
+    } else if (maxCellVoltageV >= MINI_VCELL_MAX_BLOCK_CHG_ON) {
+      blocked = true;
+    } else if (maxCellVoltageV <= MINI_VCELL_MAX_BLOCK_CHG_OFF) {
+      blocked = false;
+    }
+
+    if (ctx.state) {
+      ctx.state.miniCellVoltageChargeBlocked = blocked;
+    }
+
+    if (blocked) reasons.push("mini-cell-high-charge-block");
+    return blocked;
+  }
+
   let blocked = ctx.state?.vcellChargeBlocked ?? false;
 
   if (maxCellVoltageV != null && maxCellVoltageV >= E280_VCELL_MAX_BLOCK_CHG_ON) {
@@ -1464,6 +1615,41 @@ function resolveVcellChargeBlock(
 
   if (blocked) reasons.push("vcell-high-no-charge");
   return blocked;
+}
+
+function resolveVcellDischargeBlock(
+  ctx: CoreControlContext,
+  machine: ESpire280MachineStatus | undefined,
+  reasons: string[]
+): boolean {
+  const minCellVoltageV = finiteNumber(machine?.minCellVoltageV);
+
+  if (ctx.design.productLine === "Mini") {
+    let blocked = ctx.state?.miniCellVoltageDischargeBlocked ?? false;
+
+    if (minCellVoltageV == null) {
+      blocked = true;
+      reasons.push("mini-cell-voltage-min-missing");
+    } else if (minCellVoltageV <= MINI_VCELL_MIN_BLOCK_DIS_ON) {
+      blocked = true;
+    } else if (minCellVoltageV >= MINI_VCELL_MIN_BLOCK_DIS_OFF) {
+      blocked = false;
+    }
+
+    if (ctx.state) {
+      ctx.state.miniCellVoltageDischargeBlocked = blocked;
+    }
+
+    if (blocked) reasons.push("mini-cell-low-discharge-block");
+    return blocked;
+  }
+
+  if (minCellVoltageV != null && minCellVoltageV <= E280_VCELL_MIN_BLOCK_DIS) {
+    reasons.push("e280-cell-low-discharge-block");
+    return true;
+  }
+
+  return false;
 }
 
 function applyESpire280MachineAvailabilityPolicy(
@@ -1586,7 +1772,9 @@ function getAvailabilityReasons(reasons: string[]): string[] {
       reason === "e280-cell-high-charge-block" ||
       reason === "e280-cell-low-discharge-block" ||
       reason === "e280-charge-current-limit" ||
-      reason === "e280-discharge-current-limit"
+      reason === "e280-discharge-current-limit" ||
+      reason.startsWith("mini-max-charge-current-zero") ||
+      reason.startsWith("mini-max-discharge-current-zero")
   );
 }
 
@@ -1599,7 +1787,9 @@ function getAvailabilityStatus(
         reason === "charge-disabled" ||
         reason === "discharge-disabled" ||
         reason === "e280-cell-high-charge-block" ||
-        reason === "e280-cell-low-discharge-block"
+        reason === "e280-cell-low-discharge-block" ||
+        reason.startsWith("mini-max-charge-current-zero") ||
+        reason.startsWith("mini-max-discharge-current-zero")
     )
   ) {
     return "blocked";
@@ -1647,6 +1837,172 @@ function applyPcsLimits(
     reasons.push("pcs-limit-clamp");
   }
   return clamped;
+}
+
+interface MiniDispatchResult {
+  pcsActivePowerKw: number;
+  pcsActivePowerSetpointEnabled: boolean;
+  maxChargeCurrentA?: number;
+  maxDischargeCurrentA?: number;
+}
+
+function resolveMiniDispatch(
+  ctx: CoreControlContext,
+  telemetry: TelemetrySnapshot,
+  batteryActivePowerKw: number,
+  reasons: string[]
+): MiniDispatchResult | undefined {
+  if (ctx.design.productLine !== "Mini") return undefined;
+
+  const maxCurrents = resolveMiniCurrentLimits(ctx, telemetry, reasons);
+  const hasDcPvConverter = hasMiniDcPvConverter(ctx);
+  const offGrid =
+    telemetry.gridStatus === "island" ||
+    telemetry.protectionState === "islanded" ||
+    ctx.config.operation.mode === "off-grid";
+
+  if (offGrid) {
+    reasons.push("mini-off-grid-setpoint-suppressed");
+    if (hasDcPvConverter) {
+      maxCurrents.maxChargeCurrentA = 0;
+      reasons.push("mini-off-grid-dc-pv-charge-current-zero");
+    }
+    return {
+      pcsActivePowerKw: 0,
+      pcsActivePowerSetpointEnabled: false,
+      ...maxCurrents,
+    };
+  }
+
+  const dcPvKw =
+    hasDcPvConverter && Number.isFinite(telemetry.pvKw)
+      ? telemetry.pvKw || 0
+      : 0;
+  let pcsActivePowerKw = hasDcPvConverter
+    ? dcPvKw + batteryActivePowerKw
+    : batteryActivePowerKw;
+  if (
+    hasDcPvConverter &&
+    ctx.config.operation.crdMode === "no-export" &&
+    batteryActivePowerKw >= 0 &&
+    maxCurrents.maxChargeCurrentA === 0 &&
+    Number.isFinite(telemetry.siteLoadKw)
+  ) {
+    pcsActivePowerKw = clamp(
+      telemetry.siteLoadKw || 0,
+      0,
+      ctx.design.limits.pcs.maxDischargeKw
+    );
+    reasons.push("mini-no-export-pv-load-follow");
+  }
+  reasons.push(
+    hasDcPvConverter
+      ? "mini-dc-pv-ac-setpoint"
+      : "mini-ac-pv-battery-setpoint"
+  );
+
+  return {
+    pcsActivePowerKw,
+    pcsActivePowerSetpointEnabled: true,
+    ...maxCurrents,
+  };
+}
+
+function hasMiniDcPvConverter(ctx: CoreControlContext): boolean {
+  return ctx.design.productLine === "Mini" && ctx.design.pv.dcCoupledToMiniPcs;
+}
+
+function resolveMiniCurrentLimits(
+  ctx: CoreControlContext,
+  telemetry: TelemetrySnapshot,
+  reasons: string[]
+): Pick<MiniDispatchResult, "maxChargeCurrentA" | "maxDischargeCurrentA"> {
+  const machine = telemetry.machineStatus;
+  const batteryVoltageV = finiteNumber(machine?.batteryVoltageV);
+  const socState =
+    ctx.state?.socState || resolveSocHysteresisState(ctx, telemetry, reasons);
+
+  let maxChargeCurrentA = finiteNumber(machine?.maxChargeCurrentAllowedA);
+  let maxDischargeCurrentA = finiteNumber(machine?.maxDischargeCurrentAllowedA);
+
+  if (batteryVoltageV != null && batteryVoltageV > 0) {
+    const chargeCapA =
+      (ctx.design.limits.pcs.maxChargeKw * 1000) / batteryVoltageV;
+    const dischargeCapA =
+      (ctx.design.limits.pcs.maxDischargeKw * 1000) / batteryVoltageV;
+    maxChargeCurrentA =
+      maxChargeCurrentA == null
+        ? chargeCapA
+        : Math.min(maxChargeCurrentA, chargeCapA);
+    maxDischargeCurrentA =
+      maxDischargeCurrentA == null
+        ? dischargeCapA
+        : Math.min(maxDischargeCurrentA, dischargeCapA);
+  }
+
+  const maxCellTemperatureC = finiteNumber(machine?.maxCellTemperatureC);
+  const minCellTemperatureC = finiteNumber(machine?.minCellTemperatureC);
+  const cellChargeBlocked =
+    ctx.state?.miniCellVoltageChargeBlocked ??
+    resolveVcellChargeBlock(ctx, machine, reasons);
+  const cellDischargeBlocked =
+    ctx.state?.miniCellVoltageDischargeBlocked ??
+    resolveVcellDischargeBlock(ctx, machine, reasons);
+
+  if (!socState.allowCharge) {
+    maxChargeCurrentA = 0;
+    reasons.push("mini-max-charge-current-zero-soc");
+  }
+  if (cellChargeBlocked) {
+    maxChargeCurrentA = 0;
+    reasons.push("mini-max-charge-current-zero-cell-high");
+  }
+  if (
+    minCellTemperatureC != null &&
+    minCellTemperatureC <= MINI_CHARGE_MIN_TEMP_C
+  ) {
+    maxChargeCurrentA = 0;
+    reasons.push("mini-max-charge-current-zero-temp-low");
+  }
+  if (
+    maxCellTemperatureC != null &&
+    maxCellTemperatureC >= MINI_BATTERY_MAX_TEMP_C
+  ) {
+    maxChargeCurrentA = 0;
+    reasons.push("mini-max-charge-current-zero-temp-high");
+  }
+
+  if (!socState.allowDischarge) {
+    maxDischargeCurrentA = 0;
+    reasons.push("mini-max-discharge-current-zero-soc");
+  }
+  if (cellDischargeBlocked) {
+    maxDischargeCurrentA = 0;
+    reasons.push("mini-max-discharge-current-zero-cell-low");
+  }
+  if (
+    minCellTemperatureC != null &&
+    minCellTemperatureC <= MINI_DISCHARGE_MIN_TEMP_C
+  ) {
+    maxDischargeCurrentA = 0;
+    reasons.push("mini-max-discharge-current-zero-temp-low");
+  }
+  if (
+    maxCellTemperatureC != null &&
+    maxCellTemperatureC >= MINI_BATTERY_MAX_TEMP_C
+  ) {
+    maxDischargeCurrentA = 0;
+    reasons.push("mini-max-discharge-current-zero-temp-high");
+  }
+
+  return {
+    maxChargeCurrentA:
+      maxChargeCurrentA == null ? undefined : Math.max(0, maxChargeCurrentA),
+    maxDischargeCurrentA:
+      maxDischargeCurrentA == null
+        ? undefined
+        : Math.max(0, maxDischargeCurrentA),
+  };
 }
 
 function applyBatteryCommandRamp(

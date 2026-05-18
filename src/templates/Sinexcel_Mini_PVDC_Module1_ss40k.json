@@ -1,0 +1,291 @@
+{
+  "version": "2",
+  "device": {
+    "vendor": "Sinexcel",
+    "model": "PVDC Module 1",
+    "protocol": "modbus-tcp",
+    "defaultByteOrder": "BE",
+    "defaultWordOrder32": "ABCD",
+    "name": "udt_Sinexcel_PVDC_Module1",
+    "sourceFormat": "supplier-v119"
+  },
+  "telemetry": [
+    {
+      "id": "PVDCStatusWord",
+      "pollClass": "normal",
+      "function": "HRUS",
+      "address": 34032,
+      "bitfieldStatus": true
+    },
+    {
+      "id": "PVDCStringStatusWord",
+      "pollClass": "normal",
+      "function": "HRUS",
+      "address": 34033,
+      "bitfieldStatus": true
+    },
+    {
+      "id": "PVDCGeneratingStatusWord",
+      "pollClass": "normal",
+      "function": "HRUS",
+      "address": 34034,
+      "bitfieldStatus": true
+    },
+    {
+      "id": "PVSideTotalPower",
+      "pollClass": "normal",
+      "function": "HR",
+      "address": 34053,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "PV1SideTotalPower",
+      "pollClass": "normal",
+      "function": "HR",
+      "address": 34054,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "PV2SideTotalPower",
+      "pollClass": "normal",
+      "function": "HR",
+      "address": 34055,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "PV3SideTotalPower",
+      "pollClass": "normal",
+      "function": "HR",
+      "address": 34056,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "PV1SideVoltage",
+      "pollClass": "normal",
+      "function": "HR",
+      "address": 34063,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "PV2SideVoltage",
+      "pollClass": "normal",
+      "function": "HR",
+      "address": 34064,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "PV3SideVoltage",
+      "pollClass": "normal",
+      "function": "HR",
+      "address": 34065,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "PVSideTotalCurrent",
+      "pollClass": "normal",
+      "function": "HR",
+      "address": 34066,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "PV1SideTotalCurrent",
+      "pollClass": "normal",
+      "function": "HR",
+      "address": 34067,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "PV2SideTotalCurrent",
+      "pollClass": "normal",
+      "function": "HR",
+      "address": 34068,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "PV3SideTotalCurrent",
+      "pollClass": "normal",
+      "function": "HR",
+      "address": 34069,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "PVExternalDcBusVoltage",
+      "pollClass": "normal",
+      "function": "HR",
+      "address": 34076,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "PVInternalDcBusVoltage",
+      "pollClass": "normal",
+      "function": "HR",
+      "address": 34077,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "PVBusSidePower",
+      "pollClass": "normal",
+      "function": "HR",
+      "address": 34078,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "PVBusSideCurrent",
+      "pollClass": "normal",
+      "function": "HR",
+      "address": 34079,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "PVModuleTemperature",
+      "pollClass": "normal",
+      "function": "HR",
+      "address": 34081
+    },
+    {
+      "id": "PVGeneratedEnergyHighWord",
+      "pollClass": "slow",
+      "function": "HRUS",
+      "address": 34082,
+      "supporting": true
+    },
+    {
+      "id": "PVGeneratedEnergyLowWord",
+      "pollClass": "slow",
+      "function": "HRUS",
+      "address": 34083,
+      "supporting": true
+    },
+    {
+      "id": "PVGeneratedEnergy",
+      "pollClass": "slow",
+      "calc": {
+        "inputs": {
+          "hi": "PVGeneratedEnergyHighWord",
+          "lo": "PVGeneratedEnergyLowWord"
+        },
+        "expr": "(hi * 65536 + lo) * 0.1"
+      }
+    }
+  ],
+  "commands": [
+    {
+      "id": "PVDCStart",
+      "function": "HRUS",
+      "address": 34161
+    },
+    {
+      "id": "PVDCStop",
+      "function": "HRUS",
+      "address": 34162
+    },
+    {
+      "id": "PVDCClearFault",
+      "function": "HRUS",
+      "address": 34163
+    },
+    {
+      "id": "PVBusCurrentLimit",
+      "function": "HRUS",
+      "address": 34222,
+      "readback": true,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    }
+  ]
+}

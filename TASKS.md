@@ -48,7 +48,7 @@ This task list was rebuilt on April 3, 2026 from:
 - [x] `src/templates/eGauge_280_ss40k.json`
   - local diff appears mostly formatting/line-ending churn
 - [x] Added Mini Sinexcel templates:
-  - `src/templates/Sinexcel_Mini_ss40k.json`
+  - `src/templates/Sinexcel_Mini_PCS_ss40k.json`
   - `src/templates/Sinexcel_Mini_Fault_Map_ss40k.json`
   - Mini fault map aligned to SS40K model `40103`
 

@@ -1,5 +1,10 @@
 import type { IslandingDeviceType, SiteConfig } from "../config";
-import { deriveCapabilities, type SiteCapabilities } from "../capabilities";
+import {
+  deriveCapabilities,
+  parseMiniModel,
+  type MiniModelInfo,
+  type SiteCapabilities,
+} from "../capabilities";
 import {
   loadSiteConfigCommandSpec,
   type CloudCommandSpec,
@@ -45,6 +50,7 @@ export interface UnifiedControlDesign {
   commands: ControlCommandDesign[];
   site: {
     systemProfile: string;
+    miniModel?: MiniModelInfo;
     controllerTimezone: string;
     controllerNetwork: {
       controllerIp: string;
@@ -69,6 +75,7 @@ export interface UnifiedControlDesign {
     acInverterCount: number;
     totalRatedKwAc: number;
     curtailmentMethod: "modbus" | "frequency-shifting" | "none";
+    dcCoupledToMiniPcs: boolean;
   };
   protection: {
     islandingDevice?: IslandingDeviceType;
@@ -177,6 +184,7 @@ export function buildUnifiedControlDesign(
       .sort((a, b) => a.commandId.localeCompare(b.commandId)),
     site: {
       systemProfile: config.system.systemProfile,
+      miniModel: capabilities.miniModelInfo || undefined,
       controllerTimezone: config.system.controllerTimezone,
       controllerNetwork: {
         controllerIp: config.network.controller.ip,
@@ -207,6 +215,7 @@ export function buildUnifiedControlDesign(
         config.pv.curtailmentMethod === "frequency-shifting"
           ? config.pv.curtailmentMethod
           : "none",
+      dcCoupledToMiniPcs: resolveMiniDcCoupledPv(config, productLine),
     },
     protection: resolveProtectionDesign(config),
     metering,
@@ -270,7 +279,8 @@ export function buildUnifiedControlDesign(
         (config.operation.mode === "off-grid" ||
           config.pv.curtailmentMethod === "frequency-shifting"),
       pvKw:
-        capabilities.hasACPV && metering.sources.pvKw !== "not-configured",
+        (capabilities.hasACPV || resolveMiniDcCoupledPv(config, productLine)) &&
+        metering.sources.pvKw !== "not-configured",
       protectionState: capabilities.hasIslanding,
       generatorState: capabilities.hasGenerator,
     },
@@ -362,6 +372,17 @@ function resolveMeteringDesign(
           : "not-configured",
     },
   };
+}
+
+function resolveMiniDcCoupledPv(
+  config: SiteConfig,
+  productLine: ControlProductLine
+): boolean {
+  if (productLine !== "Mini") return false;
+  if (config.pv.dcCoupledToMiniPcs != null) {
+    return config.pv.dcCoupledToMiniPcs;
+  }
+  return parseMiniModel(config.system.systemProfile)?.hasDcPvConverter ?? false;
 }
 
 function resolvePcsLimits(

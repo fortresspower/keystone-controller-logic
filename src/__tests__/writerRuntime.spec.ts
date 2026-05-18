@@ -76,6 +76,111 @@ describe("Writer template + runtime", () => {
     });
   });
 
+  test("SolarEdge template exposes dynamic active power limit as a command", () => {
+    const compiled = buildTemplateWriteProfile("udt_solarEdge_V1", {
+      equipmentId: "SolarEdge1",
+      serverKey: "AC_PV_1",
+      unitId: 1,
+    });
+
+    expect(compiled.profile.tagsById.get("Dynamic_Active_Power_Limit")).toMatchObject({
+      tagID: "Dynamic_Active_Power_Limit",
+      unitId: 1,
+      modbusType: "HRF",
+      address: 64290,
+      rawLow: 0,
+      rawHigh: 100,
+      scaledLow: 0,
+      scaledHigh: 1,
+    });
+  });
+
+  test("Sinexcel Mini template exposes PVDC controls", () => {
+    const compiled = buildTemplateWriteProfile("Sinexcel_Mini_PCS_ss40k", {
+      equipmentId: "PCS",
+      serverKey: "PCS_SERVER",
+      unitId: 1,
+    });
+
+    expect(compiled.profile.tagsById.get("PvDcdcConverterEnable")).toMatchObject({
+      tagID: "PvDcdcConverterEnable",
+      unitId: 1,
+      modbusType: "HRUS",
+      address: 1270,
+    });
+    expect(compiled.profile.tagsById.get("PVDCStop")).toMatchObject({
+      tagID: "PVDCStop",
+      unitId: 1,
+      modbusType: "HRUS",
+      address: 34162,
+    });
+    expect(compiled.profile.tagsById.get("PVBusCurrentLimit")).toMatchObject({
+      tagID: "PVBusCurrentLimit",
+      unitId: 1,
+      modbusType: "HRUS",
+      address: 34222,
+      rawLow: 0,
+      rawHigh: 10,
+      scaledLow: 0,
+      scaledHigh: 1,
+    });
+  });
+
+  test("Sinexcel Mini PVDC module templates expose offset write commands", () => {
+    const modules = [
+      {
+        profileName: "pvdc_module_1",
+        startAddress: 34161,
+        stopAddress: 34162,
+        clearFaultAddress: 34163,
+        currentLimitAddress: 34222,
+      },
+      {
+        profileName: "pvdc_module_2",
+        startAddress: 34461,
+        stopAddress: 34462,
+        clearFaultAddress: 34463,
+        currentLimitAddress: 34522,
+      },
+      {
+        profileName: "pvdc_module_3",
+        startAddress: 34761,
+        stopAddress: 34762,
+        clearFaultAddress: 34763,
+        currentLimitAddress: 34822,
+      },
+    ];
+
+    for (const module of modules) {
+      const compiled = buildTemplateWriteProfile(module.profileName, {
+        equipmentId: "PVDC",
+        serverKey: "PCS_SERVER",
+        unitId: 1,
+      });
+
+      expect(compiled.profile.tagsById.get("PVDCStart")).toMatchObject({
+        tagID: "PVDCStart",
+        address: module.startAddress,
+      });
+      expect(compiled.profile.tagsById.get("PVDCStop")).toMatchObject({
+        tagID: "PVDCStop",
+        address: module.stopAddress,
+      });
+      expect(compiled.profile.tagsById.get("PVDCClearFault")).toMatchObject({
+        tagID: "PVDCClearFault",
+        address: module.clearFaultAddress,
+      });
+      expect(compiled.profile.tagsById.get("PVBusCurrentLimit")).toMatchObject({
+        tagID: "PVBusCurrentLimit",
+        address: module.currentLimitAddress,
+        rawLow: 0,
+        rawHigh: 10,
+        scaledLow: 0,
+        scaledHigh: 1,
+      });
+    }
+  });
+
   test("writer runtime compiles then emits modbus-flex-write requests", () => {
     let state = createWriterRuntimeState();
 

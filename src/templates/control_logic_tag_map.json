@@ -1,0 +1,351 @@
+{
+  "version": "1",
+  "description": "Canonical mapping between device template tags and unified control logic inputs/outputs. Inputs target TelemetrySnapshot fields used by runUnifiedControlCycle/evaluateCoreControl. Outputs target CoreControlCommand fields written by buildCoreWriterEnvelopes or sequencer writers.",
+  "signals": {
+    "inputs": [
+      "TelemetrySnapshot.soc",
+      "TelemetrySnapshot.gridStatus",
+      "TelemetrySnapshot.utilityPowerKw",
+      "TelemetrySnapshot.siteLoadKw",
+      "TelemetrySnapshot.pvKw",
+      "TelemetrySnapshot.pcsActivePowerKw",
+      "TelemetrySnapshot.generatorRunning",
+      "TelemetrySnapshot.protectionState",
+      "TelemetrySnapshot.pcsRunAllowed",
+      "TelemetrySnapshot.remoteInterlockClosed",
+      "TelemetrySnapshot.allowCharge",
+      "TelemetrySnapshot.allowDischarge",
+      "TelemetrySnapshot.machineStatus.batteryVoltageV",
+      "TelemetrySnapshot.machineStatus.maxChargeCurrentAllowedA",
+      "TelemetrySnapshot.machineStatus.maxDischargeCurrentAllowedA",
+      "TelemetrySnapshot.machineStatus.maxCellVoltageV",
+      "TelemetrySnapshot.machineStatus.minCellVoltageV",
+      "TelemetrySnapshot.machineStatus.maxCellTemperatureC",
+      "TelemetrySnapshot.machineStatus.minCellTemperatureC",
+      "TelemetrySnapshot.machineStatus.bmsStatus",
+      "TelemetrySnapshot.machineStatus.pcsGlobalState",
+      "TelemetrySnapshot.machineStatus.epoActive",
+      "TelemetrySnapshot.machineStatus.contactorsClosed"
+    ],
+    "outputs": [
+      "CoreControlCommand.pcsActivePowerKw",
+      "CoreControlCommand.pcsReactivePowerKvar",
+      "CoreControlCommand.pcsRunMode",
+      "CoreControlCommand.gridWireConnection",
+      "CoreControlCommand.maxChargeCurrentA",
+      "CoreControlCommand.maxDischargeCurrentA",
+      "CoreControlCommand.pvActivePowerLimitPct",
+      "GeneratorSequencerCommand.generatorStart",
+      "IslandingSequencerCommand.remoteInterlockClosed"
+    ]
+  },
+  "templates": {
+    "MBMU_280_ss40k": {
+      "templateFile": "MBMU_280_ss40k.json",
+      "equipmentRole": "battery",
+      "inputs": {
+        "TelemetrySnapshot.soc": {
+          "tagID": "System_SOC_pct",
+          "transform": "percent_to_decimal"
+        },
+        "TelemetrySnapshot.machineStatus.batteryVoltageV": {
+          "tagID": "System_Voltage_V"
+        },
+        "TelemetrySnapshot.machineStatus.maxChargeCurrentAllowedA": {
+          "tagID": "Max_Charge_Current_Allowed_A"
+        },
+        "TelemetrySnapshot.machineStatus.maxDischargeCurrentAllowedA": {
+          "tagID": "Max_Discharge_Current_Allowed_A"
+        },
+        "TelemetrySnapshot.machineStatus.maxCellVoltageV": {
+          "tagID": "Max_Cell_Voltage_V"
+        },
+        "TelemetrySnapshot.machineStatus.minCellVoltageV": {
+          "tagID": "Min_Cell_Voltage_V"
+        },
+        "TelemetrySnapshot.machineStatus.maxCellTemperatureC": {
+          "tagID": "Max_Cell_Temp_C"
+        },
+        "TelemetrySnapshot.machineStatus.minCellTemperatureC": {
+          "tagID": "Min_Cell_Temp_C"
+        },
+        "TelemetrySnapshot.machineStatus.bmsStatus": {
+          "tagID": "BMS_Status"
+        }
+      }
+    },
+    "Delta_280_ss40k": {
+      "templateFile": "Delta_280_ss40k.json",
+      "equipmentRole": "pcs",
+      "inputs": {
+        "TelemetrySnapshot.pcsActivePowerKw": {
+          "tagID": "SYSTEM_POWER_ACTIVE_ALL"
+        },
+        "TelemetrySnapshot.machineStatus.pcsGlobalState": {
+          "tagID": "SYSTEM_GLOBAL_STATE"
+        }
+      },
+      "candidateInputs": {
+        "TelemetrySnapshot.gridStatus": {
+          "tagID": "SYSTEM_STATE_SWITCH",
+          "needsVerification": true,
+          "notes": "Confirm enum meanings before driving normal/island/fault from this tag."
+        },
+        "TelemetrySnapshot.machineStatus.epoActive": {
+          "tagID": "SYSTEM_FAULT",
+          "needsVerification": true,
+          "notes": "Current template exposes aggregate faults, not a dedicated EPO bit."
+        },
+        "TelemetrySnapshot.machineStatus.contactorsClosed": {
+          "tagID": "SYSTEM_GLOBAL_STATE",
+          "needsVerification": true,
+          "notes": "Derive only after global-state enum is confirmed."
+        }
+      },
+      "outputs": {
+        "CoreControlCommand.pcsActivePowerKw": {
+          "tagID": "SYSTEM_ACTIVE_POWER_DEMAND"
+        },
+        "CoreControlCommand.pcsReactivePowerKvar": {
+          "tagID": "SYSTEM_REACTIVE_POWER_DEMAND"
+        },
+        "CoreControlCommand.pcsRunMode": {
+          "tagID": "SYSTEM_RUN_MODE"
+        },
+        "CoreControlCommand.gridWireConnection": {
+          "tagID": "GRID_WIRE_CONNECTION"
+        },
+        "IslandingSequencerCommand.pcsOnOff": {
+          "tagID": "SYSTEM_ON_OFF"
+        }
+      }
+    },
+    "eGauge_280_ss40k": {
+      "templateFile": "eGauge_280_ss40k.json",
+      "equipmentRole": "meter",
+      "inputs": {
+        "TelemetrySnapshot.utilityPowerKw": {
+          "source": "calc",
+          "inputs": {
+            "importKw": "MTR_GRID_P_IMP_TOT",
+            "exportKw": "MTR_GRID_P_EXP_TOT"
+          },
+          "expr": "importKw - exportKw",
+          "notes": "+utility means importing from grid; negative means exporting."
+        },
+        "TelemetrySnapshot.siteLoadKw": {
+          "tagID": "MTR_LOAD_P_TOT"
+        },
+        "TelemetrySnapshot.pvKw": {
+          "tagID": "MTR_ACCP_P_TOT",
+          "notes": "Use for AC-coupled PV when eGauge channel assignment follows Grid/Load/Gen/AcCp convention."
+        },
+        "TelemetrySnapshot.generatorRunning": {
+          "tagID": "MTR_GEN_P_TOT",
+          "transform": "positive_kw_to_boolean",
+          "optional": true
+        }
+      }
+    },
+    "udt_solarEdge_V1": {
+      "templateFile": "udt_solarEdge_V1.json",
+      "equipmentRole": "acPvInverter",
+      "inputs": {
+        "TelemetrySnapshot.pvKw": {
+          "tagID": "AC_POWER",
+          "aggregate": "sumAcrossAcPvInverters"
+        }
+      },
+      "outputs": {
+        "CoreControlCommand.pvActivePowerLimitPct": {
+          "tagID": "Dynamic_Active_Power_Limit",
+          "transform": "fraction_0_1",
+          "aggregate": "writeSameLimitToEachAcPvInverter"
+        }
+      }
+    },
+    "Sinexcel_Mini_PCS_ss40k": {
+      "templateFile": "Sinexcel_Mini_PCS_ss40k.json",
+      "equipmentRole": "miniPcs",
+      "inputs": {
+        "TelemetrySnapshot.pcsActivePowerKw": {
+          "tagID": "ACBusTotalActivePower",
+          "transform": "invert_sign_for_control_feedback",
+          "notes": "Mini reports positive while charging and negative while discharging. Control convention is positive discharge and negative charge."
+        },
+        "TelemetrySnapshot.pvKw": {
+          "tagID": "PVSideTotalPower",
+          "aggregate": "sumAcrossMiniPvDcModules",
+          "condition": "Mini model YY > 0. YY=45 means one DC/DC module, YY=90 means two modules, YY=135 means three modules.",
+          "notes": "PVSideTotalPower is per DC/DC module, not site total. Total DC PV is the sum of each module instance."
+        },
+        "TelemetrySnapshot.machineStatus.batteryVoltageV": {
+          "tagID": "DCInputVoltage"
+        }
+      },
+      "candidateInputs": {
+        "TelemetrySnapshot.gridStatus": {
+          "tagID": "OnOffGridSwitch",
+          "needsVerification": true
+        }
+      },
+      "outputs": {
+        "CoreControlCommand.pcsActivePowerKw": {
+          "tagID": "ActivePowerSetpoint",
+          "transform": "invert_sign_for_mini_writer"
+        },
+        "CoreControlCommand.maxChargeCurrentA": {
+          "tagID": "MaxChgCurrent"
+        },
+        "CoreControlCommand.maxDischargeCurrentA": {
+          "tagID": "MaxDsgCurrent"
+        },
+        "MiniPvDcControl.enable": {
+          "tagID": "PvDcdcConverterEnable"
+        },
+        "MiniPvDcControl.start": {
+          "tagID": "PVDCStart"
+        },
+        "MiniPvDcControl.stop": {
+          "tagID": "PVDCStop"
+        },
+        "MiniPvDcControl.clearFault": {
+          "tagID": "PVDCClearFault"
+        },
+        "MiniPvDcControl.busCurrentLimitA": {
+          "tagID": "PVBusCurrentLimit"
+        }
+      }
+    },
+    "AMPACE_Mini_ss40k": {
+      "templateFile": "AMPACE_Mini_ss40k.json",
+      "equipmentRole": "miniBattery",
+      "inputs": {
+        "TelemetrySnapshot.soc": {
+          "tagID": "BamsSoc",
+          "notes": "Template scale converts raw 0..1000 to decimal 0..1."
+        },
+        "TelemetrySnapshot.machineStatus.batteryVoltageV": {
+          "tagID": "BamsVoltage"
+        },
+        "TelemetrySnapshot.machineStatus.maxChargeCurrentAllowedA": {
+          "tagID": "BamsPermitChgCurrent"
+        },
+        "TelemetrySnapshot.machineStatus.maxDischargeCurrentAllowedA": {
+          "tagID": "BamsPermitDsgCurrent"
+        },
+        "TelemetrySnapshot.machineStatus.maxCellVoltageV": {
+          "tagID": "BamsMaxCellVol"
+        },
+        "TelemetrySnapshot.machineStatus.minCellVoltageV": {
+          "tagID": "BamsMinCellVol"
+        },
+        "TelemetrySnapshot.machineStatus.maxCellTemperatureC": {
+          "tagID": "BamsMaxCellT"
+        },
+        "TelemetrySnapshot.machineStatus.minCellTemperatureC": {
+          "tagID": "BamsMinCellT"
+        }
+      },
+      "candidateInputs": {
+        "TelemetrySnapshot.allowCharge": {
+          "tagID": "BamsPermitChgPower",
+          "transform": "positive_kw_to_boolean",
+          "needsVerification": true
+        },
+        "TelemetrySnapshot.allowDischarge": {
+          "tagID": "BamsPermitDsgPower",
+          "transform": "positive_kw_to_boolean",
+          "needsVerification": true
+        },
+        "TelemetrySnapshot.machineStatus.contactorsClosed": {
+          "tagID": "BamsHvContactorMode",
+          "needsVerification": true
+        }
+      },
+      "outputs": {
+        "AmpaceBmsControl.hvContactorMode": {
+          "tagID": "BamsHvContactorMode"
+        },
+        "AmpaceBmsControl.hvContactorControl": {
+          "tagID": "BamsHvContactorCtrl"
+        }
+      }
+    },
+    "Sinexcel_Mini_Load_ss40k": {
+      "templateFile": "Sinexcel_Mini_Load_ss40k.json",
+      "equipmentRole": "loadMeter",
+      "inputs": {
+        "TelemetrySnapshot.siteLoadKw": {
+          "tagID": "LoadTotalActivePower"
+        }
+      }
+    },
+    "Sinexcel_Mini_PVDC_Module1_ss40k": {
+      "templateFile": "Sinexcel_Mini_PVDC_Module1_ss40k.json",
+      "equipmentRole": "miniPvDcModule",
+      "inputs": {
+        "TelemetrySnapshot.pvKw": {
+          "tagID": "PVSideTotalPower",
+          "aggregate": "sumAcrossMiniPvDcModules",
+          "condition": "Mini model YY > 0. YY=45 means one DC/DC module, YY=90 means two modules, YY=135 means three modules.",
+          "notes": "Each DC/DC converter is 45 kW. Use parsed Mini model DC PV kW to decide how many module profiles should be included."
+        }
+      },
+      "outputs": {
+        "MiniPvDcControl.start": {
+          "tagID": "PVDCStart"
+        },
+        "MiniPvDcControl.stop": {
+          "tagID": "PVDCStop"
+        },
+        "MiniPvDcControl.clearFault": {
+          "tagID": "PVDCClearFault"
+        },
+        "MiniPvDcControl.busCurrentLimitA": {
+          "tagID": "PVBusCurrentLimit"
+        }
+      }
+    },
+    "Sinexcel_Mini_PVDC_Module2_ss40k": {
+      "templateFile": "Sinexcel_Mini_PVDC_Module2_ss40k.json",
+      "equipmentRole": "miniPvDcModule",
+      "sameMappingAs": "Sinexcel_Mini_PVDC_Module1_ss40k"
+    },
+    "Sinexcel_Mini_PVDC_Module3_ss40k": {
+      "templateFile": "Sinexcel_Mini_PVDC_Module3_ss40k.json",
+      "equipmentRole": "miniPvDcModule",
+      "sameMappingAs": "Sinexcel_Mini_PVDC_Module1_ss40k"
+    },
+    "Delta_Fault_Map_ss40k": {
+      "templateFile": "Delta_Fault_Map_ss40k.json",
+      "equipmentRole": "pcsFaultMap",
+      "inputs": {
+        "TelemetrySnapshot.machineStatus.pcsGlobalState": {
+          "source": "faultMapAggregate",
+          "notes": "Fault map outputs should feed fault/warning diagnostics first. Only promote to control safety gates after the exact source fault bits are verified."
+        }
+      }
+    },
+    "MBMU_Fault_Map_ss40k": {
+      "templateFile": "MBMU_Fault_Map_ss40k.json",
+      "equipmentRole": "batteryFaultMap",
+      "inputs": {
+        "TelemetrySnapshot.machineStatus.bmsStatus": {
+          "source": "faultMapAggregate",
+          "notes": "Use as fault/warning diagnostic context; keep BMS_Status as the primary control gate until fault map severity is confirmed."
+        }
+      }
+    },
+    "Sinexcel_Mini_Fault_Map_ss40k": {
+      "templateFile": "Sinexcel_Mini_Fault_Map_ss40k.json",
+      "equipmentRole": "miniFaultMap",
+      "inputs": {
+        "TelemetrySnapshot.machineStatus.pcsGlobalState": {
+          "source": "faultMapAggregate",
+          "notes": "Mini fault maps should feed diagnostic reasons and availability gates after bit severity is verified."
+        }
+      }
+    }
+  }
+}

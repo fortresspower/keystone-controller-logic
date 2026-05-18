@@ -1,0 +1,91 @@
+{
+  "version": "2",
+  "device": {
+    "vendor": "SolarEdge",
+    "model": "Inverter",
+    "protocol": "modbus-tcp",
+    "defaultByteOrder": "BE",
+    "defaultWordOrder32": "ABCD",
+    "name": "udt_solarEdge_V1",
+    "sourceFormat": "legacy-eGauge"
+  },
+  "telemetry": [
+    {
+      "id": "AC_POWER_RAW",
+      "pollClass": "normal",
+      "function": "HR",
+      "address": 40083,
+      "supporting": true
+    },
+    {
+      "id": "AC_POWER_SF",
+      "pollClass": "normal",
+      "function": "HR",
+      "address": 40084,
+      "supporting": true
+    },
+    {
+      "id": "Fall-back_Active_Power_Limit",
+      "pollClass": "normal",
+      "function": "HRF",
+      "address": 64274,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 100,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "Dynamic_Active_Power_Limit",
+      "pollClass": "normal",
+      "function": "HRF",
+      "address": 64290,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 100,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "AC_POWER",
+      "pollClass": "normal",
+      "calc": {
+        "inputs": {
+          "raw": "AC_POWER_RAW",
+          "sf": "AC_POWER_SF"
+        },
+        "expr": "raw * pow(10, sf)"
+      }
+    }
+  ],
+  "commands": [
+    {
+      "id": "Fall-back_Active_Power_Limit",
+      "function": "HRF",
+      "address": 64274,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 100,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "Dynamic_Active_Power_Limit",
+      "function": "HRF",
+      "address": 64290,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 100,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    }
+  ]
+}

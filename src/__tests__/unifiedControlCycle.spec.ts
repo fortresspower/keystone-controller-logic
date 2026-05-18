@@ -84,6 +84,133 @@ function makeConfig(): SiteConfig {
   };
 }
 
+function makeMiniConfig(): SiteConfig {
+  return {
+    system: {
+      systemProfile: "MINI-60-90-163-480",
+      controllerTimezone: "America/Los_Angeles",
+      nominal: {
+        voltageVll: 480,
+        frequencyHz: 60,
+      },
+    },
+    network: {
+      controller: {
+        ip: "192.168.1.10",
+        modbusServer: {
+          ip: "192.168.1.20",
+          port: 502,
+        },
+      },
+    },
+    operation: {
+      mode: "grid-tied",
+      gridCode: "IEEE1547-2018",
+      crdMode: "no-restriction",
+      scheduledControlEnabled: true,
+    },
+    battery: {
+      minSoc: 0.1,
+      maxSoc: 0.95,
+      socLow: 0.1,
+      socLowRecover: 0.12,
+      socHigh: 0.95,
+      socHighRecover: 0.92,
+      forceGridChargeSoc: 0.02,
+      powerHeadroomKw: 0,
+      commandRampKwPerSec: 1000,
+    },
+    pv: {
+      acInverters: [],
+      curtailmentMethod: null,
+    },
+    metering: {
+      meterType: "Mini internal",
+      modbusProfile: "Sinexcel_Mini_PCS_ss40k",
+      ip: "192.168.1.50",
+      reads: {
+        pv: true,
+        pvFromInverter: false,
+        utility: true,
+        load: true,
+      },
+      calculations: {
+        utilityPowerKw: {
+          source: "tag",
+          tagID: "Meter.POI_kW",
+        },
+        siteLoadKw: {
+          source: "tag",
+          tagID: "Meter.Load_kW",
+        },
+        pvKw: {
+          source: "tag",
+          tagID: "PCS.DcPv_kW",
+        },
+      },
+    },
+  };
+}
+
+function makeMiniAcPvConfig(): SiteConfig {
+  const config = makeMiniConfig();
+  config.system.systemProfile = "MINI-60-0-163-480";
+  config.pv = {
+    acInverters: [
+      {
+        id: "PV1",
+        type: "SMA",
+        model: "STP",
+        ratedKwAc: 90,
+        ip: "192.168.1.51",
+        port: 502,
+        modbusProfile: "sma-sunspec",
+      },
+    ],
+    curtailmentMethod: "modbus",
+    dcCoupledToMiniPcs: false,
+  };
+  config.metering = {
+    meterType: "Site meter",
+    modbusProfile: "site_meter",
+    ip: "192.168.1.52",
+    reads: {
+      pv: true,
+      pvFromInverter: false,
+      utility: true,
+      load: true,
+    },
+    calculations: {
+      utilityPowerKw: {
+        source: "tag",
+        tagID: "Meter.POI_kW",
+      },
+      siteLoadKw: {
+        source: "tag",
+        tagID: "Meter.Load_kW",
+      },
+      pvKw: {
+        source: "tag",
+        tagID: "Meter.PV_kW",
+      },
+    },
+  };
+  return config;
+}
+
+function miniMachineStatus(overrides = {}) {
+  return {
+    batteryVoltageV: 500,
+    maxChargeCurrentAllowedA: 100,
+    maxDischargeCurrentAllowedA: 120,
+    maxCellVoltageV: 3.4,
+    minCellVoltageV: 3.2,
+    minCellTemperatureC: 25,
+    maxCellTemperatureC: 30,
+    ...overrides,
+  };
+}
+
 describe("unified control cycle", () => {
   test("uses site metering calculations before core dispatch and writer output", () => {
     const result = runUnifiedControlCycle(makeConfig(), {
@@ -1040,6 +1167,686 @@ describe("unified control cycle", () => {
           status: "blocked",
           reasons: expect.arrayContaining(["remote-interlock-open"]),
         }),
+      ])
+    );
+  });
+
+  test("Mini translates scheduled battery charge plus DC PV into AC setpoint", () => {
+    const result = runUnifiedControlCycle(makeMiniConfig(), {
+      telemetry: {
+        "Meter.POI_kW": -30,
+        "Meter.Load_kW": 10,
+        "PCS.DcPv_kW": 40,
+      },
+      baseTelemetry: {
+        soc: 0.5,
+        gridStatus: "normal",
+        machineStatus: miniMachineStatus(),
+      },
+      schedule: {
+        activePowerKwSetpoint: -10,
+      },
+    });
+
+    expect(result.command).toEqual(
+      expect.objectContaining({
+        controlMode: "scheduled",
+        batteryActivePowerKw: -10,
+        pcsActivePowerKw: 30,
+        pcsActivePowerSetpointEnabled: true,
+        maxChargeCurrentA: 100,
+        maxDischargeCurrentA: 120,
+      })
+    );
+    expect(result.design.site.miniModel).toEqual(
+      expect.objectContaining({
+        dcPvKw: 90,
+        hasDcPvConverter: true,
+      })
+    );
+    expect(result.design.pv.dcCoupledToMiniPcs).toBe(true);
+    expect(result.command.reasons).toEqual(
+      expect.arrayContaining([
+        "scheduled-active-setpoint",
+        "mini-dc-pv-ac-setpoint",
+      ])
+    );
+    expect(result.writerEnvelopes).toEqual([
+      {
+        topic: "PCS",
+        payload: [
+          { tagID: "ActivePowerSetpoint", value: -30 },
+          { tagID: "MaxChgCurrent", value: 100 },
+          { tagID: "MaxDsgCurrent", value: 120 },
+        ],
+      },
+    ]);
+  });
+
+  test("Mini AC PV topology does not pass PV through the PCS setpoint", () => {
+    const result = runUnifiedControlCycle(makeMiniAcPvConfig(), {
+      telemetry: {
+        "Meter.POI_kW": -30,
+        "Meter.Load_kW": 10,
+        "Meter.PV_kW": 40,
+      },
+      baseTelemetry: {
+        soc: 0.5,
+        gridStatus: "normal",
+        machineStatus: miniMachineStatus(),
+      },
+      schedule: {
+        activePowerKwSetpoint: -10,
+      },
+    });
+
+    expect(result.design.pv.dcCoupledToMiniPcs).toBe(false);
+    expect(result.design.site.miniModel).toEqual(
+      expect.objectContaining({
+        dcPvKw: 0,
+        hasDcPvConverter: false,
+      })
+    );
+    expect(result.command).toEqual(
+      expect.objectContaining({
+        controlMode: "scheduled",
+        batteryActivePowerKw: -10,
+        pcsActivePowerKw: -10,
+        pcsActivePowerSetpointEnabled: true,
+      })
+    );
+    expect(result.command.reasons).toEqual(
+      expect.arrayContaining(["mini-ac-pv-battery-setpoint"])
+    );
+    expect(result.command.reasons).not.toEqual(
+      expect.arrayContaining(["mini-dc-pv-ac-setpoint"])
+    );
+    expect(result.writerEnvelopes[0].payload).toEqual([
+      { tagID: "ActivePowerSetpoint", value: 10 },
+      { tagID: "MaxChgCurrent", value: 100 },
+      { tagID: "MaxDsgCurrent", value: 120 },
+    ]);
+  });
+
+  test("Mini AC PV no-export uses battery command and skips DC PV load-follow", () => {
+    const config = makeMiniAcPvConfig();
+    config.operation.crdMode = "no-export";
+
+    const result = runUnifiedControlCycle(config, {
+      telemetry: {
+        "Meter.POI_kW": -20,
+        "Meter.Load_kW": 10,
+        "Meter.PV_kW": 30,
+      },
+      baseTelemetry: {
+        soc: 0.96,
+        gridStatus: "normal",
+        pcsActivePowerKw: 0,
+        machineStatus: miniMachineStatus(),
+      },
+      schedule: {},
+    });
+
+    expect(result.command).toEqual(
+      expect.objectContaining({
+        batteryActivePowerKw: 0,
+        pcsActivePowerKw: 0,
+        maxChargeCurrentA: 0,
+      })
+    );
+    expect(result.command.reasons).not.toEqual(
+      expect.arrayContaining(["mini-no-export-pv-load-follow"])
+    );
+    expect(result.writerEnvelopes[0].payload).toEqual([
+      { tagID: "ActivePowerSetpoint", value: 0 },
+      { tagID: "MaxChgCurrent", value: 0 },
+      { tagID: "MaxDsgCurrent", value: 120 },
+    ]);
+  });
+
+  test("Mini no-export absorbs DC PV surplus into battery charge", () => {
+    const config = makeMiniConfig();
+    config.operation.crdMode = "no-export";
+
+    const result = runUnifiedControlCycle(config, {
+      telemetry: {
+        "Meter.POI_kW": -20,
+        "Meter.Load_kW": 10,
+        "PCS.DcPv_kW": 30,
+      },
+      baseTelemetry: {
+        soc: 0.5,
+        gridStatus: "normal",
+        pcsActivePowerKw: 30,
+        machineStatus: miniMachineStatus(),
+      },
+      schedule: {},
+    });
+
+    expect(result.command).toEqual(
+      expect.objectContaining({
+        batteryActivePowerKw: -20,
+        pcsActivePowerKw: 10,
+        pcsActivePowerSetpointEnabled: true,
+      })
+    );
+    expect(result.command.reasons).toEqual(
+      expect.arrayContaining(["crd-no-export", "mini-dc-pv-ac-setpoint"])
+    );
+    expect(result.writerEnvelopes[0].payload).toEqual([
+      { tagID: "ActivePowerSetpoint", value: -10 },
+      { tagID: "MaxChgCurrent", value: 100 },
+      { tagID: "MaxDsgCurrent", value: 120 },
+    ]);
+  });
+
+  test("Mini no-export at full battery zeros charge current and follows load", () => {
+    const config = makeMiniConfig();
+    config.operation.crdMode = "no-export";
+
+    const result = runUnifiedControlCycle(config, {
+      telemetry: {
+        "Meter.POI_kW": -20,
+        "Meter.Load_kW": 10,
+        "PCS.DcPv_kW": 30,
+      },
+      baseTelemetry: {
+        soc: 0.96,
+        gridStatus: "normal",
+        pcsActivePowerKw: 30,
+        machineStatus: miniMachineStatus(),
+      },
+      schedule: {},
+    });
+
+    expect(result.command).toEqual(
+      expect.objectContaining({
+        batteryActivePowerKw: 0,
+        pcsActivePowerKw: 10,
+        pcsActivePowerSetpointEnabled: true,
+        maxChargeCurrentA: 0,
+        maxDischargeCurrentA: 120,
+      })
+    );
+    expect(result.command.reasons).toEqual(
+      expect.arrayContaining([
+        "crd-no-export",
+        "soc-high-charge-block",
+        "mini-max-charge-current-zero-soc",
+        "mini-no-export-pv-load-follow",
+        "mini-dc-pv-ac-setpoint",
+      ])
+    );
+    expect(result.writerEnvelopes[0].payload).toEqual([
+      { tagID: "ActivePowerSetpoint", value: -10 },
+      { tagID: "MaxChgCurrent", value: 0 },
+      { tagID: "MaxDsgCurrent", value: 120 },
+    ]);
+  });
+
+  test("Mini no-export at full battery recovers load follow from curtailed PV import", () => {
+    const config = makeMiniConfig();
+    config.operation.crdMode = "no-export";
+
+    const result = runUnifiedControlCycle(config, {
+      telemetry: {
+        "Meter.POI_kW": 42,
+        "Meter.Load_kW": 50,
+        "PCS.DcPv_kW": 8,
+      },
+      baseTelemetry: {
+        soc: 0.96,
+        gridStatus: "normal",
+        pcsActivePowerKw: 8,
+        machineStatus: miniMachineStatus(),
+      },
+      schedule: {},
+    });
+
+    expect(result.command).toEqual(
+      expect.objectContaining({
+        batteryActivePowerKw: 0,
+        pcsActivePowerKw: 50,
+        maxChargeCurrentA: 0,
+      })
+    );
+    expect(result.command.reasons).toEqual(
+      expect.arrayContaining([
+        "mini-max-charge-current-zero-soc",
+        "mini-no-export-pv-load-follow",
+      ])
+    );
+    expect(result.writerEnvelopes[0].payload).toEqual([
+      { tagID: "ActivePowerSetpoint", value: -50 },
+      { tagID: "MaxChgCurrent", value: 0 },
+      { tagID: "MaxDsgCurrent", value: 120 },
+    ]);
+  });
+
+  test("Mini scheduled meter rule charges DC PV surplus instead of holding PV as battery discharge", () => {
+    const result = runUnifiedControlCycle(makeMiniConfig(), {
+      telemetry: {
+        "Meter.POI_kW": -68,
+        "Meter.Load_kW": 38,
+        "PCS.DcPv_kW": 90,
+      },
+      baseTelemetry: {
+        soc: 0.61,
+        gridStatus: "normal",
+        pcsActivePowerKw: 107,
+        machineStatus: miniMachineStatus(),
+      },
+      schedule: {
+        strategy: {
+          meter_rule: {
+            discharge: {
+              net_load_threshold: { value: 20, unit: "kW" },
+            },
+            charge: {
+              net_load_threshold: { value: 1, unit: "kW" },
+            },
+          },
+        },
+      },
+    });
+
+    expect(result.command).toEqual(
+      expect.objectContaining({
+        controlMode: "scheduled",
+        batteryActivePowerKw: -52,
+        pcsActivePowerKw: 38,
+        predictedUtilityPowerKw: 1,
+      })
+    );
+    expect(result.command.reasons).toEqual(
+      expect.arrayContaining([
+        "scheduled-meter-rule-charge",
+        "mini-dc-pv-ac-setpoint",
+      ])
+    );
+    expect(result.command.reasons).not.toEqual(
+      expect.arrayContaining(["scheduled-meter-rule-discharge-hold"])
+    );
+  });
+
+  test("Mini lets DC PV pass through when SOC blocks scheduled charge", () => {
+    const result = runUnifiedControlCycle(makeMiniConfig(), {
+      telemetry: {
+        "Meter.POI_kW": -40,
+        "Meter.Load_kW": 0,
+        "PCS.DcPv_kW": 40,
+      },
+      baseTelemetry: {
+        soc: 0.96,
+        gridStatus: "normal",
+        machineStatus: miniMachineStatus(),
+      },
+      schedule: {
+        activePowerKwSetpoint: -10,
+      },
+    });
+
+    expect(result.command).toEqual(
+      expect.objectContaining({
+        batteryActivePowerKw: 0,
+        pcsActivePowerKw: 40,
+        maxChargeCurrentA: 0,
+        maxDischargeCurrentA: 120,
+      })
+    );
+    expect(result.command.reasons).toEqual(
+      expect.arrayContaining([
+        "soc-high-no-charge",
+        "mini-max-charge-current-zero-soc",
+      ])
+    );
+    expect(result.writerEnvelopes[0].payload).toEqual([
+      { tagID: "ActivePowerSetpoint", value: -40 },
+      { tagID: "MaxChgCurrent", value: 0 },
+      { tagID: "MaxDsgCurrent", value: 120 },
+    ]);
+  });
+
+  test("Mini cell-voltage high block stops battery charge but keeps DC PV passthrough", () => {
+    const result = runUnifiedControlCycle(makeMiniConfig(), {
+      telemetry: {
+        "Meter.POI_kW": -40,
+        "Meter.Load_kW": 0,
+        "PCS.DcPv_kW": 40,
+      },
+      baseTelemetry: {
+        soc: 0.5,
+        gridStatus: "normal",
+        machineStatus: miniMachineStatus({
+          maxCellVoltageV: 3.58,
+        }),
+      },
+      schedule: {
+        activePowerKwSetpoint: -10,
+      },
+    });
+
+    expect(result.command).toEqual(
+      expect.objectContaining({
+        batteryActivePowerKw: 0,
+        pcsActivePowerKw: 40,
+        maxChargeCurrentA: 0,
+        maxDischargeCurrentA: 120,
+      })
+    );
+    expect(result.command.reasons).toEqual(
+      expect.arrayContaining([
+        "mini-cell-high-charge-block",
+        "mini-max-charge-current-zero-cell-high",
+      ])
+    );
+    expect(result.writerEnvelopes[0].payload).toEqual([
+      { tagID: "ActivePowerSetpoint", value: -40 },
+      { tagID: "MaxChgCurrent", value: 0 },
+      { tagID: "MaxDsgCurrent", value: 120 },
+    ]);
+  });
+
+  test("Mini cell-voltage high charge block uses release hysteresis", () => {
+    const state = {
+      miniCellVoltageChargeBlocked: true,
+    };
+
+    const held = runUnifiedControlCycle(makeMiniConfig(), {
+      state,
+      telemetry: {
+        "Meter.POI_kW": -40,
+        "Meter.Load_kW": 0,
+        "PCS.DcPv_kW": 40,
+      },
+      baseTelemetry: {
+        soc: 0.5,
+        gridStatus: "normal",
+        machineStatus: miniMachineStatus({
+          maxCellVoltageV: 3.4,
+        }),
+      },
+      schedule: {
+        activePowerKwSetpoint: -10,
+      },
+    });
+
+    expect(held.command.batteryActivePowerKw).toBe(0);
+    expect(held.command.maxChargeCurrentA).toBe(0);
+    expect(held.command.reasons).toEqual(
+      expect.arrayContaining(["mini-cell-high-charge-block"])
+    );
+
+    const released = runUnifiedControlCycle(makeMiniConfig(), {
+      state,
+      telemetry: {
+        "Meter.POI_kW": -40,
+        "Meter.Load_kW": 0,
+        "PCS.DcPv_kW": 40,
+      },
+      baseTelemetry: {
+        soc: 0.5,
+        gridStatus: "normal",
+        machineStatus: miniMachineStatus({
+          maxCellVoltageV: 3.32,
+        }),
+      },
+      schedule: {
+        activePowerKwSetpoint: -10,
+      },
+    });
+
+    expect(released.command.batteryActivePowerKw).toBe(-10);
+    expect(released.command.maxChargeCurrentA).toBe(100);
+  });
+
+  test("Mini missing cell-voltage telemetry fails safe for charge and discharge directions", () => {
+    const charge = runUnifiedControlCycle(makeMiniConfig(), {
+      telemetry: {
+        "Meter.POI_kW": 0,
+        "Meter.Load_kW": 0,
+        "PCS.DcPv_kW": 0,
+      },
+      baseTelemetry: {
+        soc: 0.5,
+        gridStatus: "normal",
+        machineStatus: miniMachineStatus({
+          maxCellVoltageV: undefined,
+        }),
+      },
+      schedule: {
+        activePowerKwSetpoint: -10,
+      },
+    });
+
+    expect(charge.command.batteryActivePowerKw).toBe(0);
+    expect(charge.command.maxChargeCurrentA).toBe(0);
+    expect(charge.command.reasons).toEqual(
+      expect.arrayContaining([
+        "mini-cell-voltage-max-missing",
+        "mini-cell-high-charge-block",
+      ])
+    );
+
+    const discharge = runUnifiedControlCycle(makeMiniConfig(), {
+      telemetry: {
+        "Meter.POI_kW": 0,
+        "Meter.Load_kW": 0,
+        "PCS.DcPv_kW": 0,
+      },
+      baseTelemetry: {
+        soc: 0.5,
+        gridStatus: "normal",
+        machineStatus: miniMachineStatus({
+          minCellVoltageV: undefined,
+        }),
+      },
+      schedule: {
+        activePowerKwSetpoint: 10,
+      },
+    });
+
+    expect(discharge.command.batteryActivePowerKw).toBe(0);
+    expect(discharge.command.maxDischargeCurrentA).toBe(0);
+    expect(discharge.command.reasons).toEqual(
+      expect.arrayContaining([
+        "mini-cell-voltage-min-missing",
+        "mini-cell-low-discharge-block",
+      ])
+    );
+  });
+
+  test("Mini DC PV suppresses active power setpoint and charge current in off-grid mode", () => {
+    const result = runUnifiedControlCycle(makeMiniConfig(), {
+      telemetry: {
+        "Meter.POI_kW": 0,
+        "Meter.Load_kW": 30,
+        "PCS.DcPv_kW": 40,
+      },
+      baseTelemetry: {
+        soc: 0.5,
+        gridStatus: "island",
+        machineStatus: miniMachineStatus(),
+      },
+      schedule: {
+        activePowerKwSetpoint: -10,
+      },
+    });
+
+    expect(result.command).toEqual(
+      expect.objectContaining({
+        pcsActivePowerKw: 0,
+        pcsActivePowerSetpointEnabled: false,
+        maxChargeCurrentA: 0,
+        maxDischargeCurrentA: 120,
+      })
+    );
+    expect(result.command.reasons).toEqual(
+      expect.arrayContaining([
+        "mini-off-grid-setpoint-suppressed",
+        "mini-off-grid-dc-pv-charge-current-zero",
+      ])
+    );
+    expect(result.writerEnvelopes).toEqual([
+      {
+        topic: "PCS",
+        payload: [
+          { tagID: "MaxChgCurrent", value: 0 },
+          { tagID: "MaxDsgCurrent", value: 120 },
+        ],
+      },
+    ]);
+  });
+
+  test("Mini AC PV off-grid limits PV inverter active power like 280", () => {
+    const config = makeMiniAcPvConfig();
+    config.operation.mode = "off-grid";
+
+    const result = runUnifiedControlCycle(config, {
+      telemetry: {
+        "Meter.POI_kW": 0,
+        "Meter.Load_kW": 30,
+        "Meter.PV_kW": 120,
+      },
+      baseTelemetry: {
+        soc: 0.96,
+        gridStatus: "island",
+        machineStatus: miniMachineStatus(),
+      },
+      schedule: {},
+      nowMs: 1_000_000,
+    });
+
+    expect(result.command).toEqual(
+      expect.objectContaining({
+        pcsActivePowerKw: 0,
+        pcsActivePowerSetpointEnabled: false,
+        pvCurtailmentKw: 90,
+        pvActivePowerLimitPct: expect.closeTo(1 / 3, 5),
+      })
+    );
+    expect(result.command.reasons).toEqual(
+      expect.arrayContaining([
+        "mini-off-grid-setpoint-suppressed",
+        "pv-curtailment-modbus",
+      ])
+    );
+    expect(result.writerEnvelopes).toEqual(
+      expect.arrayContaining([
+        {
+          topic: "PV1",
+          payload: [
+            {
+              tagID: "PV1.Dynamic_Active_Power_Limit",
+              value: expect.closeTo(1 / 3, 5),
+            },
+          ],
+        },
+      ])
+    );
+  });
+
+  test("Mini protection zeros discharge current at low SOC", () => {
+    const result = runUnifiedControlCycle(makeMiniConfig(), {
+      telemetry: {
+        "Meter.POI_kW": 10,
+        "Meter.Load_kW": 10,
+        "PCS.DcPv_kW": 0,
+      },
+      baseTelemetry: {
+        soc: 0.08,
+        gridStatus: "normal",
+        machineStatus: miniMachineStatus(),
+      },
+      schedule: {
+        activePowerKwSetpoint: 10,
+      },
+    });
+
+    expect(result.command).toEqual(
+      expect.objectContaining({
+        batteryActivePowerKw: 0,
+        maxChargeCurrentA: 100,
+        maxDischargeCurrentA: 0,
+      })
+    );
+    expect(result.command.reasons).toEqual(
+      expect.arrayContaining([
+        "soc-low-no-discharge",
+        "mini-max-discharge-current-zero-soc",
+      ])
+    );
+    expect(result.writerEnvelopes[0].payload).toEqual([
+      { tagID: "ActivePowerSetpoint", value: 0 },
+      { tagID: "MaxChgCurrent", value: 100 },
+      { tagID: "MaxDsgCurrent", value: 0 },
+    ]);
+  });
+
+  test("Mini emergency grid charge runs below configured SOC unless charge cell block is active", () => {
+    const config = makeMiniConfig();
+    config.battery.forceGridChargeSoc = 0.07;
+    config.battery.forceGridChargeKw = 10;
+
+    const safe = runUnifiedControlCycle(config, {
+      telemetry: {
+        "Meter.POI_kW": 0,
+        "Meter.Load_kW": 0,
+        "PCS.DcPv_kW": 0,
+      },
+      baseTelemetry: {
+        soc: 0.06,
+        gridStatus: "normal",
+        machineStatus: miniMachineStatus(),
+      },
+      schedule: {
+        activePowerKwSetpoint: 0,
+      },
+    });
+
+    expect(safe.command).toEqual(
+      expect.objectContaining({
+        batteryActivePowerKw: -10,
+        pcsActivePowerKw: -10,
+        maxDischargeCurrentA: 0,
+      })
+    );
+    expect(safe.command.reasons).toEqual(
+      expect.arrayContaining([
+        "force-grid-charge",
+        "mini-max-discharge-current-zero-soc",
+      ])
+    );
+    expect(safe.writerEnvelopes[0].payload).toEqual([
+      { tagID: "ActivePowerSetpoint", value: 10 },
+      { tagID: "MaxChgCurrent", value: 100 },
+      { tagID: "MaxDsgCurrent", value: 0 },
+    ]);
+
+    const blocked = runUnifiedControlCycle(config, {
+      telemetry: {
+        "Meter.POI_kW": 0,
+        "Meter.Load_kW": 0,
+        "PCS.DcPv_kW": 0,
+      },
+      baseTelemetry: {
+        soc: 0.06,
+        gridStatus: "normal",
+        machineStatus: miniMachineStatus({
+          maxCellVoltageV: 3.58,
+        }),
+      },
+      schedule: {
+        activePowerKwSetpoint: 0,
+      },
+    });
+
+    expect(blocked.command.batteryActivePowerKw).toBe(0);
+    expect(blocked.command.maxChargeCurrentA).toBe(0);
+    expect(blocked.command.reasons).toEqual(
+      expect.arrayContaining([
+        "mini-cell-high-charge-block",
+        "force-grid-charge-blocked",
       ])
     );
   });

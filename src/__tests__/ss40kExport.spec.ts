@@ -134,4 +134,154 @@ describe("SS40K export helpers", () => {
       },
     });
   });
+
+  test("AMPACE Mini BMS maps battery telemetry into SS40K monitoring models", () => {
+    const { lookup } = buildSs40kLookup({
+      BMS: "AMPACE_Mini_ss40k",
+    });
+
+    expect(lookup["BMS.BamsSoc"]).toMatchObject({
+      name: "socBat",
+      model: "40101",
+      modelIndex: "1",
+      exportMultiplier: 100,
+    });
+    expect(lookup["BMS.BamsVoltage"]).toMatchObject({
+      name: "vBat",
+      model: "40101",
+      exportMultiplier: 10,
+    });
+    expect(lookup["BMS.BamsPermitChgCurrent"]).toMatchObject({
+      name: "iBatChgMaxBms",
+      model: "40201",
+      modelIndex: "5",
+      exportMultiplier: 100,
+    });
+    expect(lookup["BMS.BamsPermitDsgCurrent"]).toMatchObject({
+      name: "iBatDischgMaxBms",
+      model: "40201",
+      modelIndex: "5",
+      exportMultiplier: 100,
+    });
+    expect(lookup["BMS.batWarning"]).toMatchObject({
+      name: "batWarning",
+      model: "40103",
+      modelIndex: "3",
+      exportMultiplier: 1,
+    });
+    expect(lookup["BMS.batFault"]).toMatchObject({
+      name: "batFault",
+      model: "40103",
+      modelIndex: "3",
+      exportMultiplier: 1,
+    });
+
+    const messages = buildSs40kFixedPayloads({
+      lookup,
+      telemetry: {
+        BMS: [
+          { tagID: "BMS.BamsSoc", value: 0.72 },
+          { tagID: "BMS.BamsVoltage", value: 700.5 },
+          { tagID: "BMS.BamsMaxCellVol", value: 3.42 },
+          { tagID: "BMS.BamsPermitChgCurrent", value: 120.5 },
+          { tagID: "BMS.batWarning", value: 20 },
+          { tagID: "BMS.batFault", value: 1 },
+        ],
+      },
+      topic: "fort/v1/things/test/telem",
+    });
+
+    const byModel = Object.fromEntries(
+      messages.map((message) => [message.ss40k.model, message])
+    );
+
+    expect(byModel["40101"]).toMatchObject({
+      payload: {
+        "1": {
+          id: 40101,
+          fixed: {
+            ID: 40101,
+            socBat: 72,
+            vBat: 7005,
+            vBatCellMax: 3420,
+          },
+        },
+      },
+    });
+    expect(byModel["40201"]).toMatchObject({
+      payload: {
+        "5": {
+          id: 40201,
+          fixed: {
+            ID: 40201,
+            iBatChgMaxBms: 12050,
+          },
+        },
+      },
+    });
+    expect(byModel["40103"]).toMatchObject({
+      payload: {
+        "3": {
+          id: 40103,
+          fixed: {
+            ID: 40103,
+            batWarning: 20,
+            batFault: 1,
+          },
+        },
+      },
+    });
+  });
+
+  test("Sinexcel Mini PCS calculated faults export into SS40K 40103", () => {
+    const { lookup } = buildSs40kLookup({
+      PCS: "Sinexcel_Mini_PCS_ss40k",
+    });
+
+    expect(lookup["PCS.pcsFault"]).toMatchObject({
+      name: "pcsFault",
+      model: "40103",
+      modelIndex: "3",
+      exportMultiplier: 1,
+    });
+    expect(lookup["PCS.gridWarning"]).toMatchObject({
+      name: "gridWarning",
+      model: "40103",
+      modelIndex: "3",
+    });
+    expect(lookup["PCS.rsdEPOFault"]).toMatchObject({
+      name: "rsdEPOFault",
+      model: "40103",
+      modelIndex: "3",
+    });
+
+    const messages = buildSs40kFixedPayloads({
+      lookup,
+      telemetry: {
+        PCS: [
+          { tagID: "PCS.pcsFault", value: 8 },
+          { tagID: "PCS.gridWarning", value: 72 },
+          { tagID: "PCS.rsdEPOFault", value: 2 },
+        ],
+      },
+      topic: "fort/v1/things/test/telem",
+    });
+
+    expect(messages).toEqual([
+      expect.objectContaining({
+        payload: {
+          "3": {
+            id: 40103,
+            version: "3.0",
+            fixed: {
+              ID: 40103,
+              pcsFault: 8,
+              gridWarning: 72,
+              rsdEPOFault: 2,
+            },
+          },
+        },
+      }),
+    ]);
+  });
 });

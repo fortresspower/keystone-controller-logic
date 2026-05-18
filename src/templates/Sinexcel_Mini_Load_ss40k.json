@@ -1,0 +1,352 @@
+{
+  "version": "2",
+  "device": {
+    "vendor": "Sinexcel",
+    "model": "Mini Load",
+    "protocol": "modbus-tcp",
+    "defaultByteOrder": "BE",
+    "defaultWordOrder32": "ABCD",
+    "name": "udt_Sinexcel_Mini_Load",
+    "sourceFormat": "supplier-v119"
+  },
+  "telemetry": [
+    {
+      "id": "LoadTotalPowerFactor",
+      "pollClass": "normal",
+      "function": "HR",
+      "address": 276,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 100,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "LoadL1PowerFactor",
+      "pollClass": "normal",
+      "function": "HR",
+      "address": 277,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 100,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "LoadL2PowerFactor",
+      "pollClass": "normal",
+      "function": "HR",
+      "address": 278,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 100,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "LoadL3PowerFactor",
+      "pollClass": "normal",
+      "function": "HR",
+      "address": 279,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 100,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "LoadTotalActivePower",
+      "pollClass": "normal",
+      "function": "HR",
+      "address": 280,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "LoadL1ActivePower",
+      "pollClass": "normal",
+      "function": "HR",
+      "address": 281,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "LoadL2ActivePower",
+      "pollClass": "normal",
+      "function": "HR",
+      "address": 282,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "LoadL3ActivePower",
+      "pollClass": "normal",
+      "function": "HR",
+      "address": 283,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "LoadTotalReactivePower",
+      "pollClass": "normal",
+      "function": "HR",
+      "address": 284,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "LoadL1ReactivePower",
+      "pollClass": "normal",
+      "function": "HR",
+      "address": 285,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "LoadL2ReactivePower",
+      "pollClass": "normal",
+      "function": "HR",
+      "address": 286,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "LoadL3ReactivePower",
+      "pollClass": "normal",
+      "function": "HR",
+      "address": 287,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "LoadTotalApparentPower",
+      "pollClass": "normal",
+      "function": "HR",
+      "address": 288,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "LoadL1ApparentPower",
+      "pollClass": "normal",
+      "function": "HR",
+      "address": 289,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "LoadL2ApparentPower",
+      "pollClass": "normal",
+      "function": "HR",
+      "address": 290,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "LoadL3ApparentPower",
+      "pollClass": "normal",
+      "function": "HR",
+      "address": 291,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "LoadL1Current",
+      "pollClass": "normal",
+      "function": "HR",
+      "address": 292,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "LoadL2Current",
+      "pollClass": "normal",
+      "function": "HR",
+      "address": 293,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "LoadL3Current",
+      "pollClass": "normal",
+      "function": "HR",
+      "address": 294,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "LoadFrequency",
+      "pollClass": "normal",
+      "function": "HRUS",
+      "address": 295,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 100,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "LoadL1L2Voltage",
+      "pollClass": "normal",
+      "function": "HRUS",
+      "address": 296,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "LoadL2L3Voltage",
+      "pollClass": "normal",
+      "function": "HRUS",
+      "address": 297,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "LoadL3L1Voltage",
+      "pollClass": "normal",
+      "function": "HRUS",
+      "address": 298,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "LoadL1NVoltage",
+      "pollClass": "normal",
+      "function": "HRUS",
+      "address": 299,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "LoadL2NVoltage",
+      "pollClass": "normal",
+      "function": "HRUS",
+      "address": 300,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "LoadL3NVoltage",
+      "pollClass": "normal",
+      "function": "HRUS",
+      "address": 301,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    }
+  ]
+}
