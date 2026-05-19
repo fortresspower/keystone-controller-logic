@@ -284,4 +284,146 @@ describe("SS40K export helpers", () => {
       }),
     ]);
   });
+
+  test("Sinexcel Mini load telemetry reuses SS40K 40101 load points", () => {
+    const { lookup } = buildSs40kLookup({
+      LOAD: "Sinexcel_Mini_Load",
+    });
+
+    expect(lookup["LOAD.LoadTotalActivePower"]).toMatchObject({
+      name: "pLoad",
+      model: "40101",
+      modelIndex: "1",
+      exportMultiplier: 1000,
+    });
+    expect(lookup["LOAD.LoadL2ReactivePower"]).toMatchObject({
+      name: "qLoadL2",
+      model: "40101",
+      exportMultiplier: 1000,
+    });
+    expect(lookup["LOAD.LoadL3NVoltage"]).toMatchObject({
+      name: "vLoadL3N",
+      model: "40101",
+      exportMultiplier: 1,
+    });
+
+    const messages = buildSs40kFixedPayloads({
+      lookup,
+      telemetry: {
+        LOAD: [
+          { tagID: "LOAD.LoadTotalActivePower", value: 42.5 },
+          { tagID: "LOAD.LoadL1ActivePower", value: 14.1 },
+          { tagID: "LOAD.LoadL2ReactivePower", value: 2.25 },
+          { tagID: "LOAD.LoadFrequency", value: 60 },
+          { tagID: "LOAD.LoadL3NVoltage", value: 277.2 },
+        ],
+      },
+      topic: "fort/v1/things/test/telem",
+    });
+
+    expect(messages).toEqual([
+      expect.objectContaining({
+        payload: {
+          "1": {
+            id: 40101,
+            version: "3.0",
+            fixed: {
+              ID: 40101,
+              pLoad: 42500,
+              pLoadL1: 14100,
+              qLoadL2: 2250,
+              fLoad: 60,
+              vLoadL3N: 277.2,
+            },
+          },
+        },
+      }),
+    ]);
+  });
+
+  test("Sinexcel Mini PVDC telemetry reuses SS40K PV and energy points", () => {
+    const { lookup } = buildSs40kLookup({
+      PVDC1: "pvdc_module_1",
+      PCS: "Sinexcel_Mini_PCS_ss40k",
+    });
+
+    expect(lookup["PVDC1.PVSideTotalPower"]).toMatchObject({
+      name: "pPvTotal",
+      model: "40101",
+      modelIndex: "1",
+      exportMultiplier: 1000,
+    });
+    expect(lookup["PVDC1.PV1SideVoltage"]).toMatchObject({
+      name: "vMppt1",
+      model: "40101",
+    });
+    expect(lookup["PVDC1.PVGeneratedEnergy"]).toMatchObject({
+      name: "ePvTot",
+      model: "40102",
+      modelIndex: "2",
+      exportMultiplier: 1000,
+    });
+    expect(lookup["PCS.ACBusTotalActivePower"]).toMatchObject({
+      name: "W",
+      model: "40101",
+      exportMultiplier: 1000,
+    });
+
+    const messages = buildSs40kFixedPayloads({
+      lookup,
+      telemetry: {
+        PVDC1: [
+          { tagID: "PVDC1.PVSideTotalPower", value: 31.2 },
+          { tagID: "PVDC1.PV1SideTotalPower", value: 10.1 },
+          { tagID: "PVDC1.PV1SideVoltage", value: 620.5 },
+          { tagID: "PVDC1.PVGeneratedEnergy", value: 123.4 },
+        ],
+        PCS: [{ tagID: "PCS.ACBusTotalActivePower", value: 44.4 }],
+      },
+      topic: "fort/v1/things/test/telem",
+    });
+
+    const byKey = Object.fromEntries(
+      messages.map((message) => [
+        `${message.ss40k.equipment}.${message.ss40k.model}`,
+        message,
+      ])
+    );
+
+    expect(byKey["PVDC1.40101"]).toMatchObject({
+      payload: {
+        "1": {
+          id: 40101,
+          fixed: {
+            ID: 40101,
+            pPvTotal: 31200,
+            pMppt1: 10100,
+            vMppt1: 620.5,
+          },
+        },
+      },
+    });
+    expect(byKey["PVDC1.40102"]).toMatchObject({
+      payload: {
+        "2": {
+          id: 40102,
+          fixed: {
+            ID: 40102,
+            ePvTot: 123400,
+          },
+        },
+      },
+    });
+    expect(byKey["PCS.40101"]).toMatchObject({
+      payload: {
+        "1": {
+          id: 40101,
+          fixed: {
+            ID: 40101,
+            W: 44400,
+          },
+        },
+      },
+    });
+  });
 });

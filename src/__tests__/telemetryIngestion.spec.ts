@@ -1145,13 +1145,17 @@ describe("Telemetry baseline lock", () => {
             name: "PVDCStatusWord",
             address: module.statusAddress,
           }),
-          expect.objectContaining({
-            name: "PVSideTotalPower",
-            address: module.powerAddress,
-          }),
-          expect.objectContaining({
-            name: "PVGeneratedEnergyHighWord",
-            address: module.energyHighAddress,
+        expect.objectContaining({
+          name: "PVSideTotalPower",
+          address: module.powerAddress,
+        }),
+        expect.objectContaining({
+          name: "PV1SideTotalPower",
+          address: module.powerAddress + 1,
+        }),
+        expect.objectContaining({
+          name: "PVGeneratedEnergyHighWord",
+          address: module.energyHighAddress,
           }),
           expect.objectContaining({
             name: "PVGeneratedEnergy",
@@ -1165,6 +1169,24 @@ describe("Telemetry baseline lock", () => {
           }),
         ])
       );
+
+      const pvTotalPower = template.telemetry.find(
+        (tag) => tag.id === "PVSideTotalPower"
+      );
+      expect(pvTotalPower?.ss40k).toEqual({
+        name: "pPvTotal",
+        model: "40101",
+        exportMultiplier: 1000,
+      });
+
+      const pvEnergy = template.telemetry.find(
+        (tag) => tag.id === "PVGeneratedEnergy"
+      );
+      expect(pvEnergy?.ss40k).toEqual({
+        name: "ePvTot",
+        model: "40102",
+        exportMultiplier: 1000,
+      });
     }
   });
 
@@ -1200,6 +1222,11 @@ describe("Telemetry baseline lock", () => {
           }),
         }),
         expect.objectContaining({
+          name: "LoadL1ActivePower",
+          function: "HR",
+          address: 281,
+        }),
+        expect.objectContaining({
           name: "LoadFrequency",
           function: "HRUS",
           address: 295,
@@ -1223,6 +1250,23 @@ describe("Telemetry baseline lock", () => {
         }),
       ])
     );
+
+    const loadTotalActivePower = template.telemetry.find(
+      (tag) => tag.id === "LoadTotalActivePower"
+    );
+    expect(loadTotalActivePower?.ss40k).toEqual({
+      name: "pLoad",
+      model: "40101",
+      exportMultiplier: 1000,
+    });
+
+    const loadL3NVoltage = template.telemetry.find(
+      (tag) => tag.id === "LoadL3NVoltage"
+    );
+    expect(loadL3NVoltage?.ss40k).toEqual({
+      name: "vLoadL3N",
+      model: "40101",
+    });
   });
 
   test("MBMU template keeps status/readback normalization contracts", () => {

@@ -21,6 +21,10 @@
         "rawHigh": 100,
         "scaledLow": 0,
         "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "pfLoadTot",
+        "model": "40101"
       }
     },
     {
@@ -34,6 +38,10 @@
         "rawHigh": 100,
         "scaledLow": 0,
         "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "pfLoadL1",
+        "model": "40101"
       }
     },
     {
@@ -47,6 +55,10 @@
         "rawHigh": 100,
         "scaledLow": 0,
         "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "pfLoadL2",
+        "model": "40101"
       }
     },
     {
@@ -60,6 +72,10 @@
         "rawHigh": 100,
         "scaledLow": 0,
         "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "pfLoadL3",
+        "model": "40101"
       }
     },
     {
@@ -73,6 +89,11 @@
         "rawHigh": 10,
         "scaledLow": 0,
         "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "pLoad",
+        "model": "40101",
+        "exportMultiplier": 1000
       }
     },
     {
@@ -86,6 +107,11 @@
         "rawHigh": 10,
         "scaledLow": 0,
         "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "pLoadL1",
+        "model": "40101",
+        "exportMultiplier": 1000
       }
     },
     {
@@ -99,6 +125,11 @@
         "rawHigh": 10,
         "scaledLow": 0,
         "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "pLoadL2",
+        "model": "40101",
+        "exportMultiplier": 1000
       }
     },
     {
@@ -112,6 +143,11 @@
         "rawHigh": 10,
         "scaledLow": 0,
         "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "pLoadL3",
+        "model": "40101",
+        "exportMultiplier": 1000
       }
     },
     {
@@ -125,6 +161,11 @@
         "rawHigh": 10,
         "scaledLow": 0,
         "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "qLoadTot",
+        "model": "40101",
+        "exportMultiplier": 1000
       }
     },
     {
@@ -138,6 +179,11 @@
         "rawHigh": 10,
         "scaledLow": 0,
         "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "qLoadL1",
+        "model": "40101",
+        "exportMultiplier": 1000
       }
     },
     {
@@ -151,6 +197,11 @@
         "rawHigh": 10,
         "scaledLow": 0,
         "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "qLoadL2",
+        "model": "40101",
+        "exportMultiplier": 1000
       }
     },
     {
@@ -164,6 +215,11 @@
         "rawHigh": 10,
         "scaledLow": 0,
         "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "qLoadL3",
+        "model": "40101",
+        "exportMultiplier": 1000
       }
     },
     {
@@ -177,6 +233,11 @@
         "rawHigh": 10,
         "scaledLow": 0,
         "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "sLoadTot",
+        "model": "40101",
+        "exportMultiplier": 1000
       }
     },
     {
@@ -190,6 +251,11 @@
         "rawHigh": 10,
         "scaledLow": 0,
         "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "sLoadL1",
+        "model": "40101",
+        "exportMultiplier": 1000
       }
     },
     {
@@ -203,6 +269,11 @@
         "rawHigh": 10,
         "scaledLow": 0,
         "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "sLoadL2",
+        "model": "40101",
+        "exportMultiplier": 1000
       }
     },
     {
@@ -216,6 +287,11 @@
         "rawHigh": 10,
         "scaledLow": 0,
         "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "sLoadL3",
+        "model": "40101",
+        "exportMultiplier": 1000
       }
     },
     {
@@ -229,6 +305,10 @@
         "rawHigh": 10,
         "scaledLow": 0,
         "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "iLoadL1",
+        "model": "40101"
       }
     },
     {
@@ -242,6 +322,10 @@
         "rawHigh": 10,
         "scaledLow": 0,
         "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "iLoadL2",
+        "model": "40101"
       }
     },
     {
@@ -255,6 +339,10 @@
         "rawHigh": 10,
         "scaledLow": 0,
         "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "iLoadL3",
+        "model": "40101"
       }
     },
     {
@@ -268,6 +356,10 @@
         "rawHigh": 100,
         "scaledLow": 0,
         "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "fLoad",
+        "model": "40101"
       }
     },
     {
@@ -281,6 +373,10 @@
         "rawHigh": 10,
         "scaledLow": 0,
         "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "vLoadL12",
+        "model": "40101"
       }
     },
     {
@@ -294,6 +390,10 @@
         "rawHigh": 10,
         "scaledLow": 0,
         "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "vLoadL23",
+        "model": "40101"
       }
     },
     {
@@ -307,6 +407,10 @@
         "rawHigh": 10,
         "scaledLow": 0,
         "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "vLoadL31",
+        "model": "40101"
       }
     },
     {
@@ -320,6 +424,10 @@
         "rawHigh": 10,
         "scaledLow": 0,
         "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "vLoadL1N",
+        "model": "40101"
       }
     },
     {
@@ -333,6 +441,10 @@
         "rawHigh": 10,
         "scaledLow": 0,
         "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "vLoadL2N",
+        "model": "40101"
       }
     },
     {
@@ -346,6 +458,10 @@
         "rawHigh": 10,
         "scaledLow": 0,
         "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "vLoadL3N",
+        "model": "40101"
       }
     }
   ]

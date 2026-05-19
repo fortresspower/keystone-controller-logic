@@ -37,6 +37,11 @@
         "rawHigh": 10,
         "scaledLow": 0,
         "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "W",
+        "model": "40101",
+        "exportMultiplier": 1000
       }
     },
     {
@@ -53,7 +58,8 @@
       },
       "ss40k": {
         "name": "WL1",
-        "model": "40101"
+        "model": "40101",
+        "exportMultiplier": 1000
       }
     },
     {
@@ -70,7 +76,8 @@
       },
       "ss40k": {
         "name": "WL2",
-        "model": "40101"
+        "model": "40101",
+        "exportMultiplier": 1000
       }
     },
     {
@@ -87,7 +94,8 @@
       },
       "ss40k": {
         "name": "WL3",
-        "model": "40101"
+        "model": "40101",
+        "exportMultiplier": 1000
       }
     },
     {
@@ -205,7 +213,7 @@
         "scaledHigh": 1
       },
       "ss40k": {
-        "name": "VL3VL1",
+        "name": "VL3L1",
         "model": "40101"
       }
     },
@@ -1038,6 +1046,11 @@
         "rawHigh": 10,
         "scaledLow": 0,
         "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "pPvTotal",
+        "model": "40101",
+        "exportMultiplier": 1000
       }
     },
     {
@@ -1051,6 +1064,11 @@
         "rawHigh": 10,
         "scaledLow": 0,
         "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "pMppt1",
+        "model": "40101",
+        "exportMultiplier": 1000
       }
     },
     {
@@ -1064,6 +1082,11 @@
         "rawHigh": 10,
         "scaledLow": 0,
         "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "pMppt2",
+        "model": "40101",
+        "exportMultiplier": 1000
       }
     },
     {
@@ -1077,6 +1100,11 @@
         "rawHigh": 10,
         "scaledLow": 0,
         "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "pMppt3",
+        "model": "40101",
+        "exportMultiplier": 1000
       }
     },
     {
@@ -1090,6 +1118,10 @@
         "rawHigh": 10,
         "scaledLow": 0,
         "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "vMppt1",
+        "model": "40101"
       }
     },
     {
@@ -1103,6 +1135,10 @@
         "rawHigh": 10,
         "scaledLow": 0,
         "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "vMppt2",
+        "model": "40101"
       }
     },
     {
@@ -1116,6 +1152,10 @@
         "rawHigh": 10,
         "scaledLow": 0,
         "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "vMppt3",
+        "model": "40101"
       }
     },
     {
@@ -1142,6 +1182,10 @@
         "rawHigh": 10,
         "scaledLow": 0,
         "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "iMppt1",
+        "model": "40101"
       }
     },
     {
@@ -1155,6 +1199,10 @@
         "rawHigh": 10,
         "scaledLow": 0,
         "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "iMppt2",
+        "model": "40101"
       }
     },
     {
@@ -1168,6 +1216,10 @@
         "rawHigh": 10,
         "scaledLow": 0,
         "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "iMppt3",
+        "model": "40101"
       }
     },
     {
@@ -1251,6 +1303,11 @@
           "lo": "PVGeneratedEnergyLowWord"
         },
         "expr": "(hi * 65536 + lo) * 0.1"
+      },
+      "ss40k": {
+        "name": "ePvTot",
+        "model": "40102",
+        "exportMultiplier": 1000
       }
     },
     {

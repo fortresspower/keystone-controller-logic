@@ -1,0 +1,1075 @@
+{
+  "version": "0.1",
+  "status": "proposal",
+  "modelRange": "403xx",
+  "groupingRule": "Use one proposed 403xx model per product family. Keep using existing 40101, 40102, 40103, and 40104 models where a point already fits. Add 403xx points only for product telemetry, control readbacks, raw diagnostic words, or controller decision traces that do not fit the existing models.",
+  "models": [
+    {
+      "model": 40300,
+      "name": "eSpire280ExtendedTelemetry",
+      "product": "eSpire 280",
+      "description": "Extended PCS, BMS, protection, and controller decision telemetry for eSpire 280 points that are not covered cleanly by existing SS40K models.",
+      "sourceTemplates": [
+        "Delta_280_ss40k",
+        "MBMU_280_ss40k",
+        "Delta_Fault_Map_ss40k",
+        "MBMU_Fault_Map_ss40k",
+        "control logic runtime"
+      ],
+      "points": [
+        {
+          "point": "pcsSystemGlobalState",
+          "sourceTags": [
+            "SYSTEM_GLOBAL_STATE"
+          ],
+          "dtype": "uint16",
+          "unit": null,
+          "priority": "P0",
+          "description": "PCS global operating state."
+        },
+        {
+          "point": "pcsSystemPrimarySecondary",
+          "sourceTags": [
+            "SYSTEM_PRIMARY_OR_SECONDARY"
+          ],
+          "dtype": "uint16",
+          "unit": null,
+          "priority": "P1",
+          "description": "PCS primary or secondary role/status."
+        },
+        {
+          "point": "pcsSystemStateSwitch",
+          "sourceTags": [
+            "SYSTEM_STATE_SWITCH"
+          ],
+          "dtype": "uint16",
+          "unit": null,
+          "priority": "P0",
+          "description": "PCS state switch readback."
+        },
+        {
+          "point": "pcsInputVoltageState",
+          "sourceTags": [
+            "SYSTEM_INPUT_VOLTAGE"
+          ],
+          "dtype": "uint16",
+          "unit": null,
+          "priority": "P1",
+          "description": "PCS input voltage state."
+        },
+        {
+          "point": "pcsIsolationState",
+          "sourceTags": [
+            "SYSTEM_ISO"
+          ],
+          "dtype": "uint16",
+          "unit": null,
+          "priority": "P1",
+          "description": "PCS isolation state."
+        },
+        {
+          "point": "pcsGridAcFaultWord",
+          "sourceTags": [
+            "GRID_AC_FAULT"
+          ],
+          "dtype": "bitfield16",
+          "unit": null,
+          "priority": "P0",
+          "description": "Raw PCS grid AC fault word for cloud-side decoding and diagnostics."
+        },
+        {
+          "point": "pcsAcSupplementalFaultWord",
+          "sourceTags": [
+            "AC_SUPPLIMENTAL_FAULT"
+          ],
+          "dtype": "bitfield16",
+          "unit": null,
+          "priority": "P1",
+          "description": "Raw PCS supplemental AC fault word."
+        },
+        {
+          "point": "pcsSystemAcFaultWord",
+          "sourceTags": [
+            "SYSTEM_AC_FAULT"
+          ],
+          "dtype": "bitfield16",
+          "unit": null,
+          "priority": "P0",
+          "description": "Raw PCS system AC fault word."
+        },
+        {
+          "point": "pcsSystemDcFaultWord",
+          "sourceTags": [
+            "SYSTEM_DC_FAULT"
+          ],
+          "dtype": "bitfield16",
+          "unit": null,
+          "priority": "P0",
+          "description": "Raw PCS system DC fault word."
+        },
+        {
+          "point": "pcsSystemHardwareFaultWord",
+          "sourceTags": [
+            "SYSTEM_HARDWARE_FAULT"
+          ],
+          "dtype": "bitfield16",
+          "unit": null,
+          "priority": "P0",
+          "description": "Raw PCS hardware fault word."
+        },
+        {
+          "point": "pcsSystemCommunicationFaultWord",
+          "sourceTags": [
+            "SYSTEM_COMMUNICATION_FAULT"
+          ],
+          "dtype": "bitfield16",
+          "unit": null,
+          "priority": "P0",
+          "description": "Raw PCS communication fault word."
+        },
+        {
+          "point": "pcsSystemFaultWord",
+          "sourceTags": [
+            "SYSTEM_FAULT"
+          ],
+          "dtype": "bitfield16",
+          "unit": null,
+          "priority": "P0",
+          "description": "Raw PCS aggregate system fault word."
+        },
+        {
+          "point": "pcsRunModeCommand",
+          "sourceTags": [
+            "SYSTEM_RUN_MODE"
+          ],
+          "dtype": "uint16",
+          "unit": null,
+          "priority": "P0",
+          "description": "PCS run mode command/readback."
+        },
+        {
+          "point": "pcsOnOffCommand",
+          "sourceTags": [
+            "SYSTEM_ON_OFF"
+          ],
+          "dtype": "uint16",
+          "unit": null,
+          "priority": "P0",
+          "description": "PCS on/off command/readback."
+        },
+        {
+          "point": "pcsActivePowerDemandCommand",
+          "sourceTags": [
+            "SYSTEM_ACTIVE_POWER_DEMAND"
+          ],
+          "dtype": "int32",
+          "unit": "kW",
+          "priority": "P0",
+          "description": "PCS active power demand command/readback."
+        },
+        {
+          "point": "pcsReactivePowerDemandCommand",
+          "sourceTags": [
+            "SYSTEM_REACTIVE_POWER_DEMAND"
+          ],
+          "dtype": "int32",
+          "unit": "kvar",
+          "priority": "P1",
+          "description": "PCS reactive power demand command/readback."
+        },
+        {
+          "point": "pcsGridWireConnectionCommand",
+          "sourceTags": [
+            "GRID_WIRE_CONNECTION"
+          ],
+          "dtype": "uint16",
+          "unit": null,
+          "priority": "P1",
+          "description": "PCS grid wire connection command/readback."
+        },
+        {
+          "point": "bmsPowerOnState",
+          "sourceTags": [
+            "BMS_PowerOn_State"
+          ],
+          "dtype": "uint16",
+          "unit": null,
+          "priority": "P0",
+          "description": "BMS power-on state."
+        },
+        {
+          "point": "bmsStatus",
+          "sourceTags": [
+            "BMS_Status"
+          ],
+          "dtype": "uint16",
+          "unit": null,
+          "priority": "P0",
+          "description": "BMS status."
+        },
+        {
+          "point": "bmsConnectedRackCount",
+          "sourceTags": [
+            "Number_of_HV_Connected_Racks"
+          ],
+          "dtype": "uint16",
+          "unit": "count",
+          "priority": "P1",
+          "description": "Number of connected high-voltage battery racks."
+        },
+        {
+          "point": "bmsAvgCellVoltage",
+          "sourceTags": [
+            "Avg_Cell_Voltage_V"
+          ],
+          "dtype": "float32",
+          "unit": "V",
+          "priority": "P1",
+          "description": "Average BMS cell voltage."
+        },
+        {
+          "point": "bmsMaxChargeCurrentAllowed",
+          "sourceTags": [
+            "Max_Charge_Current_Allowed_A"
+          ],
+          "dtype": "float32",
+          "unit": "A",
+          "priority": "P0",
+          "description": "BMS maximum allowed charge current."
+        },
+        {
+          "point": "bmsMaxDischargeCurrentAllowed",
+          "sourceTags": [
+            "Max_Discharge_Current_Allowed_A"
+          ],
+          "dtype": "float32",
+          "unit": "A",
+          "priority": "P0",
+          "description": "BMS maximum allowed discharge current."
+        },
+        {
+          "point": "bmsMaxChargePowerAllowed",
+          "sourceTags": [
+            "Max_Charge_Power_Allowed_kW"
+          ],
+          "dtype": "float32",
+          "unit": "kW",
+          "priority": "P0",
+          "description": "BMS maximum allowed charge power."
+        },
+        {
+          "point": "bmsMaxDischargePowerAllowed",
+          "sourceTags": [
+            "Max_Discharge_Power_Allowed_kW"
+          ],
+          "dtype": "float32",
+          "unit": "kW",
+          "priority": "P0",
+          "description": "BMS maximum allowed discharge power."
+        },
+        {
+          "point": "bmsSystemPower",
+          "sourceTags": [
+            "System_Power_kW"
+          ],
+          "dtype": "float32",
+          "unit": "kW",
+          "priority": "P0",
+          "description": "BMS measured system battery power."
+        },
+        {
+          "point": "bmsWarningWord0000",
+          "sourceTags": [
+            "Warning_Status_0000"
+          ],
+          "dtype": "bitfield16",
+          "unit": null,
+          "priority": "P0",
+          "description": "Raw BMS warning word 0000."
+        },
+        {
+          "point": "bmsWarningWord0001",
+          "sourceTags": [
+            "Warning_Status_0001"
+          ],
+          "dtype": "bitfield16",
+          "unit": null,
+          "priority": "P0",
+          "description": "Raw BMS warning word 0001."
+        },
+        {
+          "point": "bmsWarningWord0002",
+          "sourceTags": [
+            "Warning_Status_0002"
+          ],
+          "dtype": "bitfield16",
+          "unit": null,
+          "priority": "P0",
+          "description": "Raw BMS warning word 0002."
+        },
+        {
+          "point": "bmsWarningWord0003",
+          "sourceTags": [
+            "Warning_Status_0003"
+          ],
+          "dtype": "bitfield16",
+          "unit": null,
+          "priority": "P0",
+          "description": "Raw BMS warning word 0003."
+        },
+        {
+          "point": "bmsWarningWord0004",
+          "sourceTags": [
+            "Warning_Status_0004"
+          ],
+          "dtype": "bitfield16",
+          "unit": null,
+          "priority": "P0",
+          "description": "Raw BMS warning word 0004."
+        },
+        {
+          "point": "bmsWarningWord0005",
+          "sourceTags": [
+            "Warning_Status_0005"
+          ],
+          "dtype": "bitfield16",
+          "unit": null,
+          "priority": "P0",
+          "description": "Raw BMS warning word 0005."
+        },
+        {
+          "point": "bmsWarningWord0006",
+          "sourceTags": [
+            "Warning_Status_0006"
+          ],
+          "dtype": "bitfield16",
+          "unit": null,
+          "priority": "P0",
+          "description": "Raw BMS warning word 0006."
+        },
+        {
+          "point": "bmsWarningWord0007",
+          "sourceTags": [
+            "Warning_Status_0007"
+          ],
+          "dtype": "bitfield16",
+          "unit": null,
+          "priority": "P0",
+          "description": "Raw BMS warning word 0007."
+        },
+        {
+          "point": "bmsWarningWord0008",
+          "sourceTags": [
+            "Warning_Status_0008"
+          ],
+          "dtype": "bitfield16",
+          "unit": null,
+          "priority": "P0",
+          "description": "Raw BMS warning word 0008."
+        },
+        {
+          "point": "bmsWarningWord0009",
+          "sourceTags": [
+            "Warning_Status_0009"
+          ],
+          "dtype": "bitfield16",
+          "unit": null,
+          "priority": "P0",
+          "description": "Raw BMS warning word 0009."
+        },
+        {
+          "point": "bmsWarningWord0010",
+          "sourceTags": [
+            "Warning_Status_0010"
+          ],
+          "dtype": "bitfield16",
+          "unit": null,
+          "priority": "P0",
+          "description": "Raw BMS warning word 0010."
+        },
+        {
+          "point": "bmsWarningWord0011",
+          "sourceTags": [
+            "Warning_Status_0011"
+          ],
+          "dtype": "bitfield16",
+          "unit": null,
+          "priority": "P0",
+          "description": "Raw BMS warning word 0011."
+        },
+        {
+          "point": "bmsWarningWord0013",
+          "sourceTags": [
+            "Warning_Status_0013"
+          ],
+          "dtype": "bitfield16",
+          "unit": null,
+          "priority": "P0",
+          "description": "Raw BMS warning word 0013."
+        },
+        {
+          "point": "emsHeartbeat",
+          "sourceTags": [
+            "EMS_Heartbeat"
+          ],
+          "dtype": "uint16",
+          "unit": null,
+          "priority": "P1",
+          "description": "EMS heartbeat written to or read by the BMS/PCS integration."
+        },
+        {
+          "point": "emsCommandReadback",
+          "sourceTags": [
+            "EMS_Command"
+          ],
+          "dtype": "uint16",
+          "unit": null,
+          "priority": "P1",
+          "description": "EMS command readback."
+        },
+        {
+          "point": "emsFaultClearCommand",
+          "sourceTags": [
+            "EMS_Fault_Clear"
+          ],
+          "dtype": "uint16",
+          "unit": null,
+          "priority": "P1",
+          "description": "EMS fault clear command/readback."
+        },
+        {
+          "point": "rackDisableCommand",
+          "sourceTags": [
+            "Rack_Disable"
+          ],
+          "dtype": "uint16",
+          "unit": null,
+          "priority": "P1",
+          "description": "Rack disable command/readback."
+        },
+        {
+          "point": "protectionGridAvailable",
+          "sourceTags": [
+            "protection.gridAvailable"
+          ],
+          "dtype": "bool",
+          "unit": null,
+          "priority": "P0",
+          "description": "Controller protection input indicating whether grid source is available."
+        },
+        {
+          "point": "protectionOutageDetected",
+          "sourceTags": [
+            "protection.outageDetected"
+          ],
+          "dtype": "bool",
+          "unit": null,
+          "priority": "P0",
+          "description": "Controller protection input indicating active outage condition."
+        },
+        {
+          "point": "protectionRemoteInterlockClosed",
+          "sourceTags": [
+            "protection.remoteInterlockClosed"
+          ],
+          "dtype": "bool",
+          "unit": null,
+          "priority": "P0",
+          "description": "Remote interlock status used by outage/islanding logic."
+        },
+        {
+          "point": "protectionIslandingPermitted",
+          "sourceTags": [
+            "protection.islandingPermitted"
+          ],
+          "dtype": "bool",
+          "unit": null,
+          "priority": "P0",
+          "description": "Whether the protection chain permits islanded operation."
+        },
+        {
+          "point": "protectionTransferState",
+          "sourceTags": [
+            "protection.transferState"
+          ],
+          "dtype": "uint16",
+          "unit": null,
+          "priority": "P0",
+          "description": "ATS or protection transfer state used by outage sequencing."
+        },
+        {
+          "point": "controllerControlMode",
+          "sourceTags": [
+            "controller.controlMode"
+          ],
+          "dtype": "uint16",
+          "unit": null,
+          "priority": "P0",
+          "description": "Active controller mode, such as grid-tied, off-grid, schedule, self-consumption, or safety override."
+        },
+        {
+          "point": "controllerScheduleActive",
+          "sourceTags": [
+            "controller.scheduleActive"
+          ],
+          "dtype": "bool",
+          "unit": null,
+          "priority": "P1",
+          "description": "Whether a scheduled command is currently active."
+        },
+        {
+          "point": "controllerActivePlanId",
+          "sourceTags": [
+            "controller.activePlanId"
+          ],
+          "dtype": "string",
+          "unit": null,
+          "priority": "P1",
+          "description": "Identifier for the active schedule or control plan."
+        },
+        {
+          "point": "controllerRequestedPowerKw",
+          "sourceTags": [
+            "controller.requestedPowerKw"
+          ],
+          "dtype": "float32",
+          "unit": "kW",
+          "priority": "P0",
+          "description": "Raw active-power request before limits and safety gates."
+        },
+        {
+          "point": "controllerCommandedPowerKw",
+          "sourceTags": [
+            "controller.commandedPowerKw"
+          ],
+          "dtype": "float32",
+          "unit": "kW",
+          "priority": "P0",
+          "description": "Final active-power command after limits and safety gates."
+        },
+        {
+          "point": "controllerCommandedReactivePowerKvar",
+          "sourceTags": [
+            "controller.commandedReactivePowerKvar"
+          ],
+          "dtype": "float32",
+          "unit": "kvar",
+          "priority": "P1",
+          "description": "Final reactive-power command."
+        },
+        {
+          "point": "controllerChargeAllowed",
+          "sourceTags": [
+            "controller.chargeAllowed"
+          ],
+          "dtype": "bool",
+          "unit": null,
+          "priority": "P0",
+          "description": "Whether controller currently allows battery charging."
+        },
+        {
+          "point": "controllerDischargeAllowed",
+          "sourceTags": [
+            "controller.dischargeAllowed"
+          ],
+          "dtype": "bool",
+          "unit": null,
+          "priority": "P0",
+          "description": "Whether controller currently allows battery discharging."
+        },
+        {
+          "point": "controllerSafetyGateActive",
+          "sourceTags": [
+            "controller.safetyGateActive"
+          ],
+          "dtype": "bool",
+          "unit": null,
+          "priority": "P0",
+          "description": "Whether a safety, SOC, BMS, or protection gate is limiting dispatch."
+        },
+        {
+          "point": "controllerSiteExportLimitActive",
+          "sourceTags": [
+            "controller.siteExportLimitActive"
+          ],
+          "dtype": "bool",
+          "unit": null,
+          "priority": "P0",
+          "description": "Whether site export limiting is currently active."
+        },
+        {
+          "point": "controllerPvCurtailmentActive",
+          "sourceTags": [
+            "controller.pvCurtailmentActive"
+          ],
+          "dtype": "bool",
+          "unit": null,
+          "priority": "P0",
+          "description": "Whether PV curtailment is currently active."
+        },
+        {
+          "point": "controllerGeneratorChargeActive",
+          "sourceTags": [
+            "controller.generatorChargeActive"
+          ],
+          "dtype": "bool",
+          "unit": null,
+          "priority": "P1",
+          "description": "Whether generator charging mode is currently active."
+        },
+        {
+          "point": "controllerDispatchReasonCode",
+          "sourceTags": [
+            "controller.dispatchReasonCode"
+          ],
+          "dtype": "uint16",
+          "unit": null,
+          "priority": "P0",
+          "description": "Machine-readable reason code for the final dispatch decision."
+        }
+      ]
+    },
+    {
+      "model": 40301,
+      "name": "eSpireMiniExtendedTelemetry",
+      "product": "eSpire Mini",
+      "description": "Extended Sinexcel PCS, DC PV converter, AMPACE BMS, and Mini controller decision telemetry that does not fit existing SS40K models.",
+      "sourceTemplates": [
+        "Sinexcel_Mini_PCS_ss40k",
+        "Sinexcel_Mini_Load_ss40k",
+        "Sinexcel_Mini_PVDC_Module1_ss40k",
+        "Sinexcel_Mini_PVDC_Module2_ss40k",
+        "Sinexcel_Mini_PVDC_Module3_ss40k",
+        "AMPACE_Mini_ss40k",
+        "Sinexcel_Mini_Fault_Map_ss40k",
+        "control logic runtime"
+      ],
+      "notes": [
+        "Mini load, grid, PV AC, and basic PV DC power/voltage/current/energy should keep using existing 40101 and 40102 where already mapped.",
+        "Mini PCS and BMS fault/warning aggregates should keep using existing 40103 where the existing cloud fault model is sufficient."
+      ],
+      "points": [
+        {
+          "point": "miniPcsControlMode",
+          "sourceTags": [
+            "ControlMode"
+          ],
+          "dtype": "uint16",
+          "unit": null,
+          "priority": "P0",
+          "description": "Sinexcel PCS control mode."
+        },
+        {
+          "point": "miniPcsActivePowerControlMode",
+          "sourceTags": [
+            "ActivePowerControlMode"
+          ],
+          "dtype": "uint16",
+          "unit": null,
+          "priority": "P1",
+          "description": "Sinexcel PCS active power control mode."
+        },
+        {
+          "point": "miniPcsReactivePowerControlMode",
+          "sourceTags": [
+            "ReactivePowerControlMode"
+          ],
+          "dtype": "uint16",
+          "unit": null,
+          "priority": "P1",
+          "description": "Sinexcel PCS reactive power control mode."
+        },
+        {
+          "point": "miniPcsPowerChangeMode",
+          "sourceTags": [
+            "PowerChangeMode"
+          ],
+          "dtype": "uint16",
+          "unit": null,
+          "priority": "P1",
+          "description": "Sinexcel PCS power change/ramp mode."
+        },
+        {
+          "point": "miniMaxChargeCurrentCommand",
+          "sourceTags": [
+            "MaxChgCurrent"
+          ],
+          "dtype": "float32",
+          "unit": "A",
+          "priority": "P0",
+          "description": "Mini PCS maximum charge current command/readback."
+        },
+        {
+          "point": "miniMaxDischargeCurrentCommand",
+          "sourceTags": [
+            "MaxDsgCurrent"
+          ],
+          "dtype": "float32",
+          "unit": "A",
+          "priority": "P0",
+          "description": "Mini PCS maximum discharge current command/readback."
+        },
+        {
+          "point": "miniPvDcStatusWord",
+          "sourceTags": [
+            "PVDCStatusWord"
+          ],
+          "dtype": "bitfield16",
+          "unit": null,
+          "priority": "P0",
+          "description": "Raw DC PV converter status word."
+        },
+        {
+          "point": "miniPvDcStringStatusWord",
+          "sourceTags": [
+            "PVDCStringStatusWord"
+          ],
+          "dtype": "bitfield16",
+          "unit": null,
+          "priority": "P0",
+          "description": "Raw DC PV string status word."
+        },
+        {
+          "point": "miniPvDcGeneratingStatusWord",
+          "sourceTags": [
+            "PVDCGeneratingStatusWord"
+          ],
+          "dtype": "bitfield16",
+          "unit": null,
+          "priority": "P0",
+          "description": "Raw DC PV generating status word."
+        },
+        {
+          "point": "miniPvDcExternalBusVoltage",
+          "sourceTags": [
+            "PVExternalDcBusVoltage"
+          ],
+          "dtype": "float32",
+          "unit": "V",
+          "priority": "P1",
+          "description": "External DC bus voltage for the Mini DC PV converter."
+        },
+        {
+          "point": "miniPvDcInternalBusVoltage",
+          "sourceTags": [
+            "PVInternalDcBusVoltage"
+          ],
+          "dtype": "float32",
+          "unit": "V",
+          "priority": "P1",
+          "description": "Internal DC bus voltage for the Mini DC PV converter."
+        },
+        {
+          "point": "miniPvDcBusSidePower",
+          "sourceTags": [
+            "PVBusSidePower"
+          ],
+          "dtype": "float32",
+          "unit": "kW",
+          "priority": "P0",
+          "description": "DC bus side power for the Mini DC PV converter."
+        },
+        {
+          "point": "miniPvDcBusSideCurrent",
+          "sourceTags": [
+            "PVBusSideCurrent"
+          ],
+          "dtype": "float32",
+          "unit": "A",
+          "priority": "P1",
+          "description": "DC bus side current for the Mini DC PV converter."
+        },
+        {
+          "point": "miniPvDcModuleTemperature",
+          "sourceTags": [
+            "PVModuleTemperature"
+          ],
+          "dtype": "float32",
+          "unit": "degC",
+          "priority": "P1",
+          "description": "Mini DC PV converter module temperature."
+        },
+        {
+          "point": "miniPvDcCurrentLimitCommand",
+          "sourceTags": [
+            "PVBusCurrentLimit"
+          ],
+          "dtype": "float32",
+          "unit": "A",
+          "priority": "P0",
+          "description": "DC PV bus current limit command/readback."
+        },
+        {
+          "point": "miniPvDcConverterEnableCommand",
+          "sourceTags": [
+            "PvDcdcConverterEnable"
+          ],
+          "dtype": "uint16",
+          "unit": null,
+          "priority": "P0",
+          "description": "DC PV converter enable command/readback."
+        },
+        {
+          "point": "miniBamsPower",
+          "sourceTags": [
+            "BamsPower"
+          ],
+          "dtype": "float32",
+          "unit": "kW",
+          "priority": "P0",
+          "description": "AMPACE BAMS measured power."
+        },
+        {
+          "point": "miniBamsPermitChargePower",
+          "sourceTags": [
+            "BamsPermitChgPower"
+          ],
+          "dtype": "float32",
+          "unit": "kW",
+          "priority": "P0",
+          "description": "AMPACE BAMS permitted charge power."
+        },
+        {
+          "point": "miniBamsPermitDischargePower",
+          "sourceTags": [
+            "BamsPermitDsgPower"
+          ],
+          "dtype": "float32",
+          "unit": "kW",
+          "priority": "P0",
+          "description": "AMPACE BAMS permitted discharge power."
+        },
+        {
+          "point": "miniBamsCellVoltageDelta",
+          "sourceTags": [
+            "BamsCellVolDiff"
+          ],
+          "dtype": "float32",
+          "unit": "V",
+          "priority": "P1",
+          "description": "AMPACE BAMS cell voltage delta."
+        },
+        {
+          "point": "miniBamsCellTemperatureDelta",
+          "sourceTags": [
+            "BamsCellTDiff"
+          ],
+          "dtype": "float32",
+          "unit": "degC",
+          "priority": "P1",
+          "description": "AMPACE BAMS cell temperature delta."
+        },
+        {
+          "point": "miniBamsUsedEnergy",
+          "sourceTags": [
+            "BamsUsedEnergy"
+          ],
+          "dtype": "float32",
+          "unit": "kWh",
+          "priority": "P1",
+          "description": "AMPACE BAMS used energy."
+        },
+        {
+          "point": "miniBamsLeftEnergy",
+          "sourceTags": [
+            "BamsLeftEnergy"
+          ],
+          "dtype": "float32",
+          "unit": "kWh",
+          "priority": "P1",
+          "description": "AMPACE BAMS remaining energy."
+        },
+        {
+          "point": "miniBamsUsedCapacity",
+          "sourceTags": [
+            "BamsUsedCap"
+          ],
+          "dtype": "float32",
+          "unit": "Ah",
+          "priority": "P1",
+          "description": "AMPACE BAMS used capacity."
+        },
+        {
+          "point": "miniBamsLeftCapacity",
+          "sourceTags": [
+            "BamsLeftCap"
+          ],
+          "dtype": "float32",
+          "unit": "Ah",
+          "priority": "P1",
+          "description": "AMPACE BAMS remaining capacity."
+        },
+        {
+          "point": "miniBamsProtectionAlarmRaw",
+          "sourceTags": [
+            "BamsProtAlarm0_8"
+          ],
+          "dtype": "bitfield64hex",
+          "unit": null,
+          "priority": "P0",
+          "description": "Raw 64-bit AMPACE BAMS protection alarm word."
+        },
+        {
+          "point": "miniBamsSystemFaultRaw",
+          "sourceTags": [
+            "BamsSysFaultCode0_8"
+          ],
+          "dtype": "bitfield64hex",
+          "unit": null,
+          "priority": "P0",
+          "description": "Raw 64-bit AMPACE BAMS system fault word."
+        },
+        {
+          "point": "miniBamsOtherErrorRaw",
+          "sourceTags": [
+            "BamsOtherErrCode0_8"
+          ],
+          "dtype": "bitfield64hex",
+          "unit": null,
+          "priority": "P0",
+          "description": "Raw 64-bit AMPACE BAMS other error word."
+        },
+        {
+          "point": "miniBamsHardwareErrorRaw",
+          "sourceTags": [
+            "BamsHwErrCode0_8"
+          ],
+          "dtype": "bitfield64hex",
+          "unit": null,
+          "priority": "P0",
+          "description": "Raw 64-bit AMPACE BAMS hardware error word."
+        },
+        {
+          "point": "miniBamsHardwareStatusRaw",
+          "sourceTags": [
+            "BamsHwStaCode0_8"
+          ],
+          "dtype": "bitfield64hex",
+          "unit": null,
+          "priority": "P1",
+          "description": "Raw 64-bit AMPACE BAMS hardware status word."
+        },
+        {
+          "point": "miniBamsFaultRaw",
+          "sourceTags": [
+            "BamsFaultCode0_8"
+          ],
+          "dtype": "bitfield64hex",
+          "unit": null,
+          "priority": "P0",
+          "description": "Raw 64-bit AMPACE BAMS fault word."
+        },
+        {
+          "point": "miniBamsFaultNotAllowHv",
+          "sourceTags": [
+            "BamsFaultNotAllowHvFlg"
+          ],
+          "dtype": "bool",
+          "unit": null,
+          "priority": "P0",
+          "description": "AMPACE BAMS fault flag preventing high-voltage operation."
+        },
+        {
+          "point": "miniBamsFaultNotAllowLv",
+          "sourceTags": [
+            "BamsFaultNotAllowLvFlg"
+          ],
+          "dtype": "bool",
+          "unit": null,
+          "priority": "P0",
+          "description": "AMPACE BAMS fault flag preventing low-voltage operation."
+        },
+        {
+          "point": "miniBamsContactorModeCommand",
+          "sourceTags": [
+            "BamsHvContactorMode"
+          ],
+          "dtype": "uint16",
+          "unit": null,
+          "priority": "P1",
+          "description": "AMPACE high-voltage contactor mode command/readback."
+        },
+        {
+          "point": "miniBamsContactorControlCommand",
+          "sourceTags": [
+            "BamsHvContactorCtrl"
+          ],
+          "dtype": "uint16",
+          "unit": null,
+          "priority": "P1",
+          "description": "AMPACE high-voltage contactor control command/readback."
+        },
+        {
+          "point": "miniControllerPvTopology",
+          "sourceTags": [
+            "controller.miniPvTopology"
+          ],
+          "dtype": "uint16",
+          "unit": null,
+          "priority": "P0",
+          "description": "Mini PV topology selected by parsed model/config, such as no DC PV, DC PV, or AC-only PV."
+        },
+        {
+          "point": "miniControllerDcPvPassthroughKw",
+          "sourceTags": [
+            "controller.dcPvPassthroughKw"
+          ],
+          "dtype": "float32",
+          "unit": "kW",
+          "priority": "P0",
+          "description": "DC PV passthrough amount used by Mini DC converter control."
+        },
+        {
+          "point": "miniControllerAcPvCurtailmentKw",
+          "sourceTags": [
+            "controller.acPvCurtailmentKw"
+          ],
+          "dtype": "float32",
+          "unit": "kW",
+          "priority": "P0",
+          "description": "AC PV curtailment amount commanded by Mini off-grid/export logic."
+        },
+        {
+          "point": "miniControllerCommandedMaxChargeCurrentA",
+          "sourceTags": [
+            "controller.commandedMaxChargeCurrentA"
+          ],
+          "dtype": "float32",
+          "unit": "A",
+          "priority": "P0",
+          "description": "Final Mini max charge current command after SOC, topology, outage, and export logic."
+        },
+        {
+          "point": "miniControllerCommandedMaxDischargeCurrentA",
+          "sourceTags": [
+            "controller.commandedMaxDischargeCurrentA"
+          ],
+          "dtype": "float32",
+          "unit": "A",
+          "priority": "P0",
+          "description": "Final Mini max discharge current command after SOC, topology, outage, and export logic."
+        },
+        {
+          "point": "miniControllerPcsActivePowerSetpointKw",
+          "sourceTags": [
+            "controller.pcsActivePowerSetpointKw"
+          ],
+          "dtype": "float32",
+          "unit": "kW",
+          "priority": "P0",
+          "description": "Final Mini PCS active power setpoint."
+        },
+        {
+          "point": "miniControllerReasonCode",
+          "sourceTags": [
+            "controller.reasonCode"
+          ],
+          "dtype": "uint16",
+          "unit": null,
+          "priority": "P0",
+          "description": "Machine-readable reason code for the final Mini control decision."
+        }
+      ]
+    }
+  ]
+}
