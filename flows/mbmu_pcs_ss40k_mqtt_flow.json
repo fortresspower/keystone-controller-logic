@@ -1113,7 +1113,7 @@
     "type": "function",
     "z": "7ca3963342311c2b",
     "name": "Prepare for AWSFeedModule",
-    "func": "const payload = msg.ss40k || msg.payload;\nconst timestamp = msg.timestamp || new Date().toISOString();\nif (payload && typeof payload === 'object' && !Array.isArray(payload)) {\n  for (const key of Object.keys(payload)) {\n    const record = payload[key];\n    if (record && typeof record === 'object' && !Array.isArray(record) && !record.timestamp) record.timestamp = timestamp;\n  }\n}\nmsg.topic = msg.topic || global.get('telemetryTopic') || 'fort/v1/things/25000752/telem';\nmsg.payload = payload;\nmsg.timestamp = timestamp;\nmsg.awsOutput = 'awsOutput';\nreturn msg;",
+    "func": "const payload = msg.payload;\nconst timestamp = msg.timestamp || new Date().toISOString();\n\nif (payload && typeof payload === 'object' && !Array.isArray(payload)) {\n  for (const key of Object.keys(payload)) {\n    const record = payload[key];\n    if (record && typeof record === 'object' && !Array.isArray(record) && !record.timestamp) {\n      record.timestamp = timestamp;\n    }\n  }\n}\n\nmsg.topic = msg.topic || global.get('telemetryTopic') || 'fort/v1/things/25000752/telem';\nmsg.payload = payload;\nmsg.timestamp = timestamp;\nmsg.awsOutput = 'awsOutput';\nreturn msg;",
     "outputs": 1,
     "timeout": "",
     "noerr": 0,
