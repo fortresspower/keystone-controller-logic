@@ -18,7 +18,7 @@
     ],
     "repeat": "",
     "crontab": "",
-    "once": true,
+    "once": false,
     "onceDelay": 0.1,
     "topic": "",
     "payload": "{\"cmd\":\"compile\",\"profileName\":\"MBMU_280_ss40k\",\"instance\":{\"equipmentId\":\"MBMU\",\"serverKey\":\"MBMU\",\"unitId\":1}}",
@@ -43,8 +43,8 @@
     ],
     "repeat": "",
     "crontab": "",
-    "once": true,
-    "onceDelay": "0.5",
+    "once": false,
+    "onceDelay": 0.1,
     "topic": "",
     "payload": "{\"cmd\":\"start\",\"equipmentId\":\"MBMU\"}",
     "payloadType": "json",
@@ -276,7 +276,7 @@
     "type": "function",
     "z": "7ca3963342311c2b",
     "name": "Build Template Lookup",
-    "func": "const lib = global.get('lib');\nif (!lib || !lib.telemetry || typeof lib.telemetry.buildSs40kLookup !== 'function') {\n  node.status({ fill: 'red', shape: 'ring', text: 'ss40k API missing' });\n  return { payload: { error: 'SS40K_API_MISSING' } };\n}\n\nconst equipmentConfig = {\n  PCS: { profileName: 'Delta_280_ss40k', route: 'PCS' },\n  MBMU: { profileName: 'MBMU_280_ss40k', route: 'MBMU' },\n  Meter: { profileName: 'eGauge_280_ss40k', route: 'METER' },\n  Meter2: { profileName: 'eGauge_280_ss40k', route: 'METER' }\n};\n\nconst result = lib.telemetry.buildSs40kLookup(equipmentConfig);\n\nglobal.set('ss40kLookup', result.lookup);\nglobal.set('ss40kEquipmentToProfile', result.equipmentToProfile);\nglobal.set('ss40kModelIndexMap', result.modelIndexMap);\nflow.set('telemetryRouteMap', result.routeMap);\nflow.set('telemetryEquipmentConfig', equipmentConfig);\n\nnode.status({ fill: 'green', shape: 'dot', text: `${Object.keys(result.lookup).length} mapped tags` });\nmsg.payload = {\n  lookupCount: Object.keys(result.lookup).length,\n  equipmentToProfile: result.equipmentToProfile,\n  routeMap: result.routeMap,\n  modelIndexMap: result.modelIndexMap,\n  sample: Object.fromEntries(Object.entries(result.lookup).slice(0, 10))\n};\nreturn msg;\n",
+    "func": "const lib = global.get('lib');\nif (!lib || !lib.telemetry || typeof lib.telemetry.buildSs40kLookup !== 'function') {\n  node.status({ fill: 'red', shape: 'ring', text: 'ss40k API missing' });\n  return { payload: { error: 'SS40K_API_MISSING' } };\n}\n\nconst equipmentConfig = flow.get('telemetryEquipmentConfig') || {\n  PCS: { profileName: 'Delta_280_ss40k', route: 'slot2' },\n  MBMU: { profileName: 'MBMU_280_ss40k', route: 'slot1' }\n};\nconst result = lib.telemetry.buildSs40kLookup(equipmentConfig);\n\nglobal.set('ss40kLookup', result.lookup);\nglobal.set('ss40kEquipmentToProfile', result.equipmentToProfile);\nglobal.set('ss40kModelIndexMap', result.modelIndexMap);\nflow.set('telemetryRouteMap', result.routeMap || flow.get('telemetryRouteMap') || {});\n\nnode.status({ fill: 'green', shape: 'dot', text: `${Object.keys(result.lookup).length} mapped tags` });\nmsg.payload = {\n  lookupCount: Object.keys(result.lookup).length,\n  equipmentToProfile: result.equipmentToProfile,\n  routeMap: flow.get('telemetryRouteMap'),\n  modelIndexMap: result.modelIndexMap,\n  sample: Object.fromEntries(Object.entries(result.lookup).slice(0, 10))\n};\nreturn msg;\n",
     "outputs": 1,
     "timeout": "",
     "noerr": 0,
@@ -296,7 +296,7 @@
     "type": "function",
     "z": "7ca3963342311c2b",
     "name": "Build Fixed Payloads",
-    "func": "const lib = global.get('lib');\nif (!lib || !lib.telemetry || typeof lib.telemetry.buildSs40kFixedPayloads !== 'function') {\n  node.status({ fill: 'red', shape: 'ring', text: 'ss40k API missing' });\n  return [null, { payload: { error: 'SS40K_API_MISSING' } }, null];\n}\n\nconst lookup = global.get('ss40kLookup') || {};\nconst telemetry = global.get('NEW_telemetry') || global.get('telemetry') || {};\nif (!Object.keys(lookup).length) {\n  node.status({ fill: 'yellow', shape: 'ring', text: 'lookup missing' });\n  return [null, { payload: { error: 'SS40K_LOOKUP_MISSING' } }, null];\n}\n\nconst messages = lib.telemetry.buildSs40kFixedPayloads({\n  lookup,\n  telemetry,\n  topic: 'fort/v1/things/25000761/telem',\n  version: '3.0'\n});\n\nnode.status({ fill: 'green', shape: 'dot', text: `${messages.length} payloads` });\nreturn [messages, null, { payload: messages.map((msg) => msg.ss40k) }];\n",
+    "func": "const lib = global.get('lib');\nif (!lib || !lib.telemetry || typeof lib.telemetry.buildSs40kFixedPayloads !== 'function') {\n  node.status({ fill: 'red', shape: 'ring', text: 'ss40k API missing' });\n  return [null, { payload: { error: 'SS40K_API_MISSING' } }, null];\n}\n\nconst lookup = global.get('ss40kLookup') || {};\nconst telemetry = global.get('NEW_telemetry') || global.get('telemetry') || {};\nconst config = flow.get('controlConfig') || global.get('controlConfig') || global.get('unifiedControlConfig') || {};\nif (!Object.keys(lookup).length) {\n  node.status({ fill: 'yellow', shape: 'ring', text: 'lookup missing' });\n  return [null, { payload: { error: 'SS40K_LOOKUP_MISSING' } }, null];\n}\n\nconst thingId = config?.cloud?.thingId || config?.cloud?.gsn || config?.site?.thingId || config?.site?.gsn || global.get('thingId') || '25000752';\nconst topic = config?.cloud?.telemetryTopic || `fort/v1/things/${thingId}/telem`;\nconst messages = lib.telemetry.buildSs40kFixedPayloads({ lookup, telemetry, topic, version: '3.0' });\n\nnode.status({ fill: 'green', shape: 'dot', text: `${messages.length} payloads` });\nreturn [messages, null, { payload: messages.map((msg) => msg.ss40k) }];\n",
     "outputs": 3,
     "timeout": "",
     "noerr": 0,
@@ -308,7 +308,8 @@
     "wires": [
       [
         "7df47cc90e9610f0",
-        "061164a9c2cd8714"
+        "061164a9c2cd8714",
+        "kt_prepare_aws_output"
       ],
       [
         "ce50d22d168b9e7a"
@@ -412,8 +413,8 @@
     "type": "function",
     "z": "7ca3963342311c2b",
     "name": "Route Modbus Requests",
-    "func": "const routing = Object.assign({ MBMU: 'MBMU', PCS: 'PCS' }, flow.get('telemetryRouteMap') || {});\nconst routeKey = msg.serverKey || msg.equipmentId || msg._reader?.equipmentId;\nconst target = routeKey ? routing[routeKey] : null;\nif (target === 'MBMU') return [msg, null, null];\nif (target === 'PCS') return [null, msg, null];\nnode.status({ fill: 'yellow', shape: 'ring', text: `no route ${routeKey || '?'}` });\nreturn [null, null, { payload: { error: 'NO_MODBUS_ROUTE', routeKey, routing } }];\n",
-    "outputs": 3,
+    "func": "const routing = Object.assign({}, flow.get('telemetryRouteMap') || {});\nconst routeKey = msg.serverKey || msg.equipmentId || msg._reader?.equipmentId;\nconst target = routeKey ? routing[routeKey] : null;\nconst slot = target || routeKey;\nconst outputs = { slot1: 0, slot2: 1, slot3: 2, slot4: 3, slot5: 4, slot6: 5, MBMU: 0, PCS: 1, METER: 2, Meter: 2, Meter2: 3 };\nconst idx = outputs[slot];\nif (idx !== undefined) {\n  const out = new Array(7).fill(null);\n  out[idx] = msg;\n  return out;\n}\nnode.status({ fill: 'yellow', shape: 'ring', text: `no route ${routeKey || '?'}` });\nreturn [null, null, null, null, null, null, { payload: { error: 'NO_MODBUS_ROUTE', routeKey, target, routing } }];\n",
+    "outputs": 7,
     "timeout": "",
     "noerr": 0,
     "initialize": "",
@@ -427,6 +428,18 @@
       ],
       [
         "f294fc0c69bbaa6f"
+      ],
+      [
+        "kt_slot3_getter"
+      ],
+      [
+        "kt_slot4_getter"
+      ],
+      [
+        "kt_slot5_getter"
+      ],
+      [
+        "kt_slot6_getter"
       ],
       [
         "ce50d22d168b9e7a"
@@ -473,7 +486,7 @@
     ],
     "repeat": "",
     "crontab": "",
-    "once": true,
+    "once": false,
     "onceDelay": 0.1,
     "topic": "",
     "payload": "{\"cmd\":\"compile\",\"profileName\":\"Delta_280_ss40k\",\"instance\":{\"equipmentId\":\"PCS\",\"serverKey\":\"PCS\",\"unitId\":1}}",
@@ -498,8 +511,8 @@
     ],
     "repeat": "",
     "crontab": "",
-    "once": true,
-    "onceDelay": "0.5",
+    "once": false,
+    "onceDelay": 0.1,
     "topic": "",
     "payload": "{\"cmd\":\"start\",\"equipmentId\":\"PCS\"}",
     "payloadType": "json",
@@ -676,6 +689,471 @@
     "statusType": "auto",
     "x": 720,
     "y": 840,
+    "wires": []
+  },
+  {
+    "id": "kt_setup_inject",
+    "type": "inject",
+    "z": "7ca3963342311c2b",
+    "name": "Setup telemetry from ControlConfig",
+    "props": [
+      {
+        "p": "payload"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": true,
+    "onceDelay": "1.0",
+    "topic": "",
+    "payload": "{}",
+    "payloadType": "json",
+    "x": 180,
+    "y": 40,
+    "wires": [
+      [
+        "kt_setup_from_config"
+      ]
+    ]
+  },
+  {
+    "id": "kt_setup_from_config",
+    "type": "function",
+    "z": "7ca3963342311c2b",
+    "name": "Setup telemetry from site config",
+    "func": "const lib = global.get('lib');\nif (!lib || !lib.telemetry || typeof lib.telemetry.buildSs40kLookup !== 'function') {\n  node.status({ fill: 'red', shape: 'ring', text: 'telemetry API missing' });\n  return [null, null, { payload: { error: 'TELEMETRY_API_MISSING' } }];\n}\n\nfunction asNumber(value, fallback) {\n  const n = Number(value);\n  return Number.isFinite(n) ? n : fallback;\n}\nfunction normalizeProfile(profile) {\n  if (!profile) return '';\n  const s = String(profile);\n  if (s === 'udt_eGauge_V1') return 'eGauge_280_ss40k';\n  return s;\n}\nfunction sourceProfile(source, fallback) {\n  return normalizeProfile(source && (source.profileName || source.profile || source.modbusProfile)) || fallback;\n}\nfunction sourceIp(source, fallback) {\n  return String((source && (source.ip || source.host || source.tcpHost)) || fallback || '127.0.0.1');\n}\nfunction sourcePort(source, fallback) {\n  return asNumber(source && (source.port || source.tcpPort), fallback || 502);\n}\nfunction addReader(readers, reader) {\n  if (!reader || !reader.equipmentId || !reader.profileName) return;\n  if (readers.some((existing) => existing.equipmentId === reader.equipmentId)) return;\n  readers.push({\n    equipmentId: String(reader.equipmentId),\n    profileName: normalizeProfile(reader.profileName),\n    ip: String(reader.ip || reader.host || reader.tcpHost || '127.0.0.1'),\n    port: asNumber(reader.port || reader.tcpPort, 502),\n    unitId: asNumber(reader.unitId, 1),\n    route: String(reader.route || reader.serverKey || reader.equipmentId),\n    role: reader.role || undefined\n  });\n}\nfunction defaultReaders(config) {\n  const readers = [];\n  const profile = String(config?.system?.systemProfile || 'eSpire280');\n  const isMini = profile.startsWith('MINI-');\n  const sources = config?.signalMapping?.sources || {};\n  const metering = config?.metering || {};\n  const pcsIp = config?.network?.controller?.modbusServer?.ip || '127.0.0.1';\n  if (config?.telemetryReaders && Array.isArray(config.telemetryReaders)) {\n    for (const reader of config.telemetryReaders) addReader(readers, reader);\n    return readers;\n  }\n  for (const [equipmentId, source] of Object.entries(sources)) {\n    addReader(readers, {\n      equipmentId,\n      profileName: sourceProfile(source, equipmentId === 'PCS' ? (isMini ? 'Sinexcel_Mini_PCS_ss40k' : 'Delta_280_ss40k') : 'eGauge_280_ss40k'),\n      ip: sourceIp(source, equipmentId === 'PCS' ? pcsIp : metering.ip),\n      port: sourcePort(source, 502),\n      unitId: asNumber(source.unitId, 1),\n      route: source.route || equipmentId,\n      role: source.role\n    });\n  }\n  if (isMini) {\n    addReader(readers, { equipmentId: 'PCS', profileName: 'Sinexcel_Mini_PCS_ss40k', ip: pcsIp, route: 'PCS' });\n    addReader(readers, { equipmentId: 'AMPACE', profileName: 'AMPACE_Mini_ss40k', ip: config?.battery?.ip || pcsIp, route: 'AMPACE' });\n    addReader(readers, { equipmentId: 'Load', profileName: 'Sinexcel_Mini_Load_ss40k', ip: pcsIp, route: 'Load' });\n    const segment = String(profile).split('-')[2];\n    const dcPvKw = asNumber(segment, 0);\n    const modules = Math.max(0, Math.min(3, Math.round(dcPvKw / 45)));\n    for (let i = 1; i <= modules; i++) addReader(readers, { equipmentId: 'PVDC' + i, profileName: 'Sinexcel_Mini_PVDC_Module' + i + '_ss40k', ip: pcsIp, route: 'PVDC' + i });\n  } else {\n    addReader(readers, { equipmentId: 'PCS', profileName: 'Delta_280_ss40k', ip: pcsIp, route: 'PCS' });\n    addReader(readers, { equipmentId: 'MBMU', profileName: 'MBMU_280_ss40k', ip: pcsIp, route: 'MBMU' });\n    if (metering.ip) addReader(readers, { equipmentId: 'Meter', profileName: normalizeProfile(metering.modbusProfile || 'eGauge_280_ss40k'), ip: metering.ip, route: 'Meter' });\n  }\n  return readers;\n}\n\nconst config = msg.controlConfig || msg.payload?.controlConfig || flow.get('controlConfig') || global.get('controlConfig') || global.get('unifiedControlConfig') || {};\nconst readers = defaultReaders(config).slice(0, 6);\nif (!readers.length) {\n  node.status({ fill: 'yellow', shape: 'ring', text: 'no telemetry readers' });\n  return [null, null, { payload: { error: 'NO_TELEMETRY_READERS', configKeys: Object.keys(config || {}) } }];\n}\n\nconst slotNames = ['slot1', 'slot2', 'slot3', 'slot4', 'slot5', 'slot6'];\nconst routeMap = {};\nconst equipmentConfig = {};\nconst compileMessages = [];\nconst startMessages = [];\nconst connectorMessages = [];\nfor (let i = 0; i < readers.length; i++) {\n  const reader = readers[i];\n  const slot = slotNames[i];\n  routeMap[reader.route] = slot;\n  routeMap[reader.equipmentId] = slot;\n  equipmentConfig[reader.equipmentId] = { profileName: reader.profileName, route: slot };\n  connectorMessages.push({\n    slot,\n    equipmentId: reader.equipmentId,\n    payload: { connectorType: 'TCP', tcpHost: reader.ip, tcpPort: String(reader.port) }\n  });\n  compileMessages.push({\n    payload: { cmd: 'compile', profileName: reader.profileName, instance: { equipmentId: reader.equipmentId, serverKey: reader.route, unitId: reader.unitId } },\n    equipmentId: reader.equipmentId,\n    serverKey: reader.route\n  });\n  startMessages.push({\n    payload: { cmd: 'start', equipmentId: reader.equipmentId },\n    equipmentId: reader.equipmentId,\n    serverKey: reader.route\n  });\n}\n\nconst result = lib.telemetry.buildSs40kLookup(equipmentConfig);\nglobal.set('ss40kLookup', result.lookup);\nglobal.set('ss40kEquipmentToProfile', result.equipmentToProfile);\nglobal.set('ss40kModelIndexMap', result.modelIndexMap);\nglobal.set('telemetryReaderConfig', readers);\nflow.set('telemetryRouteMap', routeMap);\nflow.set('telemetryEquipmentConfig', equipmentConfig);\nflow.set('telemetryReaderConfig', readers);\n\nnode.send([null, connectorMessages, { payload: { state: 'connectors-configured', readers, routeMap } }]);\nfor (const message of compileMessages) node.send([message, null, null]);\nsetTimeout(() => {\n  for (const message of startMessages) node.send([message, null, null]);\n}, 1500);\n\nnode.status({ fill: 'green', shape: 'dot', text: `${readers.length} reader(s), ${Object.keys(result.lookup).length} mapped tags` });\nreturn [null, null, { payload: { state: 'telemetry-setup', readers, routeMap, lookupCount: Object.keys(result.lookup).length } }];\n",
+    "outputs": 3,
+    "timeout": "",
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 470,
+    "y": 40,
+    "wires": [
+      [
+        "f8e2bf0ae352b693"
+      ],
+      [
+        "kt_route_connectors"
+      ],
+      [
+        "ce50d22d168b9e7a"
+      ]
+    ]
+  },
+  {
+    "id": "kt_route_connectors",
+    "type": "function",
+    "z": "7ca3963342311c2b",
+    "name": "Route telemetry connector setup",
+    "func": "const slot = msg.slot || msg.route || msg.equipmentId;\nconst outputs = { slot1: 0, slot2: 1, slot3: 2, slot4: 3, slot5: 4, slot6: 5 };\nconst idx = outputs[slot];\nif (idx === undefined) {\n  node.status({ fill: 'yellow', shape: 'ring', text: `no connector slot ${slot || '?'}` });\n  return [null, null, null, null, null, null, { payload: { error: 'NO_CONNECTOR_SLOT', slot, msg } }];\n}\nconst out = new Array(7).fill(null);\nout[idx] = msg;\nreturn out;\n",
+    "outputs": 7,
+    "timeout": "",
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 790,
+    "y": 40,
+    "wires": [
+      [
+        "kt_slot1_connector"
+      ],
+      [
+        "kt_slot2_connector"
+      ],
+      [
+        "kt_slot3_connector"
+      ],
+      [
+        "kt_slot4_connector"
+      ],
+      [
+        "kt_slot5_connector"
+      ],
+      [
+        "kt_slot6_connector"
+      ],
+      [
+        "ce50d22d168b9e7a"
+      ]
+    ]
+  },
+  {
+    "id": "kt_slot1_connector",
+    "type": "modbus-flex-connector",
+    "z": "7ca3963342311c2b",
+    "name": "Configure telemetry slot 1",
+    "maxReconnectsPerMinute": 10,
+    "emptyQueue": true,
+    "showStatusActivities": false,
+    "showErrors": true,
+    "server": "75829146.02452",
+    "x": 1070,
+    "y": 40,
+    "wires": [
+      [
+        "ce50d22d168b9e7a"
+      ]
+    ]
+  },
+  {
+    "id": "kt_slot2_connector",
+    "type": "modbus-flex-connector",
+    "z": "7ca3963342311c2b",
+    "name": "Configure telemetry slot 2",
+    "maxReconnectsPerMinute": 10,
+    "emptyQueue": true,
+    "showStatusActivities": false,
+    "showErrors": true,
+    "server": "81abe2e8.b9365",
+    "x": 1070,
+    "y": 70,
+    "wires": [
+      [
+        "ce50d22d168b9e7a"
+      ]
+    ]
+  },
+  {
+    "type": "modbus-client",
+    "clienttype": "tcp",
+    "bufferCommands": true,
+    "stateLogEnabled": false,
+    "queueLogEnabled": false,
+    "failureLogEnabled": false,
+    "tcpHost": "127.0.0.1",
+    "tcpPort": "502",
+    "tcpType": "DEFAULT",
+    "serialPort": "/dev/ttyUSB",
+    "serialType": "RTU-BUFFERD",
+    "serialBaudrate": "9600",
+    "serialDatabits": "8",
+    "serialStopbits": "1",
+    "serialParity": "none",
+    "serialConnectionDelay": "100",
+    "serialAsciiResponseStartDelimiter": "",
+    "unit_id": 1,
+    "commandDelay": 1,
+    "clientTimeout": 1500,
+    "reconnectOnTimeout": true,
+    "reconnectTimeout": 2000,
+    "parallelUnitIdsAllowed": true,
+    "id": "kt_slot3_client",
+    "name": "telemetry_slot_3"
+  },
+  {
+    "id": "kt_slot3_connector",
+    "type": "modbus-flex-connector",
+    "z": "7ca3963342311c2b",
+    "name": "Configure telemetry slot 3",
+    "maxReconnectsPerMinute": 10,
+    "emptyQueue": true,
+    "showStatusActivities": false,
+    "showErrors": true,
+    "server": "kt_slot3_client",
+    "x": 1070,
+    "y": 100,
+    "wires": [
+      [
+        "ce50d22d168b9e7a"
+      ]
+    ]
+  },
+  {
+    "id": "kt_slot3_getter",
+    "type": "modbus-flex-getter",
+    "z": "7ca3963342311c2b",
+    "name": "Telemetry Slot 3 Getter",
+    "showStatusActivities": false,
+    "showErrors": true,
+    "showWarnings": true,
+    "logIOActivities": false,
+    "server": "kt_slot3_client",
+    "useIOFile": false,
+    "ioFile": "",
+    "useIOForPayload": false,
+    "emptyMsgOnFail": false,
+    "keepMsgProperties": true,
+    "delayOnStart": false,
+    "startDelayTime": "",
+    "x": 850,
+    "y": 220,
+    "wires": [
+      [
+        "f8e2bf0ae352b693"
+      ],
+      [
+        "ce50d22d168b9e7a"
+      ]
+    ]
+  },
+  {
+    "type": "modbus-client",
+    "clienttype": "tcp",
+    "bufferCommands": true,
+    "stateLogEnabled": false,
+    "queueLogEnabled": false,
+    "failureLogEnabled": false,
+    "tcpHost": "127.0.0.1",
+    "tcpPort": "502",
+    "tcpType": "DEFAULT",
+    "serialPort": "/dev/ttyUSB",
+    "serialType": "RTU-BUFFERD",
+    "serialBaudrate": "9600",
+    "serialDatabits": "8",
+    "serialStopbits": "1",
+    "serialParity": "none",
+    "serialConnectionDelay": "100",
+    "serialAsciiResponseStartDelimiter": "",
+    "unit_id": 1,
+    "commandDelay": 1,
+    "clientTimeout": 1500,
+    "reconnectOnTimeout": true,
+    "reconnectTimeout": 2000,
+    "parallelUnitIdsAllowed": true,
+    "id": "kt_slot4_client",
+    "name": "telemetry_slot_4"
+  },
+  {
+    "id": "kt_slot4_connector",
+    "type": "modbus-flex-connector",
+    "z": "7ca3963342311c2b",
+    "name": "Configure telemetry slot 4",
+    "maxReconnectsPerMinute": 10,
+    "emptyQueue": true,
+    "showStatusActivities": false,
+    "showErrors": true,
+    "server": "kt_slot4_client",
+    "x": 1070,
+    "y": 130,
+    "wires": [
+      [
+        "ce50d22d168b9e7a"
+      ]
+    ]
+  },
+  {
+    "id": "kt_slot4_getter",
+    "type": "modbus-flex-getter",
+    "z": "7ca3963342311c2b",
+    "name": "Telemetry Slot 4 Getter",
+    "showStatusActivities": false,
+    "showErrors": true,
+    "showWarnings": true,
+    "logIOActivities": false,
+    "server": "kt_slot4_client",
+    "useIOFile": false,
+    "ioFile": "",
+    "useIOForPayload": false,
+    "emptyMsgOnFail": false,
+    "keepMsgProperties": true,
+    "delayOnStart": false,
+    "startDelayTime": "",
+    "x": 850,
+    "y": 280,
+    "wires": [
+      [
+        "f8e2bf0ae352b693"
+      ],
+      [
+        "ce50d22d168b9e7a"
+      ]
+    ]
+  },
+  {
+    "type": "modbus-client",
+    "clienttype": "tcp",
+    "bufferCommands": true,
+    "stateLogEnabled": false,
+    "queueLogEnabled": false,
+    "failureLogEnabled": false,
+    "tcpHost": "127.0.0.1",
+    "tcpPort": "502",
+    "tcpType": "DEFAULT",
+    "serialPort": "/dev/ttyUSB",
+    "serialType": "RTU-BUFFERD",
+    "serialBaudrate": "9600",
+    "serialDatabits": "8",
+    "serialStopbits": "1",
+    "serialParity": "none",
+    "serialConnectionDelay": "100",
+    "serialAsciiResponseStartDelimiter": "",
+    "unit_id": 1,
+    "commandDelay": 1,
+    "clientTimeout": 1500,
+    "reconnectOnTimeout": true,
+    "reconnectTimeout": 2000,
+    "parallelUnitIdsAllowed": true,
+    "id": "kt_slot5_client",
+    "name": "telemetry_slot_5"
+  },
+  {
+    "id": "kt_slot5_connector",
+    "type": "modbus-flex-connector",
+    "z": "7ca3963342311c2b",
+    "name": "Configure telemetry slot 5",
+    "maxReconnectsPerMinute": 10,
+    "emptyQueue": true,
+    "showStatusActivities": false,
+    "showErrors": true,
+    "server": "kt_slot5_client",
+    "x": 1070,
+    "y": 160,
+    "wires": [
+      [
+        "ce50d22d168b9e7a"
+      ]
+    ]
+  },
+  {
+    "id": "kt_slot5_getter",
+    "type": "modbus-flex-getter",
+    "z": "7ca3963342311c2b",
+    "name": "Telemetry Slot 5 Getter",
+    "showStatusActivities": false,
+    "showErrors": true,
+    "showWarnings": true,
+    "logIOActivities": false,
+    "server": "kt_slot5_client",
+    "useIOFile": false,
+    "ioFile": "",
+    "useIOForPayload": false,
+    "emptyMsgOnFail": false,
+    "keepMsgProperties": true,
+    "delayOnStart": false,
+    "startDelayTime": "",
+    "x": 850,
+    "y": 340,
+    "wires": [
+      [
+        "f8e2bf0ae352b693"
+      ],
+      [
+        "ce50d22d168b9e7a"
+      ]
+    ]
+  },
+  {
+    "type": "modbus-client",
+    "clienttype": "tcp",
+    "bufferCommands": true,
+    "stateLogEnabled": false,
+    "queueLogEnabled": false,
+    "failureLogEnabled": false,
+    "tcpHost": "127.0.0.1",
+    "tcpPort": "502",
+    "tcpType": "DEFAULT",
+    "serialPort": "/dev/ttyUSB",
+    "serialType": "RTU-BUFFERD",
+    "serialBaudrate": "9600",
+    "serialDatabits": "8",
+    "serialStopbits": "1",
+    "serialParity": "none",
+    "serialConnectionDelay": "100",
+    "serialAsciiResponseStartDelimiter": "",
+    "unit_id": 1,
+    "commandDelay": 1,
+    "clientTimeout": 1500,
+    "reconnectOnTimeout": true,
+    "reconnectTimeout": 2000,
+    "parallelUnitIdsAllowed": true,
+    "id": "kt_slot6_client",
+    "name": "telemetry_slot_6"
+  },
+  {
+    "id": "kt_slot6_connector",
+    "type": "modbus-flex-connector",
+    "z": "7ca3963342311c2b",
+    "name": "Configure telemetry slot 6",
+    "maxReconnectsPerMinute": 10,
+    "emptyQueue": true,
+    "showStatusActivities": false,
+    "showErrors": true,
+    "server": "kt_slot6_client",
+    "x": 1070,
+    "y": 190,
+    "wires": [
+      [
+        "ce50d22d168b9e7a"
+      ]
+    ]
+  },
+  {
+    "id": "kt_slot6_getter",
+    "type": "modbus-flex-getter",
+    "z": "7ca3963342311c2b",
+    "name": "Telemetry Slot 6 Getter",
+    "showStatusActivities": false,
+    "showErrors": true,
+    "showWarnings": true,
+    "logIOActivities": false,
+    "server": "kt_slot6_client",
+    "useIOFile": false,
+    "ioFile": "",
+    "useIOForPayload": false,
+    "emptyMsgOnFail": false,
+    "keepMsgProperties": true,
+    "delayOnStart": false,
+    "startDelayTime": "",
+    "x": 850,
+    "y": 400,
+    "wires": [
+      [
+        "f8e2bf0ae352b693"
+      ],
+      [
+        "ce50d22d168b9e7a"
+      ]
+    ]
+  },
+  {
+    "id": "kt_prepare_aws_output",
+    "type": "function",
+    "z": "7ca3963342311c2b",
+    "name": "Prepare for AWSFeedModule",
+    "func": "const payload = msg.ss40k || msg.payload;\nconst timestamp = msg.timestamp || new Date().toISOString();\nif (payload && typeof payload === 'object' && !Array.isArray(payload)) {\n  for (const key of Object.keys(payload)) {\n    const record = payload[key];\n    if (record && typeof record === 'object' && !Array.isArray(record) && !record.timestamp) record.timestamp = timestamp;\n  }\n}\nmsg.topic = msg.topic || global.get('telemetryTopic') || 'fort/v1/things/25000752/telem';\nmsg.payload = payload;\nmsg.timestamp = timestamp;\nmsg.awsOutput = 'awsOutput';\nreturn msg;",
+    "outputs": 1,
+    "timeout": "",
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 740,
+    "y": 780,
+    "wires": [
+      [
+        "kt_aws_output_debug",
+        "kt_aws_module_output"
+      ]
+    ]
+  },
+  {
+    "id": "kt_aws_output_debug",
+    "type": "debug",
+    "z": "7ca3963342311c2b",
+    "name": "AWSFeedModule payload",
+    "active": false,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "payload",
+    "targetType": "msg",
+    "statusVal": "",
+    "statusType": "auto",
+    "x": 1010,
+    "y": 760,
+    "wires": []
+  },
+  {
+    "id": "kt_aws_module_output",
+    "type": "moduleoutput",
+    "z": "7ca3963342311c2b",
+    "client": "27fda477.05255c",
+    "output": "awsOutput",
+    "x": 1000,
+    "y": 800,
     "wires": []
   }
 ]
