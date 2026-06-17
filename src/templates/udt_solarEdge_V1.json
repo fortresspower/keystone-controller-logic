@@ -1,0 +1,656 @@
+{
+  "version": "2",
+  "device": {
+    "vendor": "SolarEdge",
+    "model": "Inverter",
+    "protocol": "modbus-tcp",
+    "defaultByteOrder": "BE",
+    "defaultWordOrder32": "ABCD",
+    "name": "udt_solarEdge_V1",
+    "sourceFormat": "legacy-node-red-global-components",
+    "notes": "Converted from Mission Energy live SolarEdge UDT. Raw SunSpec values are exposed as supporting tags; calculated tags apply the paired scale-factor registers."
+  },
+  "telemetry": [
+    {
+      "id": "DEVICE_ADDRESS",
+      "pollClass": "normal",
+      "function": "HRUS",
+      "address": 40068
+    },
+    {
+      "id": "AC_CURRENT_TOTAL_RAW",
+      "pollClass": "normal",
+      "function": "HRUS",
+      "address": 40071,
+      "supporting": true
+    },
+    {
+      "id": "AC_CURRENT_A_RAW",
+      "pollClass": "normal",
+      "function": "HRUS",
+      "address": 40072,
+      "supporting": true
+    },
+    {
+      "id": "AC_CURRENT_B_RAW",
+      "pollClass": "normal",
+      "function": "HRUS",
+      "address": 40073,
+      "supporting": true
+    },
+    {
+      "id": "AC_CURRENT_C_RAW",
+      "pollClass": "normal",
+      "function": "HRUS",
+      "address": 40074,
+      "supporting": true
+    },
+    {
+      "id": "AC_CURRENT_SF",
+      "pollClass": "normal",
+      "function": "HR",
+      "address": 40075,
+      "supporting": true
+    },
+    {
+      "id": "AC_VOLTAGE_AB_RAW",
+      "pollClass": "normal",
+      "function": "HRUS",
+      "address": 40076,
+      "supporting": true
+    },
+    {
+      "id": "AC_VOLTAGE_BC_RAW",
+      "pollClass": "normal",
+      "function": "HRUS",
+      "address": 40077,
+      "supporting": true
+    },
+    {
+      "id": "AC_VOLTAGE_CA_RAW",
+      "pollClass": "normal",
+      "function": "HRUS",
+      "address": 40078,
+      "supporting": true
+    },
+    {
+      "id": "AC_VOLTAGE_AN_RAW",
+      "pollClass": "normal",
+      "function": "HRUS",
+      "address": 40079,
+      "supporting": true
+    },
+    {
+      "id": "AC_VOLTAGE_BN_RAW",
+      "pollClass": "normal",
+      "function": "HRUS",
+      "address": 40080,
+      "supporting": true
+    },
+    {
+      "id": "AC_VOLTAGE_CN_RAW",
+      "pollClass": "normal",
+      "function": "HRUS",
+      "address": 40081,
+      "supporting": true
+    },
+    {
+      "id": "AC_VOLTAGE_SF",
+      "pollClass": "normal",
+      "function": "HR",
+      "address": 40082,
+      "supporting": true
+    },
+    {
+      "id": "AC_POWER_RAW",
+      "pollClass": "normal",
+      "function": "HR",
+      "address": 40083,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1000,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
+      "supporting": true
+    },
+    {
+      "id": "AC_POWER_SF",
+      "pollClass": "normal",
+      "function": "HR",
+      "address": 40084,
+      "supporting": true
+    },
+    {
+      "id": "AC_FREQUENCY_RAW",
+      "pollClass": "normal",
+      "function": "HRUS",
+      "address": 40085,
+      "supporting": true
+    },
+    {
+      "id": "AC_FREQUENCY_SF",
+      "pollClass": "normal",
+      "function": "HR",
+      "address": 40086,
+      "supporting": true
+    },
+    {
+      "id": "AC_VA_RAW",
+      "pollClass": "normal",
+      "function": "HR",
+      "address": 40087,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1000,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
+      "supporting": true
+    },
+    {
+      "id": "AC_VA_SF",
+      "pollClass": "normal",
+      "function": "HR",
+      "address": 40088,
+      "supporting": true
+    },
+    {
+      "id": "AC_VAR_RAW",
+      "pollClass": "normal",
+      "function": "HR",
+      "address": 40089,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1000,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
+      "supporting": true
+    },
+    {
+      "id": "AC_VAR_SF",
+      "pollClass": "normal",
+      "function": "HR",
+      "address": 40090,
+      "supporting": true
+    },
+    {
+      "id": "AC_PF_RAW",
+      "pollClass": "normal",
+      "function": "HR",
+      "address": 40091,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 100,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
+      "supporting": true
+    },
+    {
+      "id": "AC_PF_SF",
+      "pollClass": "normal",
+      "function": "HR",
+      "address": 40092,
+      "supporting": true
+    },
+    {
+      "id": "AC_ENERGY_WH_RAW",
+      "pollClass": "normal",
+      "function": "HR",
+      "address": 40093,
+      "supporting": true
+    },
+    {
+      "id": "AC_ENERGY_WH_SF",
+      "pollClass": "normal",
+      "function": "HRUS",
+      "address": 40095,
+      "supporting": true
+    },
+    {
+      "id": "DC_CURRENT_RAW",
+      "pollClass": "normal",
+      "function": "HRUS",
+      "address": 40096,
+      "supporting": true
+    },
+    {
+      "id": "DC_CURRENT_SF",
+      "pollClass": "normal",
+      "function": "HR",
+      "address": 40097,
+      "supporting": true
+    },
+    {
+      "id": "DC_VOLTAGE_RAW",
+      "pollClass": "normal",
+      "function": "HRUS",
+      "address": 40098,
+      "supporting": true
+    },
+    {
+      "id": "DC_VOLTAGE_SF",
+      "pollClass": "normal",
+      "function": "HR",
+      "address": 40099,
+      "supporting": true
+    },
+    {
+      "id": "DC_POWER_RAW",
+      "pollClass": "normal",
+      "function": "HR",
+      "address": 40100,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1000,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
+      "supporting": true
+    },
+    {
+      "id": "DC_POWER_SF",
+      "pollClass": "normal",
+      "function": "HR",
+      "address": 40101,
+      "supporting": true
+    },
+    {
+      "id": "TEMP_SINK_RAW",
+      "pollClass": "normal",
+      "function": "HR",
+      "address": 40103,
+      "supporting": true
+    },
+    {
+      "id": "TEMP_SINK_SF",
+      "pollClass": "normal",
+      "function": "HR",
+      "address": 40106,
+      "supporting": true
+    },
+    {
+      "id": "STATUS",
+      "pollClass": "normal",
+      "function": "HRUS",
+      "address": 40107,
+      "statusFlag": true
+    },
+    {
+      "id": "STATUS_VENDOR",
+      "pollClass": "normal",
+      "function": "HRUS",
+      "address": 40108
+    },
+    {
+      "id": "GLOBAL_EVENTS",
+      "pollClass": "normal",
+      "function": "HRUS",
+      "address": 40127,
+      "alarm": true,
+      "statusFlag": true
+    },
+    {
+      "id": "COMMIT_POWER_CONTROL_SETTINGS",
+      "pollClass": "normal",
+      "function": "HRI",
+      "address": 63744
+    },
+    {
+      "id": "REACTIVE_POWER_CONFIGURATION",
+      "pollClass": "normal",
+      "function": "HRI",
+      "address": 63748
+    },
+    {
+      "id": "ADVANCED_POWER_CONTROLS_ENABLE",
+      "pollClass": "normal",
+      "function": "HRI",
+      "address": 63810
+    },
+    {
+      "id": "Enable_Dynamic_Power_Control",
+      "pollClass": "normal",
+      "function": "HRUS",
+      "address": 64256
+    },
+    {
+      "id": "Max_Active_Power",
+      "pollClass": "normal",
+      "function": "HRF",
+      "address": 64260,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1000,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "Active_Reactive_Preference",
+      "pollClass": "normal",
+      "function": "HRUS",
+      "address": 64264
+    },
+    {
+      "id": "Command_Timeout",
+      "pollClass": "normal",
+      "function": "HRUI",
+      "address": 64272
+    },
+    {
+      "id": "Fall-back_CosPhi",
+      "pollClass": "normal",
+      "function": "HRUS",
+      "address": 64278
+    },
+    {
+      "id": "Active_Power_Ramp-up_Rate",
+      "pollClass": "normal",
+      "function": "HRF",
+      "address": 64280
+    },
+    {
+      "id": "Active_Power_Ramp-down_Rate",
+      "pollClass": "normal",
+      "function": "HRF",
+      "address": 64282
+    },
+    {
+      "id": "Phi_Change_Rate",
+      "pollClass": "normal",
+      "function": "HRF",
+      "address": 64288
+    },
+    {
+      "id": "Dynamic_CosPhi_Ref",
+      "pollClass": "normal",
+      "function": "HRF",
+      "address": 64294
+    },
+    {
+      "id": "AC_CURRENT_TOTAL",
+      "pollClass": "normal",
+      "calc": {
+        "inputs": {
+          "raw": "AC_CURRENT_TOTAL_RAW",
+          "sf": "AC_CURRENT_SF"
+        },
+        "expr": "raw * pow(10, sf)"
+      },
+      "ss40k": {
+        "name": "iAcCplTot",
+        "model": "40101"
+      }
+    },
+    {
+      "id": "AC_CURRENT_A",
+      "pollClass": "normal",
+      "calc": {
+        "inputs": {
+          "raw": "AC_CURRENT_A_RAW",
+          "sf": "AC_CURRENT_SF"
+        },
+        "expr": "raw * pow(10, sf)"
+      }
+    },
+    {
+      "id": "AC_CURRENT_B",
+      "pollClass": "normal",
+      "calc": {
+        "inputs": {
+          "raw": "AC_CURRENT_B_RAW",
+          "sf": "AC_CURRENT_SF"
+        },
+        "expr": "raw * pow(10, sf)"
+      }
+    },
+    {
+      "id": "AC_CURRENT_C",
+      "pollClass": "normal",
+      "calc": {
+        "inputs": {
+          "raw": "AC_CURRENT_C_RAW",
+          "sf": "AC_CURRENT_SF"
+        },
+        "expr": "raw * pow(10, sf)"
+      }
+    },
+    {
+      "id": "AC_VOLTAGE_AB",
+      "pollClass": "normal",
+      "calc": {
+        "inputs": {
+          "raw": "AC_VOLTAGE_AB_RAW",
+          "sf": "AC_VOLTAGE_SF"
+        },
+        "expr": "raw * pow(10, sf)"
+      }
+    },
+    {
+      "id": "AC_VOLTAGE_BC",
+      "pollClass": "normal",
+      "calc": {
+        "inputs": {
+          "raw": "AC_VOLTAGE_BC_RAW",
+          "sf": "AC_VOLTAGE_SF"
+        },
+        "expr": "raw * pow(10, sf)"
+      }
+    },
+    {
+      "id": "AC_VOLTAGE_CA",
+      "pollClass": "normal",
+      "calc": {
+        "inputs": {
+          "raw": "AC_VOLTAGE_CA_RAW",
+          "sf": "AC_VOLTAGE_SF"
+        },
+        "expr": "raw * pow(10, sf)"
+      }
+    },
+    {
+      "id": "AC_VOLTAGE_AN",
+      "pollClass": "normal",
+      "calc": {
+        "inputs": {
+          "raw": "AC_VOLTAGE_AN_RAW",
+          "sf": "AC_VOLTAGE_SF"
+        },
+        "expr": "raw * pow(10, sf)"
+      }
+    },
+    {
+      "id": "AC_VOLTAGE_BN",
+      "pollClass": "normal",
+      "calc": {
+        "inputs": {
+          "raw": "AC_VOLTAGE_BN_RAW",
+          "sf": "AC_VOLTAGE_SF"
+        },
+        "expr": "raw * pow(10, sf)"
+      }
+    },
+    {
+      "id": "AC_VOLTAGE_CN",
+      "pollClass": "normal",
+      "calc": {
+        "inputs": {
+          "raw": "AC_VOLTAGE_CN_RAW",
+          "sf": "AC_VOLTAGE_SF"
+        },
+        "expr": "raw * pow(10, sf)"
+      }
+    },
+    {
+      "id": "AC_POWER",
+      "pollClass": "normal",
+      "calc": {
+        "inputs": {
+          "raw": "AC_POWER_RAW",
+          "sf": "AC_POWER_SF"
+        },
+        "expr": "raw * pow(10, sf)"
+      },
+      "ss40k": {
+        "name": "pAcCplTot",
+        "model": "40101"
+      }
+    },
+    {
+      "id": "AC_FREQUENCY",
+      "pollClass": "normal",
+      "calc": {
+        "inputs": {
+          "raw": "AC_FREQUENCY_RAW",
+          "sf": "AC_FREQUENCY_SF"
+        },
+        "expr": "raw * pow(10, sf)"
+      },
+      "ss40k": {
+        "name": "fAcCpl",
+        "model": "40101"
+      }
+    },
+    {
+      "id": "AC_VA",
+      "pollClass": "normal",
+      "calc": {
+        "inputs": {
+          "raw": "AC_VA_RAW",
+          "sf": "AC_VA_SF"
+        },
+        "expr": "raw * pow(10, sf)"
+      },
+      "ss40k": {
+        "name": "sAcCplTot",
+        "model": "40101"
+      }
+    },
+    {
+      "id": "AC_VAR",
+      "pollClass": "normal",
+      "calc": {
+        "inputs": {
+          "raw": "AC_VAR_RAW",
+          "sf": "AC_VAR_SF"
+        },
+        "expr": "raw * pow(10, sf)"
+      },
+      "ss40k": {
+        "name": "qAcCplTot",
+        "model": "40101"
+      }
+    },
+    {
+      "id": "AC_PF",
+      "pollClass": "normal",
+      "calc": {
+        "inputs": {
+          "raw": "AC_PF_RAW",
+          "sf": "AC_PF_SF"
+        },
+        "expr": "raw * pow(10, sf)"
+      },
+      "ss40k": {
+        "name": "pfAcCplTot",
+        "model": "40101"
+      }
+    },
+    {
+      "id": "AC_ENERGY_WH",
+      "pollClass": "normal",
+      "calc": {
+        "inputs": {
+          "raw": "AC_ENERGY_WH_RAW",
+          "sf": "AC_ENERGY_WH_SF"
+        },
+        "expr": "raw * pow(10, sf)"
+      },
+      "ss40k": {
+        "name": "ePvTot",
+        "model": "40102"
+      }
+    },
+    {
+      "id": "DC_CURRENT",
+      "pollClass": "normal",
+      "calc": {
+        "inputs": {
+          "raw": "DC_CURRENT_RAW",
+          "sf": "DC_CURRENT_SF"
+        },
+        "expr": "raw * pow(10, sf)"
+      }
+    },
+    {
+      "id": "DC_VOLTAGE",
+      "pollClass": "normal",
+      "calc": {
+        "inputs": {
+          "raw": "DC_VOLTAGE_RAW",
+          "sf": "DC_VOLTAGE_SF"
+        },
+        "expr": "raw * pow(10, sf)"
+      }
+    },
+    {
+      "id": "DC_POWER",
+      "pollClass": "normal",
+      "calc": {
+        "inputs": {
+          "raw": "DC_POWER_RAW",
+          "sf": "DC_POWER_SF"
+        },
+        "expr": "raw * pow(10, sf)"
+      }
+    },
+    {
+      "id": "TEMP_SINK",
+      "pollClass": "normal",
+      "calc": {
+        "inputs": {
+          "raw": "TEMP_SINK_RAW",
+          "sf": "TEMP_SINK_SF"
+        },
+        "expr": "raw * pow(10, sf)"
+      }
+    }
+  ],
+  "commands": [
+    {
+      "id": "Fall-back_Active_Power_Limit",
+      "pollClass": "normal",
+      "function": "HRF",
+      "address": 64274,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 100,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "Dynamic_Active_Power_Limit",
+      "pollClass": "normal",
+      "function": "HRF",
+      "address": 64290,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 100,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    }
+  ]
+}

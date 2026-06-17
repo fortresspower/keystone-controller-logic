@@ -1,0 +1,14 @@
+[Unit]
+Description=Node-RED fixed Modbus slot apply supervisor
+After=default.target
+
+[Service]
+Type=simple
+ExecStart=%h/node-red-auto-apply/node-red-apply-supervisor.sh
+Restart=always
+RestartSec=5
+Environment=CONTAINER=NodeRedModule
+Environment=POLL_SEC=5
+
+[Install]
+WantedBy=default.target

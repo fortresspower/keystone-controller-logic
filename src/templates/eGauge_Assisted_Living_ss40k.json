@@ -1,0 +1,224 @@
+{
+  "version": "2",
+  "device": {
+    "vendor": "eGauge",
+    "model": "Assisted Living site eGauge",
+    "protocol": "modbus-tcp",
+    "defaultByteOrder": "BE",
+    "defaultWordOrder32": "ABCD",
+    "name": "udt_eGauge_Assisted_Living_V1",
+    "sourceFormat": "legacy-site-specific",
+    "notes": "Site-specific eGauge layout from production Node-RED. Do not use as a generic udt_eGauge_V1 replacement; eGauge virtual registers are site-configured."
+  },
+  "telemetry": [
+    {
+      "id": "L1_Voltage",
+      "function": "IRF",
+      "address": 9002,
+      "pollClass": "fast",
+      "ss40k": {
+        "name": "vGridL1N",
+        "model": "40101"
+      }
+    },
+    {
+      "id": "L2_Voltage",
+      "function": "IRF",
+      "address": 9004,
+      "pollClass": "fast",
+      "ss40k": {
+        "name": "vGridL2N",
+        "model": "40101"
+      }
+    },
+    {
+      "id": "L3_Voltage",
+      "function": "IRF",
+      "address": 9006,
+      "pollClass": "fast",
+      "ss40k": {
+        "name": "vGridL3N",
+        "model": "40101"
+      }
+    },
+    {
+      "id": "Utility_L1_Power",
+      "function": "IRF",
+      "address": 9014,
+      "pollClass": "fast",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1000,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "pGridL1",
+        "model": "40101",
+        "exportMultiplier": 1000
+      }
+    },
+    {
+      "id": "Utility_L2_Power",
+      "function": "IRF",
+      "address": 9016,
+      "pollClass": "fast",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1000,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "pGridL2",
+        "model": "40101",
+        "exportMultiplier": 1000
+      }
+    },
+    {
+      "id": "Utility_L3_Power",
+      "function": "IRF",
+      "address": 9018,
+      "pollClass": "fast",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1000,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "pGridL3",
+        "model": "40101",
+        "exportMultiplier": 1000
+      }
+    },
+    {
+      "id": "Utility_Total_Power",
+      "function": "IRF",
+      "address": 9020,
+      "pollClass": "fast",
+      "supporting": true,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1000,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "Utility_Import_Power",
+      "pollClass": "fast",
+      "calc": {
+        "inputs": {
+          "utility": "Utility_Total_Power"
+        },
+        "expr": "max(utility, 0)"
+      },
+      "ss40k": {
+        "name": "pGridImpTot",
+        "model": "40101",
+        "exportMultiplier": 1000
+      }
+    },
+    {
+      "id": "Utility_Export_Power",
+      "pollClass": "fast",
+      "calc": {
+        "inputs": {
+          "utility": "Utility_Total_Power"
+        },
+        "expr": "max(-utility, 0)"
+      },
+      "ss40k": {
+        "name": "pGridExpTot",
+        "model": "40101",
+        "exportMultiplier": 1000
+      }
+    },
+    {
+      "id": "Backup_Load_L1_Power",
+      "function": "IRF",
+      "address": 9028,
+      "pollClass": "fast",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1000,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "pLoadL1",
+        "model": "40101",
+        "exportMultiplier": 1000
+      }
+    },
+    {
+      "id": "Backup_Load_L2_Power",
+      "function": "IRF",
+      "address": 9030,
+      "pollClass": "fast",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1000,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "pLoadL2",
+        "model": "40101",
+        "exportMultiplier": 1000
+      }
+    },
+    {
+      "id": "Backup_Load_L3_Power",
+      "function": "IRF",
+      "address": 9000,
+      "pollClass": "fast",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1000,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "pLoadL3",
+        "model": "40101",
+        "exportMultiplier": 1000
+      }
+    },
+    {
+      "id": "Backup_Load_Total_Power",
+      "function": "IRF",
+      "address": 9032,
+      "pollClass": "fast",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1000,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "pBkupTot",
+        "model": "40101",
+        "exportMultiplier": 1000
+      }
+    },
+    {
+      "id": "Load_Active_Power",
+      "pollClass": "fast",
+      "ss40k": {
+        "name": "pLoad",
+        "model": "40101",
+        "exportMultiplier": 1000
+      }
+    }
+  ]
+}

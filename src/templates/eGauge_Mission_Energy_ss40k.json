@@ -1,0 +1,423 @@
+{
+  "version": "2",
+  "device": {
+    "vendor": "eGauge",
+    "model": "Mission Energy site meter",
+    "protocol": "modbus-tcp",
+    "defaultByteOrder": "BE",
+    "defaultWordOrder32": "ABCD",
+    "name": "udt_eGauge_Mission_Energy_V1",
+    "sourceFormat": "mission-energy-active-node-red-meter-subflow",
+    "notes": "Site-specific eGauge template from 10.253.0.224 active Meter subflow. eGauge virtual registers are site-configured; do not use as a generic eGauge layout."
+  },
+  "telemetry": [
+    {
+      "id": "Load_Active_Power",
+      "pollClass": "normal",
+      "function": null,
+      "address": null,
+      "supporting": true,
+      "ss40k": {
+        "name": "pLoad",
+        "model": "40101",
+        "exportMultiplier": 1000
+      }
+    },
+    {
+      "id": "L1_Voltage",
+      "pollClass": "normal",
+      "function": "IRF",
+      "address": 9000,
+      "ss40k": {
+        "name": "vGridL1N",
+        "model": "40101"
+      }
+    },
+    {
+      "id": "L2_Voltage",
+      "pollClass": "normal",
+      "function": "IRF",
+      "address": 9002,
+      "ss40k": {
+        "name": "vGridL2N",
+        "model": "40101"
+      }
+    },
+    {
+      "id": "L3_Voltage",
+      "pollClass": "normal",
+      "function": "IRF",
+      "address": 9004,
+      "ss40k": {
+        "name": "vGridL3N",
+        "model": "40101"
+      }
+    },
+    {
+      "id": "Utility_L1_Current",
+      "pollClass": "normal",
+      "function": "IRF",
+      "address": 9006
+    },
+    {
+      "id": "Utility_L2_Current",
+      "pollClass": "normal",
+      "function": "IRF",
+      "address": 9008
+    },
+    {
+      "id": "Utility_L3_Current",
+      "pollClass": "normal",
+      "function": "IRF",
+      "address": 9010
+    },
+    {
+      "id": "AC_Combiner_L1_Current",
+      "pollClass": "normal",
+      "function": "IRF",
+      "address": 9012
+    },
+    {
+      "id": "AC_Combiner_L2_Current",
+      "pollClass": "normal",
+      "function": "IRF",
+      "address": 9014
+    },
+    {
+      "id": "AC_Combiner_L3_Current",
+      "pollClass": "normal",
+      "function": "IRF",
+      "address": 9016
+    },
+    {
+      "id": "Generator_L1_Current",
+      "pollClass": "normal",
+      "function": "IRF",
+      "address": 9018
+    },
+    {
+      "id": "Generator_L2_Current",
+      "pollClass": "normal",
+      "function": "IRF",
+      "address": 9020
+    },
+    {
+      "id": "Generator_L3_Current",
+      "pollClass": "normal",
+      "function": "IRF",
+      "address": 9022
+    },
+    {
+      "id": "Chiller_L1_Current",
+      "pollClass": "normal",
+      "function": "IRF",
+      "address": 9024
+    },
+    {
+      "id": "Chiller_L2_Current",
+      "pollClass": "normal",
+      "function": "IRF",
+      "address": 9026
+    },
+    {
+      "id": "Chiller_L3_Current",
+      "pollClass": "normal",
+      "function": "IRF",
+      "address": 9028
+    },
+    {
+      "id": "Utility_L1_Power",
+      "pollClass": "normal",
+      "function": "IRF",
+      "address": 9030,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1000,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "pGridL1",
+        "model": "40101",
+        "exportMultiplier": 1000
+      }
+    },
+    {
+      "id": "Utility_L2_Power",
+      "pollClass": "normal",
+      "function": "IRF",
+      "address": 9032,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1000,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "pGridL2",
+        "model": "40101",
+        "exportMultiplier": 1000
+      }
+    },
+    {
+      "id": "Utility_L3_Power",
+      "pollClass": "normal",
+      "function": "IRF",
+      "address": 9034,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1000,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "pGridL3",
+        "model": "40101",
+        "exportMultiplier": 1000
+      }
+    },
+    {
+      "id": "AC_Combiner_L1_Power",
+      "pollClass": "normal",
+      "function": "IRF",
+      "address": 9036,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1000,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "AC_Combiner_L2_Power",
+      "pollClass": "normal",
+      "function": "IRF",
+      "address": 9038,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1000,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "AC_Combiner_L3_Power",
+      "pollClass": "normal",
+      "function": "IRF",
+      "address": 9040,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1000,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "Chiller_L1_Power",
+      "pollClass": "normal",
+      "function": "IRF",
+      "address": 9042,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1000,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "Chiller_L2_Power",
+      "pollClass": "normal",
+      "function": "IRF",
+      "address": 9044,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1000,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "Chiller_L3_Power",
+      "pollClass": "normal",
+      "function": "IRF",
+      "address": 9046,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1000,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "Generator_L1_Power",
+      "pollClass": "normal",
+      "function": "IRF",
+      "address": 9048,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1000,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "Generator_L2_Power",
+      "pollClass": "normal",
+      "function": "IRF",
+      "address": 9050,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1000,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "Generator_L3_Power",
+      "pollClass": "normal",
+      "function": "IRF",
+      "address": 9052,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1000,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "Chiller_Total_Power",
+      "pollClass": "normal",
+      "function": "IRF",
+      "address": 9054,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1000,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "AC_Combiner_Total_Power",
+      "pollClass": "normal",
+      "function": "IRF",
+      "address": 9056,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1000,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "Utility_Total_Power",
+      "pollClass": "normal",
+      "function": "IRF",
+      "address": 9058,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1000,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "Utility_Total_Power*",
+      "pollClass": "normal",
+      "function": "IRF",
+      "address": 9060,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1000,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "AC_Combiner_Total_Power*",
+      "pollClass": "normal",
+      "function": "IRF",
+      "address": 9062,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1000,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "Generator_Total_Power",
+      "pollClass": "normal",
+      "function": "IRF",
+      "address": 9064,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1000,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "Chiller_Total_Power*",
+      "pollClass": "normal",
+      "function": "IRF",
+      "address": 9068,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1000,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "Utility_Import_Power",
+      "pollClass": "normal",
+      "supporting": true,
+      "calc": {
+        "inputs": {
+          "utility": "Utility_Total_Power"
+        },
+        "expr": "max(utility, 0)"
+      },
+      "ss40k": {
+        "name": "pGridImpTot",
+        "model": "40101",
+        "exportMultiplier": 1000
+      }
+    },
+    {
+      "id": "Utility_Export_Power",
+      "pollClass": "normal",
+      "supporting": true,
+      "calc": {
+        "inputs": {
+          "utility": "Utility_Total_Power"
+        },
+        "expr": "max(-utility, 0)"
+      },
+      "ss40k": {
+        "name": "pGridExpTot",
+        "model": "40101",
+        "exportMultiplier": 1000
+      }
+    }
+  ]
+}

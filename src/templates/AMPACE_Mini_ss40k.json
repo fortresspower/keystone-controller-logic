@@ -1,0 +1,883 @@
+{
+  "version": "2",
+  "device": {
+    "vendor": "Ampace",
+    "model": "BMS",
+    "protocol": "modbus-tcp",
+    "defaultByteOrder": "BE",
+    "defaultWordOrder32": "ABCD",
+    "name": "udt_Ampace_A_V3",
+    "sourceFormat": "legacy-udt"
+  },
+  "telemetry": [
+    {
+      "id": "BcuCount",
+      "description": "AMPACE configured BCU count used to generate dynamic 42K BCU readers",
+      "category": "Topology",
+      "function": "HRUS",
+      "address": 0,
+      "pollClass": "startup"
+    },
+    {
+      "id": "BamsVoltage",
+      "description": "BAMS system voltage",
+      "category": "Telemetry",
+      "function": "HRUI",
+      "address": 62000,
+      "pollClass": "normal",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "vBat",
+        "model": "40101",
+        "exportMultiplier": 10
+      }
+    },
+    {
+      "id": "BamsCurrent",
+      "description": "BAMS system current",
+      "category": "Telemetry",
+      "function": "HRI",
+      "address": 62002,
+      "pollClass": "normal",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "iBat",
+        "model": "40101",
+        "exportMultiplier": 100
+      }
+    },
+    {
+      "id": "BamsPower",
+      "description": "BAMS system power",
+      "category": "Telemetry",
+      "function": "HRI",
+      "address": 62004,
+      "pollClass": "normal",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "BamsDischargePower",
+      "description": "BAMS discharge power derived from signed system power. Positive BamsPower is discharge.",
+      "category": "Telemetry",
+      "pollClass": "normal",
+      "calc": {
+        "inputs": {
+          "p": "BamsPower"
+        },
+        "expr": "max(p, 0)"
+      },
+      "ss40k": {
+        "name": "pBatDischg",
+        "model": "40101",
+        "exportMultiplier": 1000
+      }
+    },
+    {
+      "id": "BamsChargePower",
+      "description": "BAMS charge power derived from signed system power. Negative BamsPower is charge.",
+      "category": "Telemetry",
+      "pollClass": "normal",
+      "calc": {
+        "inputs": {
+          "p": "BamsPower"
+        },
+        "expr": "max(-p, 0)"
+      },
+      "ss40k": {
+        "name": "pBatChg",
+        "model": "40101",
+        "exportMultiplier": 1000
+      }
+    },
+    {
+      "id": "BamsSoc",
+      "description": "BAMS state of charge",
+      "category": "read",
+      "function": "HRUS",
+      "address": 62006,
+      "pollClass": "normal",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1000,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "socBat",
+        "model": "40101",
+        "exportMultiplier": 100
+      }
+    },
+    {
+      "id": "BamsSoh",
+      "description": "BAMS state of health",
+      "category": "Telemetry",
+      "function": "HRUS",
+      "address": 62007,
+      "pollClass": "normal",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1000,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "sohBat",
+        "model": "40101",
+        "exportMultiplier": 100
+      }
+    },
+    {
+      "id": "BamsPermitChgPower",
+      "description": "BAMS permitted charge power",
+      "category": "Telemetry",
+      "function": "HRUI",
+      "address": 62008,
+      "pollClass": "normal",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "BamsPermitDsgPower",
+      "description": "BAMS permitted discharge power",
+      "category": "Telemetry",
+      "function": "HRUI",
+      "address": 62010,
+      "pollClass": "normal",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "BamsPermitChgCurrent",
+      "description": "BAMS permitted charge current",
+      "category": "Telemetry",
+      "function": "HRUI",
+      "address": 62012,
+      "pollClass": "normal",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "iBatChgMaxBms",
+        "model": "40201",
+        "exportMultiplier": 100
+      }
+    },
+    {
+      "id": "BamsPermitDsgCurrent",
+      "description": "BAMS permitted discharge current",
+      "category": "Telemetry",
+      "function": "HRUI",
+      "address": 62014,
+      "pollClass": "normal",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "iBatDischgMaxBms",
+        "model": "40201",
+        "exportMultiplier": 100
+      }
+    },
+    {
+      "id": "BamsBcuSocDiff",
+      "description": "BamsBcuSocDiff",
+      "category": "Telemetry",
+      "function": "HRUS",
+      "address": 62016,
+      "pollClass": "normal",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1000,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "BamsBcuMinSoc",
+      "description": "BamsBcuMinSoc",
+      "category": "Telemetry",
+      "function": "HRUS",
+      "address": 62017,
+      "pollClass": "normal",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1000,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "BamsBcuMinSocNo",
+      "description": "BamsBcuMinSocNo",
+      "category": "Telemetry",
+      "function": "HRUS",
+      "address": 62018,
+      "pollClass": "normal"
+    },
+    {
+      "id": "BamsBcuMaxSoc",
+      "description": "BamsBcuMaxSoc",
+      "category": "Telemetry",
+      "function": "HRUS",
+      "address": 62019,
+      "pollClass": "normal",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1000,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "BamsBcuMaxSocNo",
+      "description": "BamsBcuMaxSocNo",
+      "category": "Telemetry",
+      "function": "HRUS",
+      "address": 62020,
+      "pollClass": "normal"
+    },
+    {
+      "id": "BamsMaxCellVol",
+      "description": "Maximum cell voltage",
+      "category": "Telemetry",
+      "function": "HRUS",
+      "address": 62021,
+      "pollClass": "normal",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1000,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "vBatCellMax",
+        "model": "40101",
+        "exportMultiplier": 1000
+      }
+    },
+    {
+      "id": "BamsMaxCellVBcuBmuNo",
+      "description": "BamsMaxCellVBcuBmuNo",
+      "category": "Telemetry",
+      "function": "HRUS",
+      "address": 62022,
+      "pollClass": "normal"
+    },
+    {
+      "id": "BamsMaxCellVNo",
+      "description": "BamsMaxCellVNo",
+      "category": "Telemetry",
+      "function": "HRUS",
+      "address": 62023,
+      "pollClass": "normal"
+    },
+    {
+      "id": "BamsMinCellVol",
+      "description": "Minimum cell voltage",
+      "category": "Telemetry",
+      "function": "HRUS",
+      "address": 62024,
+      "pollClass": "normal",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1000,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "vBatCellMin",
+        "model": "40101",
+        "exportMultiplier": 1000
+      }
+    },
+    {
+      "id": "BamsMinCellVBcuBmuNo",
+      "description": "BamsMinCellVBcuBmuNo",
+      "category": "Telemetry",
+      "function": "HRUS",
+      "address": 62025,
+      "pollClass": "normal"
+    },
+    {
+      "id": "BamsMinCellVNo",
+      "description": "BamsMinCellVNo",
+      "category": "Telemetry",
+      "function": "HRUS",
+      "address": 62026,
+      "pollClass": "normal"
+    },
+    {
+      "id": "BamsAvgCellVol",
+      "description": "Average cell voltage",
+      "category": "Telemetry",
+      "function": "HRUS",
+      "address": 62027,
+      "pollClass": "normal",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1000,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "BamsCellVolDiff",
+      "description": "BamsCellVolDiff",
+      "category": "Telemetry",
+      "function": "HRUS",
+      "address": 62028,
+      "pollClass": "normal",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1000,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "BamsMaxCellT",
+      "description": "Maximum cell temperature",
+      "category": "Telemetry",
+      "function": "HR",
+      "address": 62029,
+      "pollClass": "normal",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "tempBatCellMax",
+        "model": "40101",
+        "exportMultiplier": 10
+      }
+    },
+    {
+      "id": "BamsMaxCellTBcuBmuNo",
+      "description": "BamsMaxCellTBcuBmuNo",
+      "category": "Telemetry",
+      "function": "HRUS",
+      "address": 62030,
+      "pollClass": "normal"
+    },
+    {
+      "id": "BamsMaxCellTNo",
+      "description": "BamsMaxCellTNo",
+      "category": "Telemetry",
+      "function": "HRUS",
+      "address": 62031,
+      "pollClass": "normal"
+    },
+    {
+      "id": "BamsMinCellT",
+      "description": "Minimum cell temperature",
+      "category": "Telemetry",
+      "function": "HR",
+      "address": 62032,
+      "pollClass": "normal",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "tempBatCellMin",
+        "model": "40101",
+        "exportMultiplier": 10
+      }
+    },
+    {
+      "id": "BamsMinCellTBcuBmuNo",
+      "description": "BamsMinCellTBcuBmuNo",
+      "category": "Telemetry",
+      "function": "HRUS",
+      "address": 62033,
+      "pollClass": "normal"
+    },
+    {
+      "id": "BamsMinCellTNo",
+      "description": "BamsMinCellTNo",
+      "category": "Telemetry",
+      "function": "HRUS",
+      "address": 62034,
+      "pollClass": "normal"
+    },
+    {
+      "id": "BamsAvgCellT",
+      "description": "Average cell temperature",
+      "category": "Telemetry",
+      "function": "HR",
+      "address": 62035,
+      "pollClass": "normal",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "tempBatCellAvg",
+        "model": "40101",
+        "exportMultiplier": 10
+      }
+    },
+    {
+      "id": "BamsCellTDiff",
+      "description": "BamsCellTDiff",
+      "category": "Telemetry",
+      "function": "HRUS",
+      "address": 62036,
+      "pollClass": "normal",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "BamsMaxBcuVol",
+      "description": "BamsMaxBcuVol",
+      "category": "Telemetry",
+      "function": "HRUS",
+      "address": 62037,
+      "pollClass": "normal",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "BamsMaxBcuVNo",
+      "description": "BamsMaxBcuVNo",
+      "category": "Telemetry",
+      "function": "HRUS",
+      "address": 62038,
+      "pollClass": "normal"
+    },
+    {
+      "id": "BamsMinBcuVol",
+      "description": "BamsMinBcuVol",
+      "category": "Telemetry",
+      "function": "HRUS",
+      "address": 62039,
+      "pollClass": "normal",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "BamsMinBcuVNo",
+      "description": "BamsMinBcuVNo",
+      "category": "Telemetry",
+      "function": "HRUS",
+      "address": 62040,
+      "pollClass": "normal"
+    },
+    {
+      "id": "BamsBcuAvgVol",
+      "description": "BamsBcuAvgVol",
+      "category": "Telemetry",
+      "function": "HRUS",
+      "address": 62041,
+      "pollClass": "normal",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "BamsBcuVolDiff",
+      "description": "BamsBcuVolDiff",
+      "category": "Telemetry",
+      "function": "HRUS",
+      "address": 62042,
+      "pollClass": "normal",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "BamsMaxBcuCurr",
+      "description": "BamsMaxBcuCurr",
+      "category": "Telemetry",
+      "function": "HR",
+      "address": 62043,
+      "pollClass": "normal",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "BamsMaxBcuCNo",
+      "description": "BamsMaxBcuCNo",
+      "category": "Telemetry",
+      "function": "HRUS",
+      "address": 62044,
+      "pollClass": "normal"
+    },
+    {
+      "id": "BamsMinBcuCurr",
+      "description": "BamsMinBcuCurr",
+      "category": "Telemetry",
+      "function": "HR",
+      "address": 62045,
+      "pollClass": "normal",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "BamsMinBcuCNo",
+      "description": "BamsMinBcuCNo",
+      "category": "Telemetry",
+      "function": "HRUS",
+      "address": 62046,
+      "pollClass": "normal"
+    },
+    {
+      "id": "BamsUsedEnergy",
+      "description": "BamsUsedEnergy",
+      "category": "Telemetry",
+      "function": "HRUI",
+      "address": 62084,
+      "pollClass": "normal",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "BamsLeftEnergy",
+      "description": "BamsLeftEnergy",
+      "category": "Telemetry",
+      "function": "HRUI",
+      "address": 62086,
+      "pollClass": "normal",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "BamsUsedCap",
+      "description": "BamsUsedCap",
+      "category": "Telemetry",
+      "function": "HRUI",
+      "address": 62088,
+      "pollClass": "normal",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "BamsLeftCap",
+      "description": "BamsLeftCap",
+      "category": "Telemetry",
+      "function": "HRUI",
+      "address": 62090,
+      "pollClass": "normal",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "BamsProtAlarm0_8",
+      "description": "BAMS protection alarm U64 from vendor Table9, decoded by Table12",
+      "category": "Faults",
+      "function": "HRUI_64",
+      "address": 62122,
+      "pollClass": "slow",
+      "noMerge": true,
+      "alarm": true,
+      "supportingTag": true,
+      "bitfieldStatus": true
+    },
+    {
+      "id": "BamsSysFaultCode0_8",
+      "description": "BAMS system fault U64 from vendor Table9, decoded by Table12",
+      "category": "Faults",
+      "function": "HRUI_64",
+      "address": 62126,
+      "pollClass": "slow",
+      "noMerge": true,
+      "alarm": true,
+      "supportingTag": true,
+      "bitfieldStatus": true
+    },
+    {
+      "id": "BamsOtherErrCode0_8",
+      "description": "BAMS other error U64 from vendor Table9, decoded by Table12",
+      "category": "Faults",
+      "function": "HRUI_64",
+      "address": 62130,
+      "pollClass": "slow",
+      "noMerge": true,
+      "alarm": true,
+      "supportingTag": true,
+      "bitfieldStatus": true
+    },
+    {
+      "id": "BamsHwErrCode0_8",
+      "description": "BAMS hardware error U64 from vendor Table9, decoded by Table12",
+      "category": "Faults",
+      "function": "HRUI_64",
+      "address": 62134,
+      "pollClass": "slow",
+      "noMerge": true,
+      "alarm": true,
+      "supportingTag": true,
+      "bitfieldStatus": true
+    },
+    {
+      "id": "BamsHwStaCode0_8",
+      "description": "BAMS hardware status U64 from vendor Table9, decoded by Table12",
+      "category": "Faults",
+      "function": "HRUI_64",
+      "address": 62138,
+      "pollClass": "slow",
+      "noMerge": true,
+      "alarm": true,
+      "supportingTag": true,
+      "bitfieldStatus": true
+    },
+    {
+      "id": "BamsFaultCode0_8",
+      "description": "BAMS fault code U64 from vendor Table9, decoded by Table13",
+      "category": "Faults",
+      "function": "HRUI_64",
+      "address": 62142,
+      "pollClass": "slow",
+      "noMerge": true,
+      "alarm": true,
+      "supportingTag": true,
+      "bitfieldStatus": true
+    },
+    {
+      "id": "BamsFaultNotAllowHvFlg",
+      "description": "BA fault does not allow high-voltage power-on flag",
+      "category": "Faults",
+      "function": "HRUS",
+      "address": 62146,
+      "pollClass": "slow",
+      "alarm": true,
+      "supportingTag": true,
+      "bitfieldStatus": true
+    },
+    {
+      "id": "BamsFaultNotAllowLvFlg",
+      "description": "BA fault does not allow low-voltage power-on flag",
+      "category": "Faults",
+      "function": "HRUS",
+      "address": 62147,
+      "pollClass": "slow",
+      "alarm": true,
+      "supportingTag": true,
+      "bitfieldStatus": true
+    },
+    {
+      "id": "batWarning",
+      "description": "Calculated SS40K 40103 batWarning from AMPACE BAMS vendor fault words",
+      "category": "Faults",
+      "pollClass": "normal",
+      "calc": {
+        "inputs": {
+          "p": "BamsProtAlarm0_8",
+          "s": "BamsSysFaultCode0_8",
+          "h": "BamsHwErrCode0_8",
+          "msComm": "MsBamsCommState"
+        },
+        "expr": "(has(p, '0x00000f0000000000') << 1) | (((msComm !== 0 || hasAny(h, '0x00c0000000000000', '0x000000fc00000000', '0x00000000f0000000')) ? 1 : 0) << 2) | (has(p, '0x00000c0000000000') << 3) | (hasAny(p, '0x3300000000000000', '0x0000000000330000') << 4) | (hasAny(s, '0x0030000000000000', '0x00000c3f00000000') << 4) | (hasAny(p, '0x0c00000000000000', '0x0000000000cc0000') << 5) | (has(s, '0x0000030000000000') << 5) | (has(s, '0x000000c000000000') << 6)"
+      },
+      "alarm": true,
+      "bitfieldStatus": true,
+      "ss40k": {
+        "name": "batWarning",
+        "model": "40103"
+      }
+    },
+    {
+      "id": "batFault",
+      "description": "Calculated SS40K 40103 batFault from AMPACE BAMS vendor fault words",
+      "category": "Faults",
+      "pollClass": "normal",
+      "calc": {
+        "inputs": {
+          "p": "BamsProtAlarm0_8",
+          "s": "BamsSysFaultCode0_8"
+        },
+        "expr": "hasAny(p, '0x0000c00000000000', '0x0000000000000033') | hasAny(s, '0x03c0000000000000', '0x0000c00000000000') | (hasAny(p, '0x00cc000000000000', '0x00000000000000cc') << 1) | (hasAny(s, '0x0000300000000000', '0x000000000c000000') << 1)"
+      },
+      "alarm": true,
+      "bitfieldStatus": true,
+      "ss40k": {
+        "name": "batFault",
+        "model": "40103"
+      }
+    },
+    {
+      "id": "BamsCtlLedState",
+      "description": "BamsCtlLedState",
+      "category": "Faults",
+      "function": "HRUS",
+      "address": 62148,
+      "pollClass": "slow",
+      "alarm": true
+    },
+    {
+      "id": "BcuOnlineMap",
+      "description": "BcuOnlineMap",
+      "category": "Faults",
+      "function": "HRUI_64",
+      "address": 62149,
+      "pollClass": "slow",
+      "noMerge": true,
+      "alarm": true,
+      "notes": "Vendor U64 map read as one 4-register chunk."
+    },
+    {
+      "id": "MsBamsCommState",
+      "description": "MsBamsCommState",
+      "category": "Faults",
+      "function": "HRUS",
+      "address": 62153,
+      "pollClass": "slow",
+      "alarm": true
+    },
+    {
+      "id": "BamsAllowHvOnMap",
+      "description": "BamsAllowHvOnMap",
+      "category": "Faults",
+      "function": "HRUI_64",
+      "address": 62154,
+      "pollClass": "slow",
+      "noMerge": true,
+      "alarm": true,
+      "notes": "Vendor U64 map read as one 4-register chunk."
+    },
+    {
+      "id": "ProductType",
+      "description": "ProductType",
+      "category": "Faults",
+      "function": "HRUS",
+      "address": 62158,
+      "pollClass": "slow",
+      "alarm": true
+    },
+    {
+      "id": "AirType",
+      "description": "AirType",
+      "category": "Faults",
+      "function": "HRUS",
+      "address": 62159,
+      "pollClass": "slow",
+      "alarm": true
+    }
+  ],
+  "commands": [
+    {
+      "id": "BamsHvContactorMode",
+      "description": "BAMS high-voltage contactor mode",
+      "category": "Controls",
+      "function": "HRUS",
+      "address": 62700,
+      "pollClass": "normal"
+    },
+    {
+      "id": "BamsHvContactorCtrl",
+      "description": "BAMS high-voltage contactor control",
+      "category": "Controls",
+      "function": "HRUI",
+      "address": 62701,
+      "pollClass": "normal"
+    }
+  ]
+}

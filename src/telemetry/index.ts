@@ -19,6 +19,11 @@ export {
   adaptTelemetryTemplateToReadProfile,
   resolveTelemetryTemplate,
 } from "./templateAdapter";
+export { buildConfiguredEgaugeTemplate } from "./egaugeConfigTemplate";
+export {
+  buildAmpaceBcu42kEquipmentConfig,
+  buildAmpaceBcu42kTemplate,
+} from "./ampaceBcu42k";
 export {
   createTelemetryRuntimeState,
   handleTelemetryMessage,

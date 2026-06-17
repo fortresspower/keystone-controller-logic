@@ -46,6 +46,25 @@ npm run check:local
     - `RAW_POWER = 1234`
     - `SCALE_EXP = -1`
     - `SITE_POWER = 123.4`
+- `flows/scheduler_unified_control_smoke_test.json`
+  - read-only smoke flow for cloud-style schedule payloads and unified control-cycle preview
+  - injects May 2026 off-peak, peak, post-peak, and fallback timestamps
+  - sends selected plan, strategy, constraints, command, writer envelopes, pipeline, and diagnostics to debug only
+  - expected selected plans for May 4, 2026:
+    - `5_off-peak_weekday_strategy`
+    - `5_peak_weekday_strategy`
+    - `5_post-peak_weekday_strategy`
+- `flows/unified_control_lab_dashboard.json`
+  - dashboard-backed debug lab for testing scheduler, unified control, eSpire280 machine safety, generator sequencer, and islanding sequencer together
+  - includes editable lab config controls and scenario buttons
+  - displays schedule, command, pipeline, diagnostics, generator state, islanding state, and writer envelopes
+  - debug-only: do not wire outputs to live Modbus writer nodes
+- `flows/control_environment_simulator_dashboard.json`
+  - closed-loop environment simulator dashboard for eSpire280 control testing
+  - simulates meter, PCS, MBMU, SEL751, and SEL851 telemetry into `global.telemetry`
+  - applies controller writer envelopes back into simulated PCS/SEL/generator state
+  - includes load/PV/SOC/grid/fault/cell-voltage controls and live plant/controller/sequencer output
+  - debug-only: no live Modbus writes
 
 ## Device Runtime Layout (Confirmed on 10.253.1.16)
 - Container: `NodeRedModule`

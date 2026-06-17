@@ -26,8 +26,11 @@ export interface TelemetryTemplateSs40k {
 
 export interface TelemetryTemplateEntry {
   id: string;
+  description?: string;
   function?: string | null;
   address?: number | null;
+  length?: number;
+  parser?: string;
   pollClass?: "fast" | "normal" | "slow" | "startup";
   constant?: string | number | boolean | null;
   calc?: TelemetryTemplateCalc;
@@ -46,6 +49,7 @@ export interface TelemetryTemplateEntry {
   };
   enum?: Record<string, string>;
   ss40k?: TelemetryTemplateSs40k;
+  noMerge?: boolean;
 }
 
 export interface TelemetryTemplateCommandEntry extends TelemetryTemplateEntry {
@@ -58,6 +62,9 @@ export interface TelemetryTemplateDocument {
     vendor: string;
     model: string;
     protocol: string;
+    name?: string;
+    sourceFormat?: string;
+    notes?: string;
     defaultByteOrder?: "BE" | "LE";
     defaultWordOrder32?: "ABCD" | "CDAB" | "BADC" | "DCBA";
   };
@@ -78,6 +85,8 @@ export interface NormalizedTelemetryTag {
   name: string;
   function?: string;
   address?: number;
+  length?: number;
+  parser?: string;
   pollClass?: "fast" | "normal" | "slow" | "startup";
   constant?: string | number | boolean | null;
   calc?: {
@@ -91,6 +100,7 @@ export interface NormalizedTelemetryTag {
   status?: string;
   enumStatus?: Record<string, string>;
   bitfieldStatus?: boolean | Record<string, string>;
+  noMerge?: boolean;
 }
 
 export interface NormalizedTelemetryProfile {
@@ -108,6 +118,51 @@ const TEMPLATE_FILE_ALIASES: Record<string, string> = {
   egauge_280: "eGauge_280_ss40k.json",
   egauge: "eGauge_280_ss40k.json",
   udt_eGauge_V1: "eGauge_280_ss40k.json",
+  eGauge_Assisted_Living_ss40k: "eGauge_Assisted_Living_ss40k.json",
+  eGauge_Assisted_Living: "eGauge_Assisted_Living_ss40k.json",
+  udt_eGauge_Assisted_Living_V1: "eGauge_Assisted_Living_ss40k.json",
+  eGauge_Mission_Energy_ss40k: "eGauge_Mission_Energy_ss40k.json",
+  eGauge_Mission_Energy: "eGauge_Mission_Energy_ss40k.json",
+  eGauge_MissionEnergy: "eGauge_Mission_Energy_ss40k.json",
+  udt_eGauge_Mission_Energy_V1: "eGauge_Mission_Energy_ss40k.json",
+  eGauge_Mission_Energy_Meter2_ss40k: "eGauge_Mission_Energy_Meter2_ss40k.json",
+  eGauge_Mission_Energy_Meter2: "eGauge_Mission_Energy_Meter2_ss40k.json",
+  udt_eGauge_Mission_Energy_Meter2_V1: "eGauge_Mission_Energy_Meter2_ss40k.json",
+  udt_solarEdge_V1: "udt_solarEdge_V1.json",
+  solarEdge: "udt_solarEdge_V1.json",
+  solaredge: "udt_solarEdge_V1.json",
+  solaredge_ac_v1: "udt_solarEdge_V1.json",
+  SEL851_ss40k: "SEL851_ss40k.json",
+  SEL851: "SEL851_ss40k.json",
+  sel851: "SEL851_ss40k.json",
+  udt_SEL851_v1: "SEL851_ss40k.json",
+  AMPACE_Mini_ss40k: "AMPACE_Mini_ss40k.json",
+  AMPACE_Mini: "AMPACE_Mini_ss40k.json",
+  Ampace_BMS_ss40k: "AMPACE_Mini_ss40k.json",
+  Ampace_BMS: "AMPACE_Mini_ss40k.json",
+  udt_Ampace_A_V3: "AMPACE_Mini_ss40k.json",
+  ampace_bms: "AMPACE_Mini_ss40k.json",
+  ampace_mini: "AMPACE_Mini_ss40k.json",
+  AMPACE_Mini_BCU_42k: "AMPACE_Mini_BCU_42k.json",
+  AMPACE_Mini_BCU42k: "AMPACE_Mini_BCU_42k.json",
+  ampace_mini_bcu_42k: "AMPACE_Mini_BCU_42k.json",
+  Sinexcel_Mini_PCS_ss40k: "Sinexcel_Mini_PCS_ss40k.json",
+  Sinexcel_Mini_PCS: "Sinexcel_Mini_PCS_ss40k.json",
+  udt_Sinexcel_Mini_PCS: "Sinexcel_Mini_PCS_ss40k.json",
+  mini_pcs: "Sinexcel_Mini_PCS_ss40k.json",
+  Sinexcel_Mini_ss40k: "Sinexcel_Mini_PCS_ss40k.json",
+  Sinexcel_Mini_Load: "Sinexcel_Mini_Load_ss40k.json",
+  udt_Sinexcel_Mini_Load: "Sinexcel_Mini_Load_ss40k.json",
+  mini_load: "Sinexcel_Mini_Load_ss40k.json",
+  Sinexcel_Mini_PVDC_Module1: "Sinexcel_Mini_PVDC_Module1_ss40k.json",
+  Sinexcel_Mini_PVDC_Module2: "Sinexcel_Mini_PVDC_Module2_ss40k.json",
+  Sinexcel_Mini_PVDC_Module3: "Sinexcel_Mini_PVDC_Module3_ss40k.json",
+  udt_Sinexcel_PVDC_Module1: "Sinexcel_Mini_PVDC_Module1_ss40k.json",
+  udt_Sinexcel_PVDC_Module2: "Sinexcel_Mini_PVDC_Module2_ss40k.json",
+  udt_Sinexcel_PVDC_Module3: "Sinexcel_Mini_PVDC_Module3_ss40k.json",
+  pvdc_module_1: "Sinexcel_Mini_PVDC_Module1_ss40k.json",
+  pvdc_module_2: "Sinexcel_Mini_PVDC_Module2_ss40k.json",
+  pvdc_module_3: "Sinexcel_Mini_PVDC_Module3_ss40k.json",
 };
 
 function templatesDir() {
@@ -191,11 +246,9 @@ export function adaptTelemetryTemplateToReadProfile(
       ...template.telemetry.map((entry, index) =>
         adaptTelemetryEntry(profileName, entry, index)
       ),
-      ...((template.commands || [])
-        .filter((entry) => entry.readback === true)
-        .map((entry, index) =>
-          adaptTelemetryEntry(profileName, entry, index, "commands")
-        )),
+      ...(template.commands || []).map((entry, index) =>
+        adaptTelemetryEntry(profileName, entry, index, "commands")
+      ),
     ],
   };
 }
@@ -206,19 +259,26 @@ function adaptTelemetryEntry(
   index: number,
   section: "telemetry" | "commands" = "telemetry"
 ): NormalizedTelemetryTag {
+  const enumStatus = normalizeEnumStatus(entry);
+  const bitfieldStatus = normalizeBitfieldStatus(entry);
+  const hasImplicitStatus = !!enumStatus || bitfieldStatus !== undefined;
   const normalized: NormalizedTelemetryTag = {
     name: entry.id,
     alarm: (entry.alarmFlag ?? entry.alarm) ? "Yes" : "No",
     supportingTag: (entry.supporting ?? entry.supportingTag) ? "Yes" : "No",
-    status: (entry.statusFlag ?? entry.status?.flag) ? "Yes" : "No",
+    status:
+      (entry.statusFlag ?? entry.status?.flag ?? hasImplicitStatus)
+        ? "Yes"
+        : "No",
   };
-  const enumStatus = normalizeEnumStatus(entry);
   if (enumStatus) {
     normalized.enumStatus = enumStatus;
   }
-  const bitfieldStatus = normalizeBitfieldStatus(entry);
   if (bitfieldStatus !== undefined) {
     normalized.bitfieldStatus = bitfieldStatus;
+  }
+  if (entry.noMerge) {
+    normalized.noMerge = true;
   }
 
   if (entry.constant !== undefined) {
@@ -234,6 +294,12 @@ function adaptTelemetryEntry(
     normalized.function = entry.function || undefined;
     normalized.address =
       typeof entry.address === "number" ? entry.address : undefined;
+    if (typeof entry.length === "number" && entry.length > 0) {
+      normalized.length = entry.length;
+    }
+    if (typeof entry.parser === "string" && entry.parser.trim()) {
+      normalized.parser = entry.parser.trim();
+    }
   }
 
   if (entry.pollClass) {

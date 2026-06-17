@@ -25,6 +25,7 @@ interface TagDef {
   status?: string;
   enumStatus?: Record<string, string>;
   bitfieldStatus?: boolean | Record<string, string>;
+  noMerge?: boolean;
 }
 
 type FnKey = string;
@@ -35,6 +36,7 @@ type ParserKind =
   | "F32" | "F64"
   | "U64" | "S64"
   | "C"
+  | "STR16BE"
   | "STR";
 
 /**
@@ -236,7 +238,9 @@ export function buildReadPlan(profile: any, instance: any, env: CompilerEnv): Re
   // group by function and startup mode so startup tags do not merge into recurring blocks
   const byFn = new Map<FnKey, typeof tags>();
   for (const t of tags) {
-    const fn = `${t.function}::${t.startupOnly ? "startup" : "poll"}`;
+    const fn = `${t.function}::${t.startupOnly ? "startup" : "poll"}${
+      (t as any).noMerge ? `::solo::${t.name}` : ""
+    }`;
     if (!byFn.has(fn)) byFn.set(fn, [] as any);
     byFn.get(fn)!.push(t);
   }

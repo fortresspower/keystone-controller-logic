@@ -1,0 +1,477 @@
+{
+  "version": "2",
+  "device": {
+    "vendor": "Sinexcel",
+    "model": "PVDC Module 3",
+    "protocol": "modbus-tcp",
+    "defaultByteOrder": "BE",
+    "defaultWordOrder32": "ABCD",
+    "name": "udt_Sinexcel_PVDC_Module3",
+    "sourceFormat": "supplier-v119"
+  },
+  "telemetry": [
+    {
+      "id": "PVDCStatusWord",
+      "pollClass": "normal",
+      "function": "HRUS",
+      "address": 34632,
+      "bitfieldStatus": true
+    },
+    {
+      "id": "PVDCStringStatusWord",
+      "pollClass": "normal",
+      "function": "HRUS",
+      "address": 34633,
+      "bitfieldStatus": true
+    },
+    {
+      "id": "PVDCGeneratingStatusWord",
+      "pollClass": "normal",
+      "function": "HRUS",
+      "address": 34634,
+      "bitfieldStatus": true
+    },
+    {
+      "id": "PVDCFaultWord40",
+      "pollClass": "normal",
+      "function": "HRUS",
+      "address": 34640,
+      "category": "Faults",
+      "alarm": true,
+      "supporting": true,
+      "bitfieldStatus": true,
+      "description": "PVDC module internal faults: EPO, calibration/sampling/flash/DSP initialization/version abnormalities, and PV DSP parameter mismatch bits."
+    },
+    {
+      "id": "PVDCFaultWord41",
+      "pollClass": "normal",
+      "function": "HRUS",
+      "address": 34641,
+      "category": "Faults",
+      "alarm": true,
+      "supporting": true,
+      "bitfieldStatus": true,
+      "description": "PVDC module communication fault word; bit 0 indicates module PV 485 communication fault."
+    },
+    {
+      "id": "PVDCFaultWord42",
+      "pollClass": "normal",
+      "function": "HRUS",
+      "address": 34642,
+      "category": "Faults",
+      "alarm": true,
+      "supporting": true,
+      "bitfieldStatus": true,
+      "description": "PVDC fan and auxiliary power fault word."
+    },
+    {
+      "id": "PVDCFaultWord43",
+      "pollClass": "normal",
+      "function": "HRUS",
+      "address": 34643,
+      "category": "Faults",
+      "alarm": true,
+      "supporting": true,
+      "bitfieldStatus": true,
+      "description": "PVDC temperature fault and derating word."
+    },
+    {
+      "id": "PVDCFaultWord44",
+      "pollClass": "normal",
+      "function": "HRUS",
+      "address": 34644,
+      "category": "Faults",
+      "alarm": true,
+      "supporting": true,
+      "bitfieldStatus": true,
+      "description": "PVDC temperature sensor, frequent start, SPD, and PID abnormal fault word."
+    },
+    {
+      "id": "PVDCFaultWord45",
+      "pollClass": "normal",
+      "function": "HRUS",
+      "address": 34645,
+      "category": "Faults",
+      "alarm": true,
+      "supporting": true,
+      "bitfieldStatus": true,
+      "description": "PVDC current fault word: over-current and current abnormal bits."
+    },
+    {
+      "id": "PVDCFaultWord46",
+      "pollClass": "normal",
+      "function": "HRUS",
+      "address": 34646,
+      "category": "Faults",
+      "alarm": true,
+      "supporting": true,
+      "bitfieldStatus": true,
+      "description": "PVDC PV input fault word: input over/under voltage, reverse connection, overload timeout, dry contact, and recharge-current bits."
+    },
+    {
+      "id": "PVDCFaultWord47",
+      "pollClass": "normal",
+      "function": "HRUS",
+      "address": 34647,
+      "category": "Faults",
+      "alarm": true,
+      "supporting": true,
+      "bitfieldStatus": true,
+      "description": "PVDC bus side fault word: bus voltage, soft-start, galvanic-break-device, insulation detect, reverse connection, PCS power-off, and leakage self-test bits."
+    },
+    {
+      "id": "PVDCFaultWord48",
+      "pollClass": "normal",
+      "function": "HRUS",
+      "address": 34648,
+      "category": "Faults",
+      "alarm": true,
+      "supporting": true,
+      "bitfieldStatus": true,
+      "description": "PVDC current-limit alarm word."
+    },
+    {
+      "id": "dcPvWarning",
+      "pollClass": "normal",
+      "category": "Faults",
+      "alarm": true,
+      "bitfieldStatus": true,
+      "calc": {
+        "inputs": {
+          "w46": "PVDCFaultWord46",
+          "w47": "PVDCFaultWord47"
+        },
+        "expr": "(((((w46 >>> 6) & 1) | ((w46 >>> 7) & 1) | ((w46 >>> 8) & 1) | ((w47 >>> 10) & 1)) << 0))"
+      },
+      "ss40k": {
+        "name": "dcPvWarning",
+        "model": "40103"
+      },
+      "description": "SS40K PV warning map. Direct supplier mapping: bit 0 PV polarity reverse from PV input reverse-connection and bus-side reverse-connection bits."
+    },
+    {
+      "id": "dcPvFault",
+      "pollClass": "normal",
+      "category": "Faults",
+      "alarm": true,
+      "bitfieldStatus": true,
+      "calc": {
+        "inputs": {
+          "w46": "PVDCFaultWord46",
+          "w47": "PVDCFaultWord47"
+        },
+        "expr": "(((((w47 >>> 7) & 1) | ((w47 >>> 8) & 1)) << 2) | ((((w46 >>> 0) & 1) | ((w46 >>> 1) & 1) | ((w46 >>> 2) & 1)) << 5))"
+      },
+      "ss40k": {
+        "name": "dcPvFault",
+        "model": "40103"
+      },
+      "description": "SS40K PV fault map. Direct supplier mappings: bit 2 PV insulation fault from insulation-detect abnormal bits; bit 5 PV over-voltage from PV input over-voltage bits."
+    },
+    {
+      "id": "PVSideTotalPower",
+      "pollClass": "normal",
+      "function": "HR",
+      "address": 34653,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "pPvTotal",
+        "model": "40101",
+        "exportMultiplier": 1000
+      }
+    },
+    {
+      "id": "PV1SideTotalPower",
+      "pollClass": "normal",
+      "function": "HR",
+      "address": 34654,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "pMppt1",
+        "model": "40101",
+        "exportMultiplier": 1000
+      }
+    },
+    {
+      "id": "PV2SideTotalPower",
+      "pollClass": "normal",
+      "function": "HR",
+      "address": 34655,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "pMppt2",
+        "model": "40101",
+        "exportMultiplier": 1000
+      }
+    },
+    {
+      "id": "PV3SideTotalPower",
+      "pollClass": "normal",
+      "function": "HR",
+      "address": 34656,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "pMppt3",
+        "model": "40101",
+        "exportMultiplier": 1000
+      }
+    },
+    {
+      "id": "PV1SideVoltage",
+      "pollClass": "normal",
+      "function": "HR",
+      "address": 34663,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "vMppt1",
+        "model": "40101"
+      }
+    },
+    {
+      "id": "PV2SideVoltage",
+      "pollClass": "normal",
+      "function": "HR",
+      "address": 34664,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "vMppt2",
+        "model": "40101"
+      }
+    },
+    {
+      "id": "PV3SideVoltage",
+      "pollClass": "normal",
+      "function": "HR",
+      "address": 34665,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "vMppt3",
+        "model": "40101"
+      }
+    },
+    {
+      "id": "PVSideTotalCurrent",
+      "pollClass": "normal",
+      "function": "HR",
+      "address": 34666,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "PV1SideTotalCurrent",
+      "pollClass": "normal",
+      "function": "HR",
+      "address": 34667,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "iMppt1",
+        "model": "40101"
+      }
+    },
+    {
+      "id": "PV2SideTotalCurrent",
+      "pollClass": "normal",
+      "function": "HR",
+      "address": 34668,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "iMppt2",
+        "model": "40101"
+      }
+    },
+    {
+      "id": "PV3SideTotalCurrent",
+      "pollClass": "normal",
+      "function": "HR",
+      "address": 34669,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "iMppt3",
+        "model": "40101"
+      }
+    },
+    {
+      "id": "PVExternalDcBusVoltage",
+      "pollClass": "normal",
+      "function": "HR",
+      "address": 34676,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "PVInternalDcBusVoltage",
+      "pollClass": "normal",
+      "function": "HR",
+      "address": 34677,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "PVBusSidePower",
+      "pollClass": "normal",
+      "function": "HR",
+      "address": 34678,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "PVBusSideCurrent",
+      "pollClass": "normal",
+      "function": "HR",
+      "address": 34679,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "PVModuleTemperature",
+      "pollClass": "normal",
+      "function": "HR",
+      "address": 34681
+    },
+    {
+      "id": "PVGeneratedEnergyHighWord",
+      "pollClass": "slow",
+      "function": "HRUS",
+      "address": 34682,
+      "supporting": true
+    },
+    {
+      "id": "PVGeneratedEnergyLowWord",
+      "pollClass": "slow",
+      "function": "HRUS",
+      "address": 34683,
+      "supporting": true
+    },
+    {
+      "id": "PVGeneratedEnergy",
+      "pollClass": "slow",
+      "calc": {
+        "inputs": {
+          "hi": "PVGeneratedEnergyHighWord",
+          "lo": "PVGeneratedEnergyLowWord"
+        },
+        "expr": "(hi * 65536 + lo) * 0.1"
+      },
+      "ss40k": {
+        "name": "ePvTot",
+        "model": "40102",
+        "exportMultiplier": 1000
+      }
+    }
+  ],
+  "commands": [
+    {
+      "id": "PVDCStart",
+      "function": "HRUS",
+      "address": 34761
+    },
+    {
+      "id": "PVDCStop",
+      "function": "HRUS",
+      "address": 34762
+    },
+    {
+      "id": "PVDCClearFault",
+      "function": "HRUS",
+      "address": 34763
+    },
+    {
+      "id": "PVBusCurrentLimit",
+      "function": "HRUS",
+      "address": 34822,
+      "readback": true,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    }
+  ]
+}

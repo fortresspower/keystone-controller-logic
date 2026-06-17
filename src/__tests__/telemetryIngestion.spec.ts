@@ -5,6 +5,7 @@ import {
   adaptTelemetryTemplateToReadProfile,
   resolveTelemetryTemplate,
 } from "../telemetry/templateAdapter";
+import { buildAmpaceBcu42kTemplate } from "../telemetry/ampaceBcu42k";
 
 const compilerEnv: CompilerEnv = {
   maxQty: 120,
@@ -187,6 +188,29 @@ describe("Modbus function semantics", () => {
 
     reader.stop(plan.equipmentId);
     jest.useRealTimers();
+  });
+
+  test("reader decodes two-byte big-endian ASCII register strings", () => {
+    const plan = makePlanForTag({
+      name: "SerialNumber",
+      function: "HRUS",
+      address: 0,
+      length: 11,
+      parser: "STR16BE",
+      pollClass: "startup",
+    });
+
+    const res = simulateReply(plan, 0, [
+      21320, 12368, 13872, 12340, 13624, 14389, 12852, 12339, 12343, 12336,
+      13109,
+    ]);
+
+    expect(res.out2).toEqual([
+      expect.objectContaining({
+        tagID: "SerialNumber",
+        value: "SH0P600458852403070035",
+      }),
+    ]);
   });
 
   test("reader staggers same-period blocks so later blocks are not starved", () => {
@@ -510,6 +534,7 @@ describe("Modbus function semantics", () => {
       "0": "Normal",
       "1": "AuxPowerLose",
     });
+    expect(profile.tags[0].status).toBe("Yes");
 
     const plan = buildReadPlan(profile, instance, compilerEnv);
     const res = reader.onReply(
@@ -636,7 +661,7 @@ describe("Modbus function semantics", () => {
     );
   });
 
-  test("commands with readback true are compiled into the read plan", () => {
+  test("commands are compiled into the read plan by default", () => {
     const profile = adaptTelemetryTemplateToReadProfile("command_readback_test", {
       version: "2",
       device: {
@@ -650,7 +675,6 @@ describe("Modbus function semantics", () => {
           id: "Start",
           function: "HRUS",
           address: 100,
-          readback: true,
           enumStatus: {
             "0": "Stop",
             "1": "Start",
@@ -678,7 +702,7 @@ describe("Modbus function semantics", () => {
     expect(plan.blocks[0].pollMs).toBe(1000);
   });
 
-  test("legacy command enum is normalized for readback status decoding", () => {
+  test("legacy command enum is normalized for command status decoding", () => {
     const profile = adaptTelemetryTemplateToReadProfile("command_enum_compat_test", {
       version: "2",
       device: {
@@ -693,7 +717,6 @@ describe("Modbus function semantics", () => {
           function: "HRUS",
           address: 200,
           pollClass: "normal",
-          readback: true,
           enum: {
             "2": "GT",
             "6": "SA",
@@ -820,7 +843,7 @@ describe("Modbus function semantics", () => {
     expect(Math.abs(sample.value - 1.5)).toBeLessThan(1e-6);
   });
 
-  test("HRI_64 / HRUI_64 decode via F64", () => {
+  test("HRUI_64 reads four registers and preserves the exact U64 bitfield", () => {
     const plan = makePlanForTag({
       name: "hrui_64",
       function: "HRUI_64",
@@ -831,17 +854,36 @@ describe("Modbus function semantics", () => {
     expect(blk.fc).toBe(3);
     expect(blk.quantity).toBe(4);
 
-    const buf = new ArrayBuffer(8);
-    const dv = new DataView(buf);
-    dv.setFloat64(0, 123456.75, false);
-    const w0 = dv.getUint16(0, false);
-    const w1 = dv.getUint16(2, false);
-    const w2 = dv.getUint16(4, false);
-    const w3 = dv.getUint16(6, false);
-
-    const res = simulateReply(plan, 0, [w0, w1, w2, w3]);
+    const res = simulateReply(plan, 0, [0x8000, 0x0000, 0x0000, 0x0001]);
     const sample = res.out2[0];
-    expect(Math.abs(sample.value - 123456.75)).toBeLessThan(1e-6);
+    expect(sample.value).toBe("0x8000000000000001");
+  });
+
+  test("calculated tags can test HRUI_64 values with 64-bit masks", () => {
+    const plan = makePlanForTag({
+      name: "fault_word",
+      function: "HRUI_64",
+      address: 300,
+    });
+    (plan as any).calcs = [
+      {
+        tagID: "fault_calc",
+        inputs: { word: "fault_word" },
+        expr: "has(word, '0x8000000000000000') | (bit(word, 0) << 1)",
+        alarm: "Yes",
+        supportingTag: "No",
+      },
+    ];
+
+    const res = simulateReply(plan, 0, [0x8000, 0x0000, 0x0000, 0x0001]);
+    expect(res.out2).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          tagID: "fault_calc",
+          value: 3,
+        }),
+      ])
+    );
   });
 
   test("C (coil)", () => {
@@ -952,6 +994,591 @@ describe("Modbus function semantics", () => {
 });
 
 describe("Telemetry baseline lock", () => {
+  test("SolarEdge template resolves aliases and keeps raw/SF calc", () => {
+    const template = resolveTelemetryTemplate("udt_solarEdge_V1");
+    const aliasTemplate = resolveTelemetryTemplate("solarEdge");
+    expect(aliasTemplate.device.vendor).toBe("SolarEdge");
+
+    const profile = adaptTelemetryTemplateToReadProfile(
+      "udt_solarEdge_V1",
+      template
+    );
+    const acPower = profile.tags.find((tag) => tag.name === "AC_POWER");
+    const raw = profile.tags.find((tag) => tag.name === "AC_POWER_RAW");
+    const sf = profile.tags.find((tag) => tag.name === "AC_POWER_SF");
+
+    expect(raw?.supportingTag).toBe("Yes");
+    expect(sf?.function).toBe("HR");
+    expect(acPower?.calc).toEqual({
+      inputs: {
+        raw: "AC_POWER_RAW",
+        sf: "AC_POWER_SF",
+      },
+      expr: "raw * pow(10, sf)",
+    });
+
+    const plan = buildReadPlan(profile, instance, compilerEnv);
+    expect(plan.calcs).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          tagID: "AC_POWER",
+          inputs: {
+            raw: "AC_POWER_RAW",
+            sf: "AC_POWER_SF",
+          },
+          expr: "raw * pow(10, sf)",
+        }),
+      ])
+    );
+  });
+
+  test("SolarEdge template includes live SunSpec telemetry and SS40K AC-coupled PV fields", () => {
+    const template = resolveTelemetryTemplate("solarEdge");
+    const profile = adaptTelemetryTemplateToReadProfile("solarEdge", template);
+
+    expect(profile.tags).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          name: "DEVICE_ADDRESS",
+          function: "HRUS",
+          address: 40068,
+        }),
+        expect.objectContaining({
+          name: "AC_ENERGY_WH_RAW",
+          function: "HR",
+          address: 40093,
+          supportingTag: "Yes",
+        }),
+        expect.objectContaining({
+          name: "AC_ENERGY_WH",
+          calc: {
+            inputs: {
+              raw: "AC_ENERGY_WH_RAW",
+              sf: "AC_ENERGY_WH_SF",
+            },
+            expr: "raw * pow(10, sf)",
+          },
+        }),
+        expect.objectContaining({
+          name: "GLOBAL_EVENTS",
+          function: "HRUS",
+          address: 40127,
+          alarm: "Yes",
+          status: "Yes",
+        }),
+      ])
+    );
+
+    expect(template.telemetry.find((tag) => tag.id === "AC_POWER")?.ss40k).toEqual({
+      name: "pAcCplTot",
+      model: "40101",
+    });
+    expect(template.telemetry.find((tag) => tag.id === "AC_ENERGY_WH")?.ss40k).toEqual({
+      name: "ePvTot",
+      model: "40102",
+    });
+  });
+
+  test("SEL851 template resolves live register and coil points", () => {
+    const template = resolveTelemetryTemplate("udt_SEL851_v1");
+    const profile = adaptTelemetryTemplateToReadProfile("SEL851", template);
+
+    expect(template.device.vendor).toBe("SEL");
+    expect(profile.tags).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          name: "ROW_46",
+          function: "HRUS",
+          address: 12,
+          status: "Yes",
+        }),
+        expect.objectContaining({
+          name: "RB_1",
+          function: "C",
+          address: 5,
+        }),
+        expect.objectContaining({
+          name: "RB_2",
+          function: "C",
+          address: 6,
+        }),
+      ])
+    );
+  });
+
+  test("Mission Energy eGauge template uses live telemetry addresses and derived power tags", () => {
+    const template = resolveTelemetryTemplate("eGauge_Mission_Energy");
+    const profile = adaptTelemetryTemplateToReadProfile(
+      "eGauge_Mission_Energy",
+      template
+    );
+
+    expect(template.device.name).toBe("udt_eGauge_Mission_Energy_V1");
+    expect(profile.tags).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          name: "L1_Voltage",
+          function: "IRF",
+          address: 9000,
+        }),
+        expect.objectContaining({
+          name: "Utility_L1_Power",
+          function: "IRF",
+          address: 9030,
+        }),
+        expect.objectContaining({
+          name: "Utility_Total_Power",
+          function: "IRF",
+          address: 9058,
+        }),
+        expect.objectContaining({
+          name: "Load_Active_Power",
+          virtual: true,
+          supportingTag: "Yes",
+        }),
+        expect.objectContaining({
+          name: "Generator_Total_Power",
+          function: "IRF",
+          address: 9064,
+        }),
+        expect.objectContaining({
+          name: "Utility_Import_Power",
+          calc: {
+            inputs: {
+              utility: "Utility_Total_Power",
+            },
+            expr: "max(utility, 0)",
+          },
+        }),
+      ])
+    );
+  });
+
+  test("Mission Energy Meter2 template uses the two-tag SolarEdge meter map", () => {
+    const template = resolveTelemetryTemplate("eGauge_Mission_Energy_Meter2");
+    const profile = adaptTelemetryTemplateToReadProfile(
+      "eGauge_Mission_Energy_Meter2",
+      template
+    );
+
+    expect(template.device.name).toBe("udt_eGauge_Mission_Energy_Meter2_V1");
+    expect(profile.tags).toEqual([
+      expect.objectContaining({
+        name: "Grid",
+        function: "IRF",
+        address: 9000,
+      }),
+      expect.objectContaining({
+        name: "Solar",
+        function: "IRF",
+        address: 9004,
+      }),
+    ]);
+  });
+
+  test("Sinexcel Mini template includes critical PVDC telemetry", () => {
+    const template = resolveTelemetryTemplate("Sinexcel_Mini_PCS_ss40k");
+    const legacyAliasTemplate = resolveTelemetryTemplate("Sinexcel_Mini_ss40k");
+    const profile = adaptTelemetryTemplateToReadProfile(
+      "Sinexcel_Mini_PCS_ss40k",
+      template
+    );
+
+    expect(legacyAliasTemplate.device.model).toBe(template.device.model);
+    expect(profile.tags).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          name: "SerialNumber",
+          function: "HRUS",
+          address: 0,
+          length: 11,
+          parser: "STR16BE",
+          pollClass: "startup",
+        }),
+        expect.objectContaining({
+          name: "PVDCStatusWord",
+          function: "HRUS",
+          address: 34032,
+          bitfieldStatus: true,
+        }),
+        expect.objectContaining({
+          name: "PVSideTotalPower",
+          function: "HR",
+          address: 34053,
+          scale: expect.objectContaining({
+            rawLow: 0,
+            rawHigh: 10,
+            engLow: 0,
+            engHigh: 1,
+          }),
+        }),
+        expect.objectContaining({
+          name: "PVGeneratedEnergy",
+          calc: {
+            inputs: {
+              hi: "PVGeneratedEnergyHighWord",
+              lo: "PVGeneratedEnergyLowWord",
+            },
+            expr: "(hi * 65536 + lo) * 0.1",
+          },
+        }),
+      ])
+    );
+  });
+
+  test("Sinexcel Mini PCS template calculates SS40K 40103 fault fields", () => {
+    const template = resolveTelemetryTemplate("Sinexcel_Mini_PCS_ss40k");
+    const profile = adaptTelemetryTemplateToReadProfile(
+      "Sinexcel_Mini_PCS_ss40k",
+      template
+    );
+
+    expect(profile.tags).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          name: "SinexcelStatusWord36",
+          function: "HRUS",
+          address: 36,
+          alarm: "Yes",
+          supportingTag: "Yes",
+          bitfieldStatus: true,
+        }),
+        expect.objectContaining({
+          name: "SinexcelStatusWord37",
+          function: "HRUS",
+          address: 37,
+          alarm: "Yes",
+          supportingTag: "Yes",
+          bitfieldStatus: true,
+        }),
+        expect.objectContaining({
+          name: "SinexcelFaultWord106",
+          function: "HRUS",
+          address: 106,
+          alarm: "Yes",
+          supportingTag: "Yes",
+          bitfieldStatus: true,
+        }),
+        expect.objectContaining({
+          name: "SinexcelFaultWord115",
+          function: "HRUS",
+          address: 115,
+        }),
+        expect.objectContaining({
+          name: "pcsFault",
+          calc: expect.objectContaining({
+            inputs: expect.objectContaining({
+              w115: "SinexcelFaultWord115",
+            }),
+          }),
+          alarm: "Yes",
+          bitfieldStatus: true,
+        }),
+        expect.objectContaining({
+          name: "gridWarning",
+          calc: expect.objectContaining({
+            inputs: expect.objectContaining({
+              w118: "SinexcelFaultWord118",
+            }),
+          }),
+        }),
+        expect.objectContaining({
+          name: "rsdEPOFault",
+          calc: expect.objectContaining({
+            inputs: expect.objectContaining({
+              w106: "SinexcelFaultWord106",
+            }),
+          }),
+        }),
+      ])
+    );
+
+    const pcsFault = template.telemetry.find((tag) => tag.id === "pcsFault");
+    expect(pcsFault?.ss40k).toEqual({
+      name: "pcsFault",
+      model: "40103",
+    });
+    expect(pcsFault?.calc?.expr).toContain("w115 >>> 0");
+    expect(pcsFault?.calc?.expr).toContain("<< 3");
+
+    const pcsWarning = template.telemetry.find((tag) => tag.id === "pcsWarning");
+    expect(pcsWarning?.calc?.inputs).toEqual(
+      expect.objectContaining({
+        w36: "SinexcelStatusWord36",
+        w37: "SinexcelStatusWord37",
+      })
+    );
+    expect(pcsWarning?.calc?.expr).toContain("w36 >>> 5");
+    expect(pcsWarning?.calc?.expr).toContain("w36 >>> 6");
+  });
+
+  test("Sinexcel Mini PVDC module templates apply supplier address offsets", () => {
+    const modules = [
+      {
+        profileName: "pvdc_module_1",
+        statusAddress: 34032,
+        fault40Address: 34040,
+        fault48Address: 34048,
+        powerAddress: 34053,
+        energyHighAddress: 34082,
+      },
+      {
+        profileName: "pvdc_module_2",
+        statusAddress: 34332,
+        fault40Address: 34340,
+        fault48Address: 34348,
+        powerAddress: 34353,
+        energyHighAddress: 34382,
+      },
+      {
+        profileName: "pvdc_module_3",
+        statusAddress: 34632,
+        fault40Address: 34640,
+        fault48Address: 34648,
+        powerAddress: 34653,
+        energyHighAddress: 34682,
+      },
+    ];
+
+    for (const module of modules) {
+      const template = resolveTelemetryTemplate(module.profileName);
+      const profile = adaptTelemetryTemplateToReadProfile(
+        module.profileName,
+        template
+      );
+
+      expect(profile.tags).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            name: "PVDCStatusWord",
+            address: module.statusAddress,
+          }),
+          expect.objectContaining({
+            name: "PVDCFaultWord40",
+            address: module.fault40Address,
+            alarm: "Yes",
+            supportingTag: "Yes",
+            bitfieldStatus: true,
+          }),
+          expect.objectContaining({
+            name: "PVDCFaultWord48",
+            address: module.fault48Address,
+            alarm: "Yes",
+            supportingTag: "Yes",
+            bitfieldStatus: true,
+          }),
+          expect.objectContaining({
+            name: "PVSideTotalPower",
+            address: module.powerAddress,
+          }),
+          expect.objectContaining({
+            name: "PV1SideTotalPower",
+            address: module.powerAddress + 1,
+          }),
+          expect.objectContaining({
+            name: "PVGeneratedEnergyHighWord",
+            address: module.energyHighAddress,
+          }),
+          expect.objectContaining({
+            name: "PVGeneratedEnergy",
+            calc: {
+              inputs: {
+                hi: "PVGeneratedEnergyHighWord",
+                lo: "PVGeneratedEnergyLowWord",
+              },
+              expr: "(hi * 65536 + lo) * 0.1",
+            },
+          }),
+        ])
+      );
+
+      const pvTotalPower = template.telemetry.find(
+        (tag) => tag.id === "PVSideTotalPower"
+      );
+      expect(pvTotalPower?.ss40k).toEqual({
+        name: "pPvTotal",
+        model: "40101",
+        exportMultiplier: 1000,
+      });
+
+      const pvEnergy = template.telemetry.find(
+        (tag) => tag.id === "PVGeneratedEnergy"
+      );
+      expect(pvEnergy?.ss40k).toEqual({
+        name: "ePvTot",
+        model: "40102",
+        exportMultiplier: 1000,
+      });
+
+      const dcPvWarning = template.telemetry.find(
+        (tag) => tag.id === "dcPvWarning"
+      );
+      expect(dcPvWarning?.ss40k).toEqual({
+        name: "dcPvWarning",
+        model: "40103",
+      });
+      expect(dcPvWarning?.calc?.inputs).toEqual({
+        w46: "PVDCFaultWord46",
+        w47: "PVDCFaultWord47",
+      });
+      expect(dcPvWarning?.calc?.expr).toContain("w46 >>> 6");
+      expect(dcPvWarning?.calc?.expr).toContain("w47 >>> 10");
+
+      const dcPvFault = template.telemetry.find(
+        (tag) => tag.id === "dcPvFault"
+      );
+      expect(dcPvFault?.ss40k).toEqual({
+        name: "dcPvFault",
+        model: "40103",
+      });
+      expect(dcPvFault?.calc?.expr).toContain("w47 >>> 7");
+      expect(dcPvFault?.calc?.expr).toContain("w47 >>> 8");
+      expect(dcPvFault?.calc?.expr).toContain("w46 >>> 0");
+    }
+  });
+
+  test("site-specific Assisted Living eGauge template maps useful SS40K readings", () => {
+    const template = resolveTelemetryTemplate("eGauge_Assisted_Living");
+    const profile = adaptTelemetryTemplateToReadProfile(
+      "eGauge_Assisted_Living",
+      template
+    );
+
+    expect(template.device.name).toBe("udt_eGauge_Assisted_Living_V1");
+    expect(profile.tags).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          name: "Utility_Total_Power",
+          function: "IRF",
+          address: 9020,
+          supportingTag: "Yes",
+        }),
+        expect.objectContaining({
+          name: "Backup_Load_Total_Power",
+          function: "IRF",
+          address: 9032,
+        }),
+        expect.objectContaining({
+          name: "Load_Active_Power",
+          virtual: true,
+        }),
+        expect.objectContaining({
+          name: "Utility_Import_Power",
+          calc: {
+            inputs: {
+              utility: "Utility_Total_Power",
+            },
+            expr: "max(utility, 0)",
+          },
+        }),
+        expect.objectContaining({
+          name: "Utility_Export_Power",
+          calc: {
+            inputs: {
+              utility: "Utility_Total_Power",
+            },
+            expr: "max(-utility, 0)",
+          },
+        }),
+      ])
+    );
+
+    expect(
+      template.telemetry.find((tag) => tag.id === "Backup_Load_Total_Power")
+        ?.ss40k
+    ).toEqual({
+      name: "pBkupTot",
+      model: "40101",
+      exportMultiplier: 1000,
+    });
+    expect(
+      template.telemetry.find((tag) => tag.id === "Load_Active_Power")?.ss40k
+    ).toEqual({
+      name: "pLoad",
+      model: "40101",
+      exportMultiplier: 1000,
+    });
+  });
+
+  test("Sinexcel Mini Load template exposes supplier load telemetry block", () => {
+    const template = resolveTelemetryTemplate("mini_load");
+    const profile = adaptTelemetryTemplateToReadProfile("mini_load", template);
+
+    expect(template.device.vendor).toBe("Sinexcel");
+    expect(template.device.model).toBe("Mini Load");
+    expect(profile.tags).toHaveLength(26);
+    expect(profile.tags).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          name: "LoadTotalPowerFactor",
+          function: "HR",
+          address: 276,
+          scale: expect.objectContaining({
+            rawLow: 0,
+            rawHigh: 100,
+            engLow: 0,
+            engHigh: 1,
+          }),
+        }),
+        expect.objectContaining({
+          name: "LoadTotalActivePower",
+          function: "HR",
+          address: 280,
+          scale: expect.objectContaining({
+            rawLow: 0,
+            rawHigh: 10,
+            engLow: 0,
+            engHigh: 1,
+          }),
+        }),
+        expect.objectContaining({
+          name: "LoadL1ActivePower",
+          function: "HR",
+          address: 281,
+        }),
+        expect.objectContaining({
+          name: "LoadFrequency",
+          function: "HRUS",
+          address: 295,
+          scale: expect.objectContaining({
+            rawLow: 0,
+            rawHigh: 100,
+            engLow: 0,
+            engHigh: 1,
+          }),
+        }),
+        expect.objectContaining({
+          name: "LoadL3NVoltage",
+          function: "HRUS",
+          address: 301,
+          scale: expect.objectContaining({
+            rawLow: 0,
+            rawHigh: 10,
+            engLow: 0,
+            engHigh: 1,
+          }),
+        }),
+      ])
+    );
+
+    const loadTotalActivePower = template.telemetry.find(
+      (tag) => tag.id === "LoadTotalActivePower"
+    );
+    expect(loadTotalActivePower?.ss40k).toEqual({
+      name: "pLoad",
+      model: "40101",
+      exportMultiplier: 1000,
+    });
+
+    const loadL3NVoltage = template.telemetry.find(
+      (tag) => tag.id === "LoadL3NVoltage"
+    );
+    expect(loadL3NVoltage?.ss40k).toEqual({
+      name: "vLoadL3N",
+      model: "40101",
+    });
+  });
+
   test("MBMU template keeps status/readback normalization contracts", () => {
     const template = resolveTelemetryTemplate("MBMU_280_ss40k");
     const profile = adaptTelemetryTemplateToReadProfile(
@@ -982,6 +1609,300 @@ describe("Telemetry baseline lock", () => {
     const rackDisable = profile.tags.find(
       (tag) => tag.name === "Racks_disable_Command"
     );
-    expect(rackDisable).toBeUndefined();
+    expect(rackDisable?.pollClass).toBe("normal");
+  });
+
+  test("Ampace BMS template exposes Mini control input tags", () => {
+    const template = resolveTelemetryTemplate("AMPACE_Mini_ss40k");
+    const profile = adaptTelemetryTemplateToReadProfile(
+      "AMPACE_Mini_ss40k",
+      template
+    );
+
+    expect(template.device.vendor).toBe("Ampace");
+    expect(template.device.name).toBe("udt_Ampace_A_V3");
+    expect(resolveTelemetryTemplate("udt_Ampace_A_V3").device.model).toBe(
+      "BMS"
+    );
+
+    expect(profile.tags).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          name: "BcuCount",
+          function: "HRUS",
+          address: 0,
+          pollClass: "startup",
+        }),
+        expect.objectContaining({
+          name: "BamsSoc",
+          function: "HRUS",
+          address: 62006,
+          scale: expect.objectContaining({
+            rawLow: 0,
+            rawHigh: 1000,
+            engLow: 0,
+            engHigh: 1,
+          }),
+        }),
+        expect.objectContaining({
+          name: "BamsPermitChgCurrent",
+          function: "HRUI",
+          address: 62012,
+          scale: expect.objectContaining({
+            rawLow: 0,
+            rawHigh: 10,
+            engLow: 0,
+            engHigh: 1,
+          }),
+        }),
+        expect.objectContaining({
+          name: "BamsPermitDsgCurrent",
+          function: "HRUI",
+          address: 62014,
+        }),
+        expect.objectContaining({
+          name: "BamsDischargePower",
+          calc: {
+            inputs: {
+              p: "BamsPower",
+            },
+            expr: "max(p, 0)",
+          },
+        }),
+        expect.objectContaining({
+          name: "BamsChargePower",
+          calc: {
+            inputs: {
+              p: "BamsPower",
+            },
+            expr: "max(-p, 0)",
+          },
+        }),
+        expect.objectContaining({
+          name: "BamsMaxCellVol",
+          function: "HRUS",
+          address: 62021,
+        }),
+        expect.objectContaining({
+          name: "BamsMinCellVol",
+          function: "HRUS",
+          address: 62024,
+        }),
+        expect.objectContaining({
+          name: "BamsMaxCellT",
+          function: "HR",
+          address: 62029,
+        }),
+        expect.objectContaining({
+          name: "BamsMinCellT",
+          function: "HR",
+          address: 62032,
+        }),
+        expect.objectContaining({
+          name: "BamsProtAlarm0_8",
+          function: "HRUI_64",
+          address: 62122,
+          alarm: "Yes",
+          supportingTag: "Yes",
+          bitfieldStatus: true,
+          noMerge: true,
+        }),
+        expect.objectContaining({
+          name: "BamsSysFaultCode0_8",
+          function: "HRUI_64",
+          address: 62126,
+          alarm: "Yes",
+          supportingTag: "Yes",
+          bitfieldStatus: true,
+        }),
+        expect.objectContaining({
+          name: "BamsOtherErrCode0_8",
+          function: "HRUI_64",
+          address: 62130,
+          alarm: "Yes",
+          supportingTag: "Yes",
+          bitfieldStatus: true,
+        }),
+        expect.objectContaining({
+          name: "BamsHwErrCode0_8",
+          function: "HRUI_64",
+          address: 62134,
+          alarm: "Yes",
+          supportingTag: "Yes",
+          bitfieldStatus: true,
+        }),
+        expect.objectContaining({
+          name: "BamsFaultNotAllowHvFlg",
+          function: "HRUS",
+          address: 62146,
+          alarm: "Yes",
+          supportingTag: "Yes",
+          bitfieldStatus: true,
+        }),
+        expect.objectContaining({
+          name: "batWarning",
+          calc: expect.objectContaining({
+            inputs: expect.objectContaining({
+              p: "BamsProtAlarm0_8",
+              h: "BamsHwErrCode0_8",
+            }),
+          }),
+          alarm: "Yes",
+          bitfieldStatus: true,
+        }),
+        expect.objectContaining({
+          name: "batFault",
+          calc: expect.objectContaining({
+            inputs: expect.objectContaining({
+              p: "BamsProtAlarm0_8",
+              s: "BamsSysFaultCode0_8",
+            }),
+          }),
+          alarm: "Yes",
+          bitfieldStatus: true,
+        }),
+      ])
+    );
+
+    const batWarning = template.telemetry.find((tag) => tag.id === "batWarning");
+    expect(batWarning?.ss40k).toEqual({
+      name: "batWarning",
+      model: "40103",
+    });
+    expect(batWarning?.calc?.expr).toContain("<< 2");
+
+    const batFault = template.telemetry.find((tag) => tag.id === "batFault");
+    expect(batFault?.ss40k).toEqual({
+      name: "batFault",
+      model: "40103",
+    });
+    expect(batFault?.calc?.expr).toContain("<< 1");
+
+    expect(
+      template.telemetry.find((tag) => tag.id === "BamsDischargePower")?.ss40k
+    ).toEqual({
+      name: "pBatDischg",
+      model: "40101",
+      exportMultiplier: 1000,
+    });
+    expect(
+      template.telemetry.find((tag) => tag.id === "BamsChargePower")?.ss40k
+    ).toEqual({
+      name: "pBatChg",
+      model: "40101",
+      exportMultiplier: 1000,
+    });
+
+    const readPlan = buildReadPlan(profile, instance, compilerEnv);
+    const bamsProtAlarmBlock = readPlan.blocks.find((block: any) =>
+      block.map.some((item: any) => item.name === "BamsProtAlarm0_8")
+    );
+    expect(bamsProtAlarmBlock).toMatchObject({
+      function: "HRUI_64",
+      start: 62122,
+      quantity: 4,
+    });
+  });
+
+  test("Ampace BCU 42K JSON template shifts by BCU index and inverts current", () => {
+    const baseTemplate = resolveTelemetryTemplate("AMPACE_Mini_BCU_42k");
+    expect(baseTemplate.telemetry.find((tag) => tag.id === "SerialNumber")).toMatchObject({
+      function: "HRUI",
+      address: 39,
+      pollClass: "startup",
+    });
+
+    const template = buildAmpaceBcu42kTemplate({
+      bcuIndex: 1,
+      modelName: "MINI-90-135-288",
+    });
+    const profile = adaptTelemetryTemplateToReadProfile(
+      "AMPACE_Mini_BCU2_42k",
+      template
+    );
+
+    expect(profile.tags).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          name: "SerialNumber",
+          function: "HRUI",
+          address: 50239,
+          pollClass: "startup",
+        }),
+        expect.objectContaining({
+          name: "AmpaceCurrentRaw",
+          function: "HR",
+          address: 50201,
+        }),
+        expect.objectContaining({
+          name: "BcuCurrent",
+          calc: {
+            inputs: { current: "AmpaceCurrentRaw" },
+            expr: "-current",
+          },
+        }),
+        expect.objectContaining({
+          name: "BcuPower",
+          calc: {
+            inputs: { voltage: "InternalSumVoltage", current: "BcuCurrent" },
+            expr: "voltage * current",
+          },
+        }),
+        expect.objectContaining({
+          name: "BcuBatteryFault",
+          calc: expect.objectContaining({
+            inputs: {
+              p3: "ProtectAlarmLevel3",
+              s3: "SysFaultLevel3",
+              h3: "HwErrLevel3",
+            },
+          }),
+          alarm: "Yes",
+        }),
+      ])
+    );
+  });
+
+  test("Delta global state emits a fresh _str sample from enumStatus", () => {
+    const fullProfile = adaptTelemetryTemplateToReadProfile(
+      "Delta_280_ss40k",
+      resolveTelemetryTemplate("Delta_280_ss40k")
+    );
+    const targetTag = fullProfile.tags.find(
+      (tag) => tag.name === "SYSTEM_GLOBAL_STATE"
+    );
+    expect(targetTag).toBeDefined();
+
+    const profile = {
+      profileId: "Delta_280_state_only",
+      defaults: fullProfile.defaults,
+      tags: [targetTag],
+    };
+
+    const plan = buildReadPlan(profile, instance, compilerEnv);
+
+    const res = reader.onReply(
+      {
+        _reader: { equipmentId: plan.equipmentId, blockIdx: 0 },
+        payload: [3],
+      },
+      plan,
+      readerEnv
+    );
+
+    expect(res.out2).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          tagID: "SYSTEM_GLOBAL_STATE",
+          value: 3,
+          enumLabel: "GT Normal",
+        }),
+        expect.objectContaining({
+          tagID: "SYSTEM_GLOBAL_STATE_str",
+          value: "GT Normal",
+          rawValue: 3,
+        }),
+      ])
+    );
   });
 });
