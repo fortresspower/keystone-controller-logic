@@ -58,6 +58,49 @@ export interface ModbusServerConfig {
   port: number; // usually 502
 }
 
+export type SiteAssetProductLine = "280" | "Mini" | "all";
+
+export type SiteAssetRole =
+  | "pcs"
+  | "bms"
+  | "mbmu"
+  | "pvdc"
+  | "meter"
+  | "islanding"
+  | "generator"
+  | "load"
+  | "pv-inverter"
+  | "remote-io"
+  | "other";
+
+export interface ModbusServerSlotConfig {
+  /**
+   * Stable Node-RED server slot key, for example "server_1".
+   */
+  key: string;
+  ip: string;
+  port: number;
+  enabled?: boolean;
+}
+
+export interface SiteAssetConfig {
+  /**
+   * Stable asset id used by telemetry/writer topics, for example "PCS",
+   * "AMPACE", "PVDC1", "MBMU", or "Meter".
+   */
+  id: string;
+  role: SiteAssetRole;
+  productLine?: SiteAssetProductLine;
+  template?: string;
+  profileName?: string;
+  ip: string;
+  port: number;
+  unitId: number;
+  serverSlot?: string;
+  serverKey?: string;
+  enabled?: boolean;
+}
+
 export interface ControllerNetworkConfig {
   ip: string;
   modbusServer: ModbusServerConfig;
@@ -65,6 +108,16 @@ export interface ControllerNetworkConfig {
 
 export interface NetworkConfig {
   controller: ControllerNetworkConfig;
+  /**
+   * Optional fixed Modbus client slots used by the unified Node-RED flow.
+   * IP/topology changes here are restart-required.
+   */
+  serverSlots?: ModbusServerSlotConfig[];
+  /**
+   * Optional installed device inventory. The runtime plan builder should map
+   * these assets onto fixed server slots.
+   */
+  assets?: SiteAssetConfig[];
 }
 
 // ---- Operation / grid code ----
@@ -192,6 +245,39 @@ export interface BatteryConfig {
   forceGridChargeKw?: number;
   powerHeadroomKw?: number;
   commandRampKwPerSec?: number;
+  cellVoltagePolicy?: BatteryCellVoltagePolicy;
+}
+
+export interface BatteryCellVoltagePolicy {
+  /**
+   * Disable charging when max cell voltage is at or above this threshold.
+   */
+  maxCellVoltageChargeBlockV?: number;
+  /**
+   * Re-enable charging when max cell voltage is at or below this threshold.
+   */
+  maxCellVoltageChargeRecoverV?: number;
+  /**
+   * Disable discharging when min cell voltage is at or below this threshold.
+   */
+  minCellVoltageDischargeBlockV?: number;
+  /**
+   * Re-enable discharging when min cell voltage is at or above this threshold.
+   * eSpire280 defaults this to the block threshold for legacy behavior.
+   */
+  minCellVoltageDischargeRecoverV?: number;
+  /**
+   * eSpire280 charge taper start voltage.
+   */
+  chargeTaperStartV?: number;
+  /**
+   * eSpire280 charge taper end voltage. Defaults to charge-block threshold.
+   */
+  chargeTaperEndV?: number;
+  /**
+   * Minimum charge capacity fraction at taper end, before full block.
+   */
+  chargeTaperMinFraction?: number;
 }
 
 // ---- PV / AC-coupled inverters ----
@@ -234,6 +320,56 @@ export interface MeterReadsConfig {
 
 export type MeteringReadingKey = "utilityPowerKw" | "siteLoadKw" | "pvKw";
 
+export type MeteringRegisterFunction =
+  | "HR"
+  | "HRUS"
+  | "HRI"
+  | "HRUI"
+  | "HRF"
+  | "IR"
+  | "IRUS"
+  | "IRI"
+  | "IRUI"
+  | "IRF";
+
+export type MeteringRegisterSignalKey =
+  | MeteringReadingKey
+  | "gridImportPowerKw"
+  | "gridExportPowerKw"
+  | "backupLoadKw"
+  | "frequencyHz"
+  | "voltageL1N"
+  | "voltageL2N"
+  | "voltageL3N"
+  | "voltageL1L2"
+  | "voltageL2L3"
+  | "voltageL3L1"
+  | "energyImportKwh"
+  | "energyExportKwh"
+  | "custom";
+
+export interface MeteringRegisterMapping {
+  /**
+   * Stable canonical meaning. UI should present this as a dropdown instead of
+   * letting every legacy site invent new signal names.
+   */
+  signal: MeteringRegisterSignalKey;
+  /**
+   * Tag name exposed under the Meter equipment, for example
+   * Meter.Utility_Total_Power. If omitted, the runtime uses a canonical default.
+   */
+  tagID?: string;
+  register: number;
+  function: MeteringRegisterFunction;
+  scale?: number;
+  offset?: number;
+  sign?: 1 | -1;
+  pollClass?: "fast" | "normal" | "slow" | "startup";
+  ss40kName?: string;
+  supportingTag?: boolean;
+  description?: string;
+}
+
 export interface MeteringDirectReadingCalculation {
   source: "tag";
   tagID: string;
@@ -257,8 +393,45 @@ export interface MeteringConfig {
   meterType: string;      // "eGauge-4015", "Accuenergy-AcuRev", etc.
   modbusProfile: string;  // "udt_eGauge_V1", "acurev_v1", etc.
   ip: string;
+  port?: number;
+  unitId?: number;
   reads: MeterReadsConfig;
+  registerMap?: MeteringRegisterMapping[];
   calculations?: MeteringCalculationConfig;
+}
+
+// ---- Signal mapping / telemetry normalization ----
+
+export type CanonicalSignalKey =
+  | MeteringReadingKey
+  | "backupLoadKw"
+  | "batteryPowerKw"
+  | "pcsActivePowerKw"
+  | "generatorRunning";
+
+export interface SignalMappingSourceConfig {
+  profile?: string;
+  profileName?: string;
+  modbusProfile?: string;
+  role?: string;
+  ip?: string;
+  host?: string;
+  tcpHost?: string;
+  port?: number;
+  tcpPort?: number;
+  unitId?: number;
+  route?: string;
+}
+
+export interface SignalMappingSignalConfig {
+  expr: string;
+  invertSign?: boolean;
+}
+
+export interface SignalMappingConfig {
+  sources?: Record<string, SignalMappingSourceConfig>;
+  deadbands?: Record<string, number>;
+  signals?: Partial<Record<CanonicalSignalKey, SignalMappingSignalConfig>>;
 }
 
 // ---- Generator ----
@@ -284,5 +457,6 @@ export interface SiteConfig {
   pv: PvConfig;
   islanding?: IslandingConfig;
   metering: MeteringConfig;
+  signalMapping?: SignalMappingConfig;
   generator?: GeneratorConfig;
 }

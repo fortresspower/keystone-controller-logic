@@ -1,0 +1,946 @@
+{
+  "version": "2",
+  "device": {
+    "vendor": "Ampace",
+    "model": "BCU template",
+    "protocol": "modbus-tcp",
+    "defaultByteOrder": "BE",
+    "defaultWordOrder32": "ABCD",
+    "name": "AMPACE_Mini_BCU_42k",
+    "sourceFormat": "json-offset-template",
+    "notes": "Addresses in this template are offsets from BCU base. Runtime base = 50000 + bcuIndex * 200."
+  },
+  "telemetry": [
+    {
+      "id": "BatteryId",
+      "constant": "${batteryId}",
+      "pollClass": "startup",
+      "ss40k": {
+        "name": "BatteryId",
+        "model": "42100"
+      }
+    },
+    {
+      "id": "Manufacturer",
+      "constant": "${manufacturer}",
+      "pollClass": "startup",
+      "ss40k": {
+        "name": "Mn",
+        "model": "42100"
+      }
+    },
+    {
+      "id": "Model",
+      "constant": "${modelName}",
+      "pollClass": "startup",
+      "ss40k": {
+        "name": "Md",
+        "model": "42100"
+      }
+    },
+    {
+      "id": "ModelName",
+      "constant": "${modelName}",
+      "pollClass": "startup",
+      "ss40k": {
+        "name": "MdName",
+        "model": "42100"
+      }
+    },
+    {
+      "id": "BatteryType",
+      "constant": 4,
+      "pollClass": "startup",
+      "ss40k": {
+        "name": "Typ",
+        "model": "42100"
+      }
+    },
+    {
+      "id": "InternalSumVoltage",
+      "function": "HRUS",
+      "address": 0,
+      "pollClass": "normal",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "engLow": 0,
+        "engHigh": 1
+      },
+      "ss40k": {
+        "name": "V",
+        "model": "42101",
+        "exportMultiplier": 10
+      }
+    },
+    {
+      "id": "AmpaceCurrentRaw",
+      "function": "HR",
+      "address": 1,
+      "pollClass": "normal",
+      "description": "AMPACE current. Positive is discharge, opposite of 42K convention.",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "engLow": 0,
+        "engHigh": 1
+      }
+    },
+    {
+      "id": "BcuCurrent",
+      "calc": {
+        "inputs": {
+          "current": "AmpaceCurrentRaw"
+        },
+        "expr": "-current"
+      },
+      "pollClass": "normal",
+      "ss40k": {
+        "name": "A",
+        "model": "42101",
+        "exportMultiplier": 10
+      }
+    },
+    {
+      "id": "BcuPower",
+      "calc": {
+        "inputs": {
+          "voltage": "InternalSumVoltage",
+          "current": "BcuCurrent"
+        },
+        "expr": "voltage * current"
+      },
+      "pollClass": "normal",
+      "ss40k": {
+        "name": "W",
+        "model": "42101",
+        "exportMultiplier": 0.1
+      }
+    },
+    {
+      "id": "ExternalSumVoltage",
+      "function": "HRUS",
+      "address": 2,
+      "pollClass": "normal",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "engLow": 0,
+        "engHigh": 1
+      }
+    },
+    {
+      "id": "FuseVoltage",
+      "function": "HRUS",
+      "address": 3,
+      "pollClass": "normal",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "engLow": 0,
+        "engHigh": 1
+      }
+    },
+    {
+      "id": "MaxCellVInfo",
+      "function": "HRUS",
+      "address": 4,
+      "pollClass": "normal",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1000,
+        "engLow": 0,
+        "engHigh": 1
+      },
+      "ss40k": {
+        "name": "CellVMax",
+        "model": "42101",
+        "exportMultiplier": 1000
+      }
+    },
+    {
+      "id": "MaxCellVBmuNo",
+      "function": "HRUS",
+      "address": 5,
+      "pollClass": "normal"
+    },
+    {
+      "id": "MaxCellVCellNo",
+      "function": "HRUS",
+      "address": 6,
+      "pollClass": "normal",
+      "ss40k": {
+        "name": "CellVMaxNCell",
+        "model": "42101"
+      }
+    },
+    {
+      "id": "MinCellVInfo",
+      "function": "HRUS",
+      "address": 7,
+      "pollClass": "normal",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1000,
+        "engLow": 0,
+        "engHigh": 1
+      },
+      "ss40k": {
+        "name": "CellVMin",
+        "model": "42101",
+        "exportMultiplier": 1000
+      }
+    },
+    {
+      "id": "MinCellVBmuNo",
+      "function": "HRUS",
+      "address": 8,
+      "pollClass": "normal"
+    },
+    {
+      "id": "MinCellVCellNo",
+      "function": "HRUS",
+      "address": 9,
+      "pollClass": "normal",
+      "ss40k": {
+        "name": "CellVMinNCell",
+        "model": "42101"
+      }
+    },
+    {
+      "id": "MaxCellTempInfo",
+      "function": "HR",
+      "address": 10,
+      "pollClass": "normal",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "engLow": 0,
+        "engHigh": 1
+      },
+      "ss40k": {
+        "name": "ModTmpMax",
+        "model": "42101",
+        "exportMultiplier": 10
+      }
+    },
+    {
+      "id": "MaxCellTBmuNo",
+      "function": "HRUS",
+      "address": 11,
+      "pollClass": "normal"
+    },
+    {
+      "id": "MaxCellTCellNo",
+      "function": "HRUS",
+      "address": 12,
+      "pollClass": "normal",
+      "ss40k": {
+        "name": "ModTmpMaxN",
+        "model": "42101"
+      }
+    },
+    {
+      "id": "MinCellTempInfo",
+      "function": "HR",
+      "address": 13,
+      "pollClass": "normal",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "engLow": 0,
+        "engHigh": 1
+      },
+      "ss40k": {
+        "name": "ModTmpMin",
+        "model": "42101",
+        "exportMultiplier": 10
+      }
+    },
+    {
+      "id": "MinCellTBmuNo",
+      "function": "HRUS",
+      "address": 14,
+      "pollClass": "normal"
+    },
+    {
+      "id": "MinCellTCellNo",
+      "function": "HRUS",
+      "address": 15,
+      "pollClass": "normal",
+      "ss40k": {
+        "name": "ModTmpMinN",
+        "model": "42101"
+      }
+    },
+    {
+      "id": "USOC",
+      "function": "HRUS",
+      "address": 16,
+      "pollClass": "normal",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1000,
+        "engLow": 0,
+        "engHigh": 1
+      },
+      "ss40k": {
+        "name": "SoC",
+        "model": "42101",
+        "exportMultiplier": 100
+      }
+    },
+    {
+      "id": "SOH",
+      "function": "HRUS",
+      "address": 17,
+      "pollClass": "normal",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1000,
+        "engLow": 0,
+        "engHigh": 1
+      },
+      "ss40k": {
+        "name": "SoH",
+        "model": "42101",
+        "exportMultiplier": 100
+      }
+    },
+    {
+      "id": "ASOC",
+      "function": "HRUS",
+      "address": 18,
+      "pollClass": "normal",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1000,
+        "engLow": 0,
+        "engHigh": 1
+      }
+    },
+    {
+      "id": "CycleCount",
+      "function": "HRUS",
+      "address": 19,
+      "pollClass": "normal",
+      "ss40k": {
+        "name": "cyclesBat",
+        "model": "42101"
+      }
+    },
+    {
+      "id": "MaxPermitChgCurr",
+      "function": "HRUS",
+      "address": 20,
+      "pollClass": "normal",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "engLow": 0,
+        "engHigh": 1
+      },
+      "ss40k": {
+        "name": "AChaMax",
+        "model": "42101",
+        "exportMultiplier": 10
+      }
+    },
+    {
+      "id": "MaxPermitDsgCurr",
+      "function": "HRUS",
+      "address": 21,
+      "pollClass": "normal",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "engLow": 0,
+        "engHigh": 1
+      },
+      "ss40k": {
+        "name": "ADisChaMax",
+        "model": "42101",
+        "exportMultiplier": 10
+      }
+    },
+    {
+      "id": "FCCCapacity",
+      "function": "HRUS",
+      "address": 22,
+      "pollClass": "normal",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "engLow": 0,
+        "engHigh": 1
+      },
+      "ss40k": {
+        "name": "capBat",
+        "model": "42101",
+        "exportMultiplier": 10
+      }
+    },
+    {
+      "id": "RemainCapacity",
+      "function": "HRUS",
+      "address": 23,
+      "pollClass": "normal",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "engLow": 0,
+        "engHigh": 1
+      }
+    },
+    {
+      "id": "TotalInCap",
+      "function": "HRUI",
+      "address": 24,
+      "pollClass": "normal",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "engLow": 0,
+        "engHigh": 1
+      }
+    },
+    {
+      "id": "TotalOutCap",
+      "function": "HRUI",
+      "address": 26,
+      "pollClass": "normal",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "engLow": 0,
+        "engHigh": 1
+      }
+    },
+    {
+      "id": "TotalInEng",
+      "function": "HRUI",
+      "address": 28,
+      "pollClass": "normal",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "engLow": 0,
+        "engHigh": 1
+      }
+    },
+    {
+      "id": "TotalOutEng",
+      "function": "HRUI",
+      "address": 30,
+      "pollClass": "normal",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "engLow": 0,
+        "engHigh": 1
+      },
+      "ss40k": {
+        "name": "eBatDischgTot",
+        "model": "42101",
+        "exportMultiplier": 1000
+      }
+    },
+    {
+      "id": "BCUBoardTemp01",
+      "function": "HR",
+      "address": 32,
+      "pollClass": "normal",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "engLow": 0,
+        "engHigh": 1
+      }
+    },
+    {
+      "id": "BCUBoardTemp02",
+      "function": "HR",
+      "address": 33,
+      "pollClass": "normal",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "engLow": 0,
+        "engHigh": 1
+      }
+    },
+    {
+      "id": "BCUBoardTemp03",
+      "function": "HR",
+      "address": 34,
+      "pollClass": "normal",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "engLow": 0,
+        "engHigh": 1
+      }
+    },
+    {
+      "id": "MainSWVersion",
+      "function": "HRUS",
+      "address": 35,
+      "pollClass": "normal"
+    },
+    {
+      "id": "SubSWVersion",
+      "function": "HRUS",
+      "address": 36,
+      "pollClass": "normal"
+    },
+    {
+      "id": "MainHWVersion",
+      "function": "HRUS",
+      "address": 37,
+      "pollClass": "normal"
+    },
+    {
+      "id": "SubHWVersion",
+      "function": "HRUS",
+      "address": 38,
+      "pollClass": "normal"
+    },
+    {
+      "id": "SerialNumber",
+      "function": "HRUI",
+      "address": 39,
+      "pollClass": "startup",
+      "ss40k": {
+        "name": "SN",
+        "model": "42100"
+      }
+    },
+    {
+      "id": "ChgPowerAlarmThrhd",
+      "function": "HRUS",
+      "address": 41,
+      "pollClass": "normal",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "engLow": 0,
+        "engHigh": 1
+      }
+    },
+    {
+      "id": "DsgPowerAlarmThrhd",
+      "function": "HRUS",
+      "address": 42,
+      "pollClass": "normal",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "engLow": 0,
+        "engHigh": 1
+      }
+    },
+    {
+      "id": "CellNum",
+      "function": "HRUS",
+      "address": 53,
+      "pollClass": "normal"
+    },
+    {
+      "id": "CellCapacity",
+      "function": "HRUS",
+      "address": 54,
+      "pollClass": "normal",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "engLow": 0,
+        "engHigh": 1
+      }
+    },
+    {
+      "id": "SumVoltage",
+      "function": "HRUS",
+      "address": 56,
+      "pollClass": "normal",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "engLow": 0,
+        "engHigh": 1
+      }
+    },
+    {
+      "id": "Qmax",
+      "function": "HRUS",
+      "address": 57,
+      "pollClass": "normal",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "engLow": 0,
+        "engHigh": 1
+      }
+    },
+    {
+      "id": "BMSRunMode",
+      "function": "HRUS",
+      "address": 58,
+      "pollClass": "normal"
+    },
+    {
+      "id": "BMSWorkMode",
+      "function": "HRUS",
+      "address": 59,
+      "pollClass": "normal"
+    },
+    {
+      "id": "ProtectAlarm0_8",
+      "function": "HRUI_64",
+      "address": 60,
+      "pollClass": "normal",
+      "alarm": true,
+      "bitfieldStatus": true
+    },
+    {
+      "id": "SysFaultCode0_8",
+      "function": "HRUI_64",
+      "address": 64,
+      "pollClass": "normal",
+      "alarm": true,
+      "bitfieldStatus": true
+    },
+    {
+      "id": "OtherErrorCode0_8",
+      "function": "HRUI_64",
+      "address": 68,
+      "pollClass": "normal",
+      "alarm": true,
+      "bitfieldStatus": true
+    },
+    {
+      "id": "HwErrorCode0_8",
+      "function": "HRUI_64",
+      "address": 72,
+      "pollClass": "normal",
+      "alarm": true,
+      "bitfieldStatus": true
+    },
+    {
+      "id": "HwStateCode0_8",
+      "function": "HRUI_64",
+      "address": 76,
+      "pollClass": "normal",
+      "bitfieldStatus": true
+    },
+    {
+      "id": "ActuatorStaCode0_8",
+      "function": "HRUI_64",
+      "address": 80,
+      "pollClass": "normal",
+      "bitfieldStatus": true
+    },
+    {
+      "id": "HvPowOnReq",
+      "function": "HRUS",
+      "address": 84,
+      "pollClass": "normal"
+    },
+    {
+      "id": "HvPowOnState",
+      "function": "HRUS",
+      "address": 85,
+      "pollClass": "normal"
+    },
+    {
+      "id": "BcuLimitCurrState",
+      "function": "HRUS",
+      "address": 88,
+      "pollClass": "normal"
+    },
+    {
+      "id": "BcuLife",
+      "function": "HRUS",
+      "address": 89,
+      "pollClass": "normal"
+    },
+    {
+      "id": "InsulResistance",
+      "function": "HRUS",
+      "address": 90,
+      "pollClass": "normal"
+    },
+    {
+      "id": "AvgCellVolt",
+      "function": "HRUS",
+      "address": 91,
+      "pollClass": "normal",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1000,
+        "engLow": 0,
+        "engHigh": 1
+      }
+    },
+    {
+      "id": "BmuNumber",
+      "function": "HRUS",
+      "address": 99,
+      "pollClass": "normal"
+    },
+    {
+      "id": "BcuNumber",
+      "function": "HRUS",
+      "address": 100,
+      "pollClass": "normal"
+    },
+    {
+      "id": "MaxChargePower",
+      "function": "HRUS",
+      "address": 101,
+      "pollClass": "normal",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "engLow": 0,
+        "engHigh": 1
+      }
+    },
+    {
+      "id": "MaxDisChargePower",
+      "function": "HRUS",
+      "address": 102,
+      "pollClass": "normal",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "engLow": 0,
+        "engHigh": 1
+      }
+    },
+    {
+      "id": "ProtectAlarmLevel1",
+      "function": "HRUI",
+      "address": 109,
+      "pollClass": "normal",
+      "alarm": true,
+      "bitfieldStatus": true
+    },
+    {
+      "id": "ProtectAlarmLevel2",
+      "function": "HRUI",
+      "address": 111,
+      "pollClass": "normal",
+      "alarm": true,
+      "bitfieldStatus": true
+    },
+    {
+      "id": "ProtectAlarmLevel3",
+      "function": "HRUI",
+      "address": 113,
+      "pollClass": "normal",
+      "alarm": true,
+      "bitfieldStatus": true
+    },
+    {
+      "id": "SysFaultLevel1",
+      "function": "HRUI",
+      "address": 115,
+      "pollClass": "normal",
+      "alarm": true,
+      "bitfieldStatus": true
+    },
+    {
+      "id": "SysFaultLevel2",
+      "function": "HRUI",
+      "address": 117,
+      "pollClass": "normal",
+      "alarm": true,
+      "bitfieldStatus": true
+    },
+    {
+      "id": "SysFaultLevel3",
+      "function": "HRUI",
+      "address": 119,
+      "pollClass": "normal",
+      "alarm": true,
+      "bitfieldStatus": true
+    },
+    {
+      "id": "HwErrLevel1",
+      "function": "HRUI",
+      "address": 121,
+      "pollClass": "normal",
+      "alarm": true,
+      "bitfieldStatus": true
+    },
+    {
+      "id": "HwErrLevel2",
+      "function": "HRUI",
+      "address": 123,
+      "pollClass": "normal",
+      "alarm": true,
+      "bitfieldStatus": true
+    },
+    {
+      "id": "HwErrLevel3",
+      "function": "HRUI",
+      "address": 125,
+      "pollClass": "normal",
+      "alarm": true,
+      "bitfieldStatus": true
+    },
+    {
+      "id": "BcuAsMasterAllowMaxPermitChargePower",
+      "function": "HRUS",
+      "address": 127,
+      "pollClass": "normal",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "engLow": 0,
+        "engHigh": 1
+      }
+    },
+    {
+      "id": "BcuAsMasterAllowMaxPermitDisChargePower",
+      "function": "HRUS",
+      "address": 128,
+      "pollClass": "normal",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "engLow": 0,
+        "engHigh": 1
+      }
+    },
+    {
+      "id": "BcuStringStatus",
+      "calc": {
+        "inputs": {
+          "hv": "HvPowOnState"
+        },
+        "expr": "hv ? 1 : 0"
+      },
+      "pollClass": "normal",
+      "ss40k": {
+        "name": "St",
+        "model": "42101"
+      }
+    },
+    {
+      "id": "BcuChargeStatus",
+      "calc": {
+        "inputs": {
+          "st": "BcuStringStatus",
+          "a": "BcuCurrent"
+        },
+        "expr": "st === 0 ? 0 : (a > 1 ? 1 : (a < -1 ? 2 : 3))"
+      },
+      "pollClass": "normal",
+      "ss40k": {
+        "name": "ChaSt",
+        "model": "42101"
+      }
+    },
+    {
+      "id": "BcuContactorStatus",
+      "calc": {
+        "inputs": {
+          "hv": "HvPowOnState"
+        },
+        "expr": "hv ? 3 : 0"
+      },
+      "pollClass": "normal",
+      "ss40k": {
+        "name": "ConSt",
+        "model": "42101"
+      }
+    },
+    {
+      "id": "BcuBatteryFault",
+      "calc": {
+        "inputs": {
+          "p3": "ProtectAlarmLevel3",
+          "s3": "SysFaultLevel3",
+          "h3": "HwErrLevel3"
+        },
+        "expr": "(p3 || s3 || h3) ? 1 : 0"
+      },
+      "pollClass": "normal",
+      "alarm": true,
+      "bitfieldStatus": true,
+      "ss40k": {
+        "name": "BatteryFault",
+        "model": "42103"
+      }
+    },
+    {
+      "id": "BcuBatteryWarning1",
+      "calc": {
+        "inputs": {
+          "p1": "ProtectAlarmLevel1",
+          "s1": "SysFaultLevel1",
+          "h1": "HwErrLevel1"
+        },
+        "expr": "(p1 || s1 || h1) ? 1 : 0"
+      },
+      "pollClass": "normal",
+      "alarm": true,
+      "bitfieldStatus": true,
+      "ss40k": {
+        "name": "BatteryWarning1",
+        "model": "42103"
+      }
+    },
+    {
+      "id": "BcuBatteryWarning2",
+      "calc": {
+        "inputs": {
+          "p2": "ProtectAlarmLevel2",
+          "s2": "SysFaultLevel2",
+          "h2": "HwErrLevel2"
+        },
+        "expr": "(p2 || s2 || h2) ? 1 : 0"
+      },
+      "pollClass": "normal",
+      "alarm": true,
+      "bitfieldStatus": true,
+      "ss40k": {
+        "name": "BatteryWarning2",
+        "model": "42103"
+      }
+    }
+  ]
+}

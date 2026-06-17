@@ -1,0 +1,46 @@
+{
+  "version": "2",
+  "device": {
+    "vendor": "eGauge",
+    "model": "Mission Energy PV meter",
+    "protocol": "modbus-tcp",
+    "defaultByteOrder": "BE",
+    "defaultWordOrder32": "ABCD",
+    "name": "udt_eGauge_Mission_Energy_Meter2_V1",
+    "sourceFormat": "mission-energy-live-initialization-subflow",
+    "notes": "Site-specific Meter2 template from 10.253.0.224 Meter - SolarEdge configuration. This meter exposes only Grid and Solar virtual registers."
+  },
+  "telemetry": [
+    {
+      "id": "Grid",
+      "pollClass": "normal",
+      "function": "IRF",
+      "address": 9000,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1000,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "Solar",
+      "pollClass": "normal",
+      "function": "IRF",
+      "address": 9004,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1000,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "pAcCplTot",
+        "model": "40101",
+        "exportMultiplier": 1000
+      }
+    }
+  ]
+}

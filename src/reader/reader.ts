@@ -226,6 +226,7 @@ type ParserKind =
   | "F32" | "F64"
   | "U64" | "S64"
   | "C"
+  | "STR16BE"
   | "STR";
 
 function parseValue(regs: number[], base: number, item: TagMapItem) {
@@ -295,6 +296,17 @@ function parseValue(regs: number[], base: number, item: TagMapItem) {
         if (ch) chars.push(ch);
       }
       return String.fromCharCode(...chars).replace(/\u0000+$/, "");
+    }
+    case "STR16BE": {
+      const chars: number[] = [];
+      for (let i = 0; i < len; i++) {
+        const word = rd(off + i) & 0xffff;
+        const hi = (word >> 8) & 0xff;
+        const lo = word & 0xff;
+        if (hi) chars.push(hi);
+        if (lo) chars.push(lo);
+      }
+      return String.fromCharCode(...chars).replace(/[\u0000\s]+$/, "");
     }
     default:
       return rd(off) >>> 0;

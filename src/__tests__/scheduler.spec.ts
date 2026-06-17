@@ -308,6 +308,56 @@ describe("scheduler", () => {
     expect(activePlan?.via).toBe("upstream");
   });
 
+  test("selects production UI schedules with absolute time windows", () => {
+    const schedule = {
+      version: "3.0",
+      site: { export_allowed: true },
+      default: {
+        planID: "default_command",
+        default: true,
+        strategy: {
+          meter_rule: {
+            discharge: { net_load_threshold: { value: 85, unit: "kW" } },
+            charge: { net_load_threshold: { value: 0, unit: "kW" } },
+          },
+        },
+      },
+      timed: [
+        {
+          planID: "grid-charge",
+          time: {
+            start: "2026-09-14T12:00:00Z",
+            end: "2026-09-14T22:00:00Z",
+          },
+          strategy: {
+            meter_rule: {
+              discharge: { net_load_threshold: { value: 999999, unit: "kW" } },
+              charge: { net_load_threshold: { value: 0, unit: "kW" } },
+            },
+            pv_rule: { name: "SelfConsumption" },
+          },
+          constraints: {
+            min_soc: { value: 0.1, unit: "%" },
+            max_soc: { value: 0.95, unit: "%" },
+          },
+        },
+      ],
+    };
+
+    const activePlan = matchActiveSchedulePlan(schedule, {
+      now: "2026-09-14T18:00:00.000Z",
+      timezone: "America/Los_Angeles",
+    });
+
+    expect(activePlan?.plan.planID).toBe("grid-charge");
+    expect(activePlan?.via).toBe("timed");
+    expect(activePlan?.start?.toISOString()).toBe("2026-09-14T12:00:00.000Z");
+    expect(activePlan?.end.toISOString()).toBe("2026-09-14T22:00:00.000Z");
+    expect(scheduleOutputFromActivePlan(activePlan!).strategy?.pv_rule).toEqual({
+      name: "SelfConsumption",
+    });
+  });
+
   test("returns strategy, constraints, and direct setpoints from the selected plan", () => {
     const activePlan = matchActiveSchedulePlan(
       [

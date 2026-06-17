@@ -32,6 +32,143 @@
       "bitfieldStatus": true
     },
     {
+      "id": "PVDCFaultWord40",
+      "pollClass": "normal",
+      "function": "HRUS",
+      "address": 34640,
+      "category": "Faults",
+      "alarm": true,
+      "supporting": true,
+      "bitfieldStatus": true,
+      "description": "PVDC module internal faults: EPO, calibration/sampling/flash/DSP initialization/version abnormalities, and PV DSP parameter mismatch bits."
+    },
+    {
+      "id": "PVDCFaultWord41",
+      "pollClass": "normal",
+      "function": "HRUS",
+      "address": 34641,
+      "category": "Faults",
+      "alarm": true,
+      "supporting": true,
+      "bitfieldStatus": true,
+      "description": "PVDC module communication fault word; bit 0 indicates module PV 485 communication fault."
+    },
+    {
+      "id": "PVDCFaultWord42",
+      "pollClass": "normal",
+      "function": "HRUS",
+      "address": 34642,
+      "category": "Faults",
+      "alarm": true,
+      "supporting": true,
+      "bitfieldStatus": true,
+      "description": "PVDC fan and auxiliary power fault word."
+    },
+    {
+      "id": "PVDCFaultWord43",
+      "pollClass": "normal",
+      "function": "HRUS",
+      "address": 34643,
+      "category": "Faults",
+      "alarm": true,
+      "supporting": true,
+      "bitfieldStatus": true,
+      "description": "PVDC temperature fault and derating word."
+    },
+    {
+      "id": "PVDCFaultWord44",
+      "pollClass": "normal",
+      "function": "HRUS",
+      "address": 34644,
+      "category": "Faults",
+      "alarm": true,
+      "supporting": true,
+      "bitfieldStatus": true,
+      "description": "PVDC temperature sensor, frequent start, SPD, and PID abnormal fault word."
+    },
+    {
+      "id": "PVDCFaultWord45",
+      "pollClass": "normal",
+      "function": "HRUS",
+      "address": 34645,
+      "category": "Faults",
+      "alarm": true,
+      "supporting": true,
+      "bitfieldStatus": true,
+      "description": "PVDC current fault word: over-current and current abnormal bits."
+    },
+    {
+      "id": "PVDCFaultWord46",
+      "pollClass": "normal",
+      "function": "HRUS",
+      "address": 34646,
+      "category": "Faults",
+      "alarm": true,
+      "supporting": true,
+      "bitfieldStatus": true,
+      "description": "PVDC PV input fault word: input over/under voltage, reverse connection, overload timeout, dry contact, and recharge-current bits."
+    },
+    {
+      "id": "PVDCFaultWord47",
+      "pollClass": "normal",
+      "function": "HRUS",
+      "address": 34647,
+      "category": "Faults",
+      "alarm": true,
+      "supporting": true,
+      "bitfieldStatus": true,
+      "description": "PVDC bus side fault word: bus voltage, soft-start, galvanic-break-device, insulation detect, reverse connection, PCS power-off, and leakage self-test bits."
+    },
+    {
+      "id": "PVDCFaultWord48",
+      "pollClass": "normal",
+      "function": "HRUS",
+      "address": 34648,
+      "category": "Faults",
+      "alarm": true,
+      "supporting": true,
+      "bitfieldStatus": true,
+      "description": "PVDC current-limit alarm word."
+    },
+    {
+      "id": "dcPvWarning",
+      "pollClass": "normal",
+      "category": "Faults",
+      "alarm": true,
+      "bitfieldStatus": true,
+      "calc": {
+        "inputs": {
+          "w46": "PVDCFaultWord46",
+          "w47": "PVDCFaultWord47"
+        },
+        "expr": "(((((w46 >>> 6) & 1) | ((w46 >>> 7) & 1) | ((w46 >>> 8) & 1) | ((w47 >>> 10) & 1)) << 0))"
+      },
+      "ss40k": {
+        "name": "dcPvWarning",
+        "model": "40103"
+      },
+      "description": "SS40K PV warning map. Direct supplier mapping: bit 0 PV polarity reverse from PV input reverse-connection and bus-side reverse-connection bits."
+    },
+    {
+      "id": "dcPvFault",
+      "pollClass": "normal",
+      "category": "Faults",
+      "alarm": true,
+      "bitfieldStatus": true,
+      "calc": {
+        "inputs": {
+          "w46": "PVDCFaultWord46",
+          "w47": "PVDCFaultWord47"
+        },
+        "expr": "(((((w47 >>> 7) & 1) | ((w47 >>> 8) & 1)) << 2) | ((((w46 >>> 0) & 1) | ((w46 >>> 1) & 1) | ((w46 >>> 2) & 1)) << 5))"
+      },
+      "ss40k": {
+        "name": "dcPvFault",
+        "model": "40103"
+      },
+      "description": "SS40K PV fault map. Direct supplier mappings: bit 2 PV insulation fault from insulation-detect abnormal bits; bit 5 PV over-voltage from PV input over-voltage bits."
+    },
+    {
       "id": "PVSideTotalPower",
       "pollClass": "normal",
       "function": "HR",

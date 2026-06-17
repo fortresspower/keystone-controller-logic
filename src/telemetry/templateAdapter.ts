@@ -26,8 +26,11 @@ export interface TelemetryTemplateSs40k {
 
 export interface TelemetryTemplateEntry {
   id: string;
+  description?: string;
   function?: string | null;
   address?: number | null;
+  length?: number;
+  parser?: string;
   pollClass?: "fast" | "normal" | "slow" | "startup";
   constant?: string | number | boolean | null;
   calc?: TelemetryTemplateCalc;
@@ -82,6 +85,8 @@ export interface NormalizedTelemetryTag {
   name: string;
   function?: string;
   address?: number;
+  length?: number;
+  parser?: string;
   pollClass?: "fast" | "normal" | "slow" | "startup";
   constant?: string | number | boolean | null;
   calc?: {
@@ -113,10 +118,24 @@ const TEMPLATE_FILE_ALIASES: Record<string, string> = {
   egauge_280: "eGauge_280_ss40k.json",
   egauge: "eGauge_280_ss40k.json",
   udt_eGauge_V1: "eGauge_280_ss40k.json",
+  eGauge_Assisted_Living_ss40k: "eGauge_Assisted_Living_ss40k.json",
+  eGauge_Assisted_Living: "eGauge_Assisted_Living_ss40k.json",
+  udt_eGauge_Assisted_Living_V1: "eGauge_Assisted_Living_ss40k.json",
+  eGauge_Mission_Energy_ss40k: "eGauge_Mission_Energy_ss40k.json",
+  eGauge_Mission_Energy: "eGauge_Mission_Energy_ss40k.json",
+  eGauge_MissionEnergy: "eGauge_Mission_Energy_ss40k.json",
+  udt_eGauge_Mission_Energy_V1: "eGauge_Mission_Energy_ss40k.json",
+  eGauge_Mission_Energy_Meter2_ss40k: "eGauge_Mission_Energy_Meter2_ss40k.json",
+  eGauge_Mission_Energy_Meter2: "eGauge_Mission_Energy_Meter2_ss40k.json",
+  udt_eGauge_Mission_Energy_Meter2_V1: "eGauge_Mission_Energy_Meter2_ss40k.json",
   udt_solarEdge_V1: "udt_solarEdge_V1.json",
   solarEdge: "udt_solarEdge_V1.json",
   solaredge: "udt_solarEdge_V1.json",
   solaredge_ac_v1: "udt_solarEdge_V1.json",
+  SEL851_ss40k: "SEL851_ss40k.json",
+  SEL851: "SEL851_ss40k.json",
+  sel851: "SEL851_ss40k.json",
+  udt_SEL851_v1: "SEL851_ss40k.json",
   AMPACE_Mini_ss40k: "AMPACE_Mini_ss40k.json",
   AMPACE_Mini: "AMPACE_Mini_ss40k.json",
   Ampace_BMS_ss40k: "AMPACE_Mini_ss40k.json",
@@ -124,6 +143,9 @@ const TEMPLATE_FILE_ALIASES: Record<string, string> = {
   udt_Ampace_A_V3: "AMPACE_Mini_ss40k.json",
   ampace_bms: "AMPACE_Mini_ss40k.json",
   ampace_mini: "AMPACE_Mini_ss40k.json",
+  AMPACE_Mini_BCU_42k: "AMPACE_Mini_BCU_42k.json",
+  AMPACE_Mini_BCU42k: "AMPACE_Mini_BCU_42k.json",
+  ampace_mini_bcu_42k: "AMPACE_Mini_BCU_42k.json",
   Sinexcel_Mini_PCS_ss40k: "Sinexcel_Mini_PCS_ss40k.json",
   Sinexcel_Mini_PCS: "Sinexcel_Mini_PCS_ss40k.json",
   udt_Sinexcel_Mini_PCS: "Sinexcel_Mini_PCS_ss40k.json",
@@ -272,6 +294,12 @@ function adaptTelemetryEntry(
     normalized.function = entry.function || undefined;
     normalized.address =
       typeof entry.address === "number" ? entry.address : undefined;
+    if (typeof entry.length === "number" && entry.length > 0) {
+      normalized.length = entry.length;
+    }
+    if (typeof entry.parser === "string" && entry.parser.trim()) {
+      normalized.parser = entry.parser.trim();
+    }
   }
 
   if (entry.pollClass) {

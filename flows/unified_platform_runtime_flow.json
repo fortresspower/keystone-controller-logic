@@ -1,0 +1,1754 @@
+[
+  {
+    "id": "unified_platform_tab",
+    "type": "tab",
+    "label": "Unified Platform Runtime",
+    "disabled": false,
+    "info": "Production unified platform flow: site-config-driven telemetry, scheduler/API, unified control, writer runtime, fixed Modbus slots, and cloud/feed output."
+  },
+  {
+    "id": "platform_errors",
+    "type": "debug",
+    "z": "unified_platform_tab",
+    "name": "platform errors",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "payload",
+    "targetType": "msg",
+    "statusVal": "",
+    "statusType": "auto",
+    "x": 1500,
+    "y": 840,
+    "wires": []
+  },
+  {
+    "id": "platform_debug",
+    "type": "debug",
+    "z": "unified_platform_tab",
+    "name": "platform status",
+    "active": false,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "payload",
+    "targetType": "msg",
+    "statusVal": "",
+    "statusType": "auto",
+    "x": 1500,
+    "y": 760,
+    "wires": []
+  },
+  {
+    "id": "platform_writer_diag",
+    "type": "debug",
+    "z": "unified_platform_tab",
+    "name": "writer/modbus results",
+    "active": false,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "payload",
+    "targetType": "msg",
+    "statusVal": "",
+    "statusType": "auto",
+    "x": 1500,
+    "y": 620,
+    "wires": []
+  },
+  {
+    "id": "platform_catch",
+    "type": "catch",
+    "z": "unified_platform_tab",
+    "name": "flow errors",
+    "scope": null,
+    "uncaught": false,
+    "x": 1260,
+    "y": 840,
+    "wires": [
+      [
+        "platform_errors"
+      ]
+    ]
+  },
+  {
+    "id": "platform_boot_setup",
+    "type": "inject",
+    "z": "unified_platform_tab",
+    "name": "Boot: compile telemetry + writers",
+    "props": [
+      {
+        "p": "payload"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": true,
+    "onceDelay": "5",
+    "topic": "",
+    "payload": "{}",
+    "payloadType": "json",
+    "x": 160,
+    "y": 100,
+    "wires": [
+      [
+        "platform_setup_telemetry",
+        "platform_setup_writers"
+      ]
+    ]
+  },
+  {
+    "id": "platform_setup_telemetry",
+    "type": "function",
+    "z": "unified_platform_tab",
+    "name": "Setup telemetry from site config",
+    "func": "const lib = global.get('lib');\nif (!lib || !lib.telemetry || typeof lib.telemetry.buildSs40kLookup !== 'function') {\n  node.status({ fill: 'red', shape: 'ring', text: 'telemetry API missing' });\n  return [null, null, { payload: { error: 'TELEMETRY_API_MISSING' } }];\n}\n\nfunction getAnyContext(ctx, key) {\n  let value = ctx.get(key);\n  if (value !== undefined && value !== null) return value;\n  try { return ctx.get(key, 'file'); } catch (error) { return value; }\n}\nfunction setBothContext(ctx, key, value) {\n  ctx.set(key, value);\n  try { ctx.set(key, value, 'file'); } catch (error) {}\n}\nfunction asNumber(value, fallback) {\n  const n = Number(value);\n  return Number.isFinite(n) ? n : fallback;\n}\nfunction normalizeProfile(profile) {\n  if (!profile) return '';\n  const s = String(profile);\n  return s === 'udt_eGauge_V1' ? 'eGauge_280_ss40k' : s;\n}\nfunction assetLookup(config) {\n  const byKey = {};\n  for (const asset of config?.network?.assets || []) {\n    if (!asset || typeof asset !== 'object') continue;\n    if (asset.id) byKey[String(asset.id)] = asset;\n    if (asset.role) byKey[String(asset.role)] = asset;\n  }\n  return byKey;\n}\nfunction sourceProfile(source, fallback) {\n  return normalizeProfile(source && (source.profileName || source.profile || source.modbusProfile)) || fallback;\n}\nfunction sourceIp(source, fallback) {\n  return String((source && (source.ip || source.host || source.tcpHost)) || fallback || '');\n}\nfunction sourcePort(source, fallback) {\n  return asNumber(source && (source.port || source.tcpPort), fallback || 502);\n}\nfunction sourceUnit(source, fallback) {\n  return asNumber(source && (source.unitId || source.unit_id), fallback || 1);\n}\nfunction productDefaultIp(profile, equipmentId) {\n  const id = String(equipmentId || '');\n  if (String(profile || '').startsWith('MINI-')) {\n    if (id === 'AMPACE') return '192.168.1.100';\n    if (['PCS', 'Load', 'PVDC1', 'PVDC2', 'PVDC3'].includes(id)) return '192.168.1.10';\n  }\n  if (String(profile || '') === 'eSpire280') {\n    if (id === 'PCS') return '192.168.1.136';\n    if (id === 'MBMU') return '192.168.1.50';\n  }\n  return '';\n}\nfunction productIp(profile, equipmentId, source, asset, fallback) {\n  return sourceIp(source, sourceIp(asset, productDefaultIp(profile, equipmentId) || fallback));\n}\nfunction addReader(readers, reader) {\n  if (!reader || !reader.equipmentId || !reader.profileName || !reader.ip) return;\n  if (readers.some((existing) => existing.equipmentId === reader.equipmentId)) return;\n  readers.push({\n    equipmentId: String(reader.equipmentId),\n    profileName: normalizeProfile(reader.profileName),\n    ip: String(reader.ip),\n    port: sourcePort(reader, 502),\n    unitId: sourceUnit(reader, 1),\n    route: String(reader.route || reader.serverKey || reader.equipmentId),\n    role: reader.role || undefined\n  });\n}\nfunction defaultReaders(config) {\n  const readers = [];\n  const profile = String(config?.system?.systemProfile || 'eSpire280');\n  const isMini = profile.startsWith('MINI-');\n  const sources = config?.signalMapping?.sources || {};\n  const metering = config?.metering || {};\n  const assets = assetLookup(config);\n  const pcsAsset = assets.PCS || assets.pcs || {};\n  const bmsAsset = assets.AMPACE || assets.ampace || assets.BMS || assets.bms || assets.MBMU || assets.mbmu || {};\n  const loadAsset = assets.Load || assets.load || {};\n  const pcsSource = sources.PCS || {};\n  const pcsIp = productIp(profile, 'PCS', pcsSource, pcsAsset, config?.network?.controller?.modbusServer?.ip);\n  const pcsPort = sourcePort(pcsSource, sourcePort(pcsAsset, config?.network?.controller?.modbusServer?.port || 502));\n  const pcsUnit = sourceUnit(pcsSource, sourceUnit(pcsAsset, 1));\n\n  if (config?.telemetryReaders && Array.isArray(config.telemetryReaders)) {\n    for (const reader of config.telemetryReaders) addReader(readers, reader);\n    return readers;\n  }\n\n  if (isMini) {\n    addReader(readers, { equipmentId: 'PCS', profileName: 'Sinexcel_Mini_PCS_ss40k', ip: pcsIp, port: pcsPort, unitId: pcsUnit, route: 'PCS' });\n    addReader(readers, { equipmentId: 'AMPACE', profileName: 'AMPACE_Mini_ss40k', ip: productIp(profile, 'AMPACE', sources.AMPACE, bmsAsset, pcsIp), port: sourcePort(sources.AMPACE, pcsPort), unitId: sourceUnit(sources.AMPACE, 1), route: 'AMPACE' });\n    addReader(readers, { equipmentId: 'Load', profileName: 'Sinexcel_Mini_Load_ss40k', ip: productIp(profile, 'Load', sources.Load, loadAsset, pcsIp), port: sourcePort(sources.Load, pcsPort), unitId: sourceUnit(sources.Load, 1), route: 'Load' });\n    const dcPvKw = asNumber(String(profile).split('-')[2], 0);\n    const modules = Math.max(0, Math.min(3, Math.round(dcPvKw / 45)));\n    for (let i = 1; i <= modules; i++) {\n      addReader(readers, { equipmentId: 'PVDC' + i, profileName: 'Sinexcel_Mini_PVDC_Module' + i + '_ss40k', ip: productIp(profile, 'PVDC' + i, sources['PVDC' + i], assets['PVDC' + i], pcsIp), port: sourcePort(assets['PVDC' + i], pcsPort), unitId: sourceUnit(assets['PVDC' + i], 1), route: 'PVDC' + i });\n    }\n  } else {\n    addReader(readers, { equipmentId: 'PCS', profileName: 'Delta_280_ss40k', ip: pcsIp, port: pcsPort, unitId: pcsUnit, route: 'PCS' });\n    addReader(readers, { equipmentId: 'MBMU', profileName: 'MBMU_280_ss40k', ip: productIp(profile, 'MBMU', sources.MBMU, bmsAsset, pcsIp), port: sourcePort(sources.MBMU, pcsPort), unitId: sourceUnit(sources.MBMU, 1), route: 'MBMU' });\n    if (metering.ip) addReader(readers, { equipmentId: 'Meter', profileName: normalizeProfile(metering.modbusProfile || 'eGauge_280_ss40k'), ip: metering.ip, port: metering.port || 502, unitId: metering.unitId || 1, route: 'Meter' });\n  }\n\n  const productOwned = new Set(isMini ? ['PCS', 'MBMU', 'AMPACE', 'Load', 'PVDC1', 'PVDC2', 'PVDC3'] : ['PCS', 'MBMU']);\n  for (const [equipmentId, source] of Object.entries(sources)) {\n    if (productOwned.has(equipmentId)) continue;\n    const ip = sourceIp(source, equipmentId === 'Meter' ? metering.ip : undefined);\n    if (!ip) continue;\n    addReader(readers, {\n      equipmentId,\n      profileName: sourceProfile(source, equipmentId === 'Meter' || equipmentId === 'Meter2' ? 'eGauge_280_ss40k' : ''),\n      ip,\n      port: sourcePort(source, 502),\n      unitId: sourceUnit(source, 1),\n      route: source.route || equipmentId,\n      role: source.role\n    });\n  }\n  return readers;\n}\n\nconst config = msg.controlConfig || msg.payload?.controlConfig || getAnyContext(flow, 'controlConfig') || getAnyContext(global, 'controlConfig') || getAnyContext(global, 'unifiedControlConfig') || getAnyContext(global, 'siteConfig') || {};\nconst readers = defaultReaders(config);\nconst meteringTemplate = config?.metering?.registerMap && lib.telemetry && typeof lib.telemetry.buildConfiguredEgaugeTemplate === 'function'\n  ? lib.telemetry.buildConfiguredEgaugeTemplate(config.metering, 'configured_eGauge')\n  : null;\nif (!readers.length) {\n  node.status({ fill: 'yellow', shape: 'ring', text: 'no telemetry readers' });\n  return [null, null, { payload: { error: 'NO_TELEMETRY_READERS', configKeys: Object.keys(config || {}) } }];\n}\n\nconst slotNames = ['slot1', 'slot2', 'slot3', 'slot4', 'slot5', 'slot6'];\nconst routeMap = {};\nconst equipmentConfig = {};\nconst endpointSlots = {};\nconst endpointReaders = [];\nconst compileMessages = [];\nconst startMessages = [];\nfunction endpointKey(item) {\n  return [item.ip, item.port || 502, item.unitId || 1].join(':');\n}\nfunction slotForEndpoint(item) {\n  const key = endpointKey(item);\n  if (!endpointSlots[key]) {\n    const slot = slotNames[Object.keys(endpointSlots).length];\n    if (!slot) return null;\n    endpointSlots[key] = slot;\n    endpointReaders.push(Object.assign({}, item, { route: slot, groupedEquipmentIds: [] }));\n  }\n  return endpointSlots[key];\n}\nfor (const reader of readers) {\n  const slot = slotForEndpoint(reader);\n  if (!slot) continue;\n  const grouped = endpointReaders.find((entry) => entry.route === slot);\n  if (grouped) grouped.groupedEquipmentIds.push(reader.equipmentId);\n  routeMap[reader.route] = slot;\n  routeMap[reader.equipmentId] = slot;\n  const template = reader.equipmentId === 'Meter' && meteringTemplate ? meteringTemplate : undefined;\n  equipmentConfig[reader.equipmentId] = template\n    ? { profileName: reader.profileName, route: slot, template }\n    : { profileName: reader.profileName, route: slot };\n  compileMessages.push({ payload: { cmd: 'compile', profileName: reader.profileName, template, instance: { equipmentId: reader.equipmentId, serverKey: reader.route, unitId: reader.unitId } }, equipmentId: reader.equipmentId, serverKey: reader.route });\n  startMessages.push({ payload: { cmd: 'start', equipmentId: reader.equipmentId }, equipmentId: reader.equipmentId, serverKey: reader.route });\n}\n\nconst result = lib.telemetry.buildSs40kLookup(equipmentConfig);\nsetBothContext(global, 'ss40kLookup', result.lookup);\nsetBothContext(global, 'ss40kEquipmentToProfile', result.equipmentToProfile);\nsetBothContext(global, 'ss40kModelIndexMap', result.modelIndexMap);\nsetBothContext(global, 'telemetryReaderConfig', readers);\nsetBothContext(flow, 'telemetryRouteMap', routeMap);\nsetBothContext(flow, 'telemetryEquipmentConfig', equipmentConfig);\nsetBothContext(flow, 'telemetryReaderConfig', readers);\nsetBothContext(flow, 'ampaceBcu42kStartedCount', 0);\n\nnode.send([null, null, { payload: { state: 'slots-derived', readers, endpointReaders, routeMap, connectorMode: 'disabled-production-hardcoded-slots' } }]);\nfor (const message of compileMessages) node.send([message, null, null]);\nsetTimeout(() => {\n  for (const message of startMessages) node.send([message, null, null]);\n}, 1500);\n\nnode.status({ fill: 'green', shape: 'dot', text: `${readers.length} reader(s) / ${endpointReaders.length} endpoint(s): ${readers.map((r) => r.equipmentId).join(',')}` });\nreturn [null, null, { payload: { state: 'started', readers, endpointReaders, routeMap, profile: config?.system?.systemProfile } }];\n",
+    "outputs": 3,
+    "timeout": "",
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 430,
+    "y": 140,
+    "wires": [
+      [
+        "platform_telemetry_runtime"
+      ],
+      [
+        "platform_route_telemetry_connectors"
+      ],
+      [
+        "platform_errors"
+      ]
+    ]
+  },
+  {
+    "id": "platform_route_telemetry_connectors",
+    "type": "function",
+    "z": "unified_platform_tab",
+    "name": "Route telemetry connector setup",
+    "func": "const slot = msg.slot || msg.route || msg.equipmentId;\nconst outputs = { slot1: 0, slot2: 1, slot3: 2, slot4: 3, slot5: 4, slot6: 5 };\nconst idx = outputs[slot];\nif (idx === undefined) {\n  node.status({ fill: 'yellow', shape: 'ring', text: `no connector slot ${slot || '?'}` });\n  return [null, null, null, null, null, null, { payload: { error: 'NO_CONNECTOR_SLOT', slot, msg } }];\n}\nconst out = new Array(7).fill(null);\nout[idx] = msg;\nreturn out;\n",
+    "outputs": 7,
+    "timeout": "",
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 720,
+    "y": 100,
+    "wires": [
+      [
+        "platform_tslot1_connector"
+      ],
+      [
+        "platform_tslot2_connector"
+      ],
+      [
+        "platform_tslot3_connector"
+      ],
+      [
+        "platform_tslot4_connector"
+      ],
+      [
+        "platform_tslot5_connector"
+      ],
+      [
+        "platform_tslot6_connector"
+      ],
+      [
+        "platform_errors"
+      ]
+    ]
+  },
+  {
+    "id": "platform_telemetry_runtime",
+    "type": "function",
+    "z": "unified_platform_tab",
+    "name": "Telemetry Runtime",
+    "func": "const lib = global.get('lib');\nif (!lib || !lib.telemetry || typeof lib.telemetry.handleTelemetryMessage !== 'function') {\n  node.status({ fill: 'red', shape: 'ring', text: 'telemetry API missing' });\n  return [null, null, { payload: { error: 'TELEMETRY_API_MISSING' } }];\n}\n\nconst telemetry = lib.telemetry;\nconst incoming = msg.payload && typeof msg.payload === 'object' && !Array.isArray(msg.payload)\n  ? { ...msg, ...msg.payload }\n  : msg;\nconst equipmentId = incoming.equipmentId || incoming.instance?.equipmentId || incoming._reader?.equipmentId || msg.equipmentId;\nconst stateKey = equipmentId ? `telemetryState:${equipmentId}` : null;\nconst state = stateKey ? (flow.get(stateKey) || telemetry.createTelemetryRuntimeState()) : telemetry.createTelemetryRuntimeState();\n\nif (incoming.error && !equipmentId) {\n  node.status({ fill: 'yellow', shape: 'ring', text: 'modbus transport error' });\n  return [null, null, { payload: { error: incoming.error, source: 'modbus', incoming } }];\n}\n\nif (!equipmentId) {\n  node.status({ fill: 'red', shape: 'ring', text: 'equipment missing' });\n  return [null, null, { payload: { error: 'EQUIPMENT_ID_MISSING', incoming } }];\n}\n\nconst asNodeRedMsg = (value) => {\n  if (value == null) return null;\n  if (typeof value === 'object' && !Array.isArray(value) && Object.prototype.hasOwnProperty.call(value, 'payload')) {\n    return value;\n  }\n  return { payload: value };\n};\n\nconst decorate = (value) => {\n  const out = asNodeRedMsg(value);\n  if (!out) return null;\n  out.equipmentId = out.equipmentId || equipmentId;\n  out.serverKey = out.serverKey || incoming.serverKey || incoming.instance?.serverKey || equipmentId;\n  return out;\n};\n\nconst envCfg = {\n  CompilerMaxQty: 120,\n  CompilerMaxSpan: 80,\n  CompilerMaxHole: 4,\n  PollFastMs: 250,\n  PollNormalMs: 1000,\n  PollSlowMs: 5000,\n  MAX_IN_FLIGHT: 8,\n  REQUEST_TIMEOUT_MS: 1500,\n  MODBUS_ZERO_BASED: false,\n  JITTER_MS: 0,\n  RESPECT_TAG_CLAMP: true,\n  SCALE_CLAMP_DEFAULT: false,\n  SKIP_EMPTY_SAMPLES: false\n};\n\ntry {\n  const result = telemetry.handleTelemetryMessage(\n    incoming,\n    envCfg,\n    state,\n    (o1, o2, o3) => node.send([decorate(o1), decorate(o2), decorate(o3)])\n  );\n\n  if (stateKey) {\n    flow.set(stateKey, result.state);\n  }\n\n  const statusText = `${equipmentId}:${incoming.cmd || (incoming._reader ? 'reply' : 'start')}`;\n  node.status({ fill: 'green', shape: 'dot', text: statusText });\n\n  return [decorate(result.out1), decorate(result.out2), decorate(result.out3)];\n} catch (err) {\n  node.status({ fill: 'red', shape: 'ring', text: `${equipmentId}:runtime threw` });\n  return [null, null, { payload: { error: String(err), equipmentId } }];\n}\n",
+    "outputs": 3,
+    "timeout": "",
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 430,
+    "y": 280,
+    "wires": [
+      [
+        "platform_route_telemetry_requests"
+      ],
+      [
+        "platform_store_telemetry"
+      ],
+      [
+        "platform_errors"
+      ]
+    ]
+  },
+  {
+    "id": "platform_route_telemetry_requests",
+    "type": "function",
+    "z": "unified_platform_tab",
+    "name": "Route Modbus Requests",
+    "func": "const routing = Object.assign({}, flow.get('telemetryRouteMap') || {});\nconst routeKey = msg.serverKey || msg.equipmentId || msg._reader?.equipmentId;\nconst target = routeKey ? routing[routeKey] : null;\nconst slot = target || routeKey;\nconst outputs = { slot1: 0, slot2: 1, slot3: 2, slot4: 3, slot5: 4, slot6: 5, MBMU: 0, PCS: 1, METER: 2, Meter: 2, Meter2: 3 };\nconst idx = outputs[slot];\nif (idx !== undefined) {\n  const out = new Array(7).fill(null);\n  out[idx] = msg;\n  return out;\n}\nnode.status({ fill: 'yellow', shape: 'ring', text: `no route ${routeKey || '?'}` });\nreturn [null, null, null, null, null, null, { payload: { error: 'NO_MODBUS_ROUTE', routeKey, target, routing } }];\n",
+    "outputs": 7,
+    "timeout": "",
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 720,
+    "y": 280,
+    "wires": [
+      [
+        "platform_tslot1_getter"
+      ],
+      [
+        "platform_tslot2_getter"
+      ],
+      [
+        "platform_tslot3_getter"
+      ],
+      [
+        "platform_tslot4_getter"
+      ],
+      [
+        "platform_tslot5_getter"
+      ],
+      [
+        "platform_tslot6_getter"
+      ],
+      [
+        "platform_errors"
+      ]
+    ]
+  },
+  {
+    "id": "platform_store_telemetry",
+    "type": "function",
+    "z": "unified_platform_tab",
+    "name": "Store telemetry",
+    "func": "const incoming = Array.isArray(msg.payload) ? msg.payload : [];\nconst inferEquipment = () => {\n  if (msg.equipmentId) return msg.equipmentId;\n  if (msg.payload && typeof msg.payload === 'object' && msg.payload.equipment) return msg.payload.equipment;\n  for (const sample of incoming) {\n    if (sample && typeof sample.tagID === 'string' && sample.tagID.includes('.')) {\n      return sample.tagID.split('.')[0];\n    }\n  }\n  return 'UNKNOWN';\n};\n\nfunction getAnyContext(ctx, key) {\n  let value = ctx.get(key);\n  if (value !== undefined && value !== null) return value;\n  try { return ctx.get(key, 'file'); } catch (error) { return value; }\n}\nfunction setBothContext(ctx, key, value) {\n  ctx.set(key, value);\n  try { ctx.set(key, value, 'file'); } catch (error) {}\n}\nfunction sampleValue(samples, tag) {\n  for (const sample of samples || []) {\n    if (!sample || typeof sample.tagID !== 'string') continue;\n    if (sample.tagID === tag || sample.tagID.endsWith('.' + tag)) return sample.value;\n  }\n  return undefined;\n}\nfunction clampBcuCount(value) {\n  const n = Number(value);\n  if (!Number.isFinite(n)) return 0;\n  return Math.max(0, Math.min(32, Math.trunc(n)));\n}\n\nconst equipmentName = inferEquipment();\nconst legacyStore = global.get('NEW_telemetry') || {};\nconst modernStore = global.get('telemetry') || {};\nconst store = { ...legacyStore, ...modernStore };\nconst current = Array.isArray(store[equipmentName]) ? store[equipmentName] : [];\nconst byTag = {};\n\nconst toIsoTs = (value) => {\n  if (typeof value === 'string' && value.trim()) {\n    const parsed = new Date(value);\n    if (!Number.isNaN(parsed.getTime())) return parsed.toISOString();\n  }\n  if (typeof value === 'number' && Number.isFinite(value)) {\n    return new Date(value).toISOString();\n  }\n  return new Date().toISOString();\n};\n\nconst normalizeFlag = (value) => {\n  if (value === true) return 'Yes';\n  if (value === false) return 'No';\n  if (typeof value === 'string') {\n    const norm = value.trim().toLowerCase();\n    if (norm === 'yes' || norm === 'true') return 'Yes';\n    if (norm === 'no' || norm === 'false' || norm === '') return 'No';\n  }\n  return 'No';\n};\n\nfor (const sample of current) {\n  if (sample && sample.tagID) byTag[sample.tagID] = sample;\n}\n\nfor (const sample of incoming) {\n  if (!sample || !sample.tagID) continue;\n  const tagID = sample.tagID.includes('.')\n    ? sample.tagID\n    : `${equipmentName}.${sample.tagID}`;\n\n  byTag[tagID] = {\n    tagID,\n    value: sample.value,\n    timestamp: toIsoTs(sample.timestamp),\n    alarm: normalizeFlag(sample.alarm),\n    supportingTag: normalizeFlag(sample.supportingTag)\n  };\n\n  if (sample.enumLabel !== undefined) byTag[tagID].enumLabel = sample.enumLabel;\n  if (sample.activeBits !== undefined) byTag[tagID].activeBits = sample.activeBits;\n  if (sample.activeLabels !== undefined) byTag[tagID].activeLabels = sample.activeLabels;\n  if (sample.rawValue !== undefined) byTag[tagID].rawValue = sample.rawValue;\n}\n\nstore[equipmentName] = Object.values(byTag).sort((a, b) => a.tagID.localeCompare(b.tagID));\nglobal.set('telemetry', store);\nglobal.set('NEW_telemetry', store);\n\nmsg.payload = {\n  equipment: equipmentName,\n  count: store[equipmentName].length,\n  NEW_telemetry: store[equipmentName]\n};\n\nfunction maybeStartAmpaceBcuReaders() {\n  if (equipmentName !== 'AMPACE') return;\n  const lib = global.get('lib');\n  if (!lib || !lib.telemetry || typeof lib.telemetry.buildAmpaceBcu42kEquipmentConfig !== 'function') return;\n  const bcuCount = clampBcuCount(sampleValue(store.AMPACE, 'BcuCount'));\n  if (!bcuCount) return;\n  const alreadyStarted = flow.get('ampaceBcu42kStartedCount') || 0;\n  if (alreadyStarted === bcuCount) return;\n\n  const config = getAnyContext(flow, 'controlConfig') || getAnyContext(global, 'controlConfig') || getAnyContext(global, 'unifiedControlConfig') || getAnyContext(global, 'siteConfig') || {};\n  const readerConfig = getAnyContext(flow, 'telemetryReaderConfig') || getAnyContext(global, 'telemetryReaderConfig') || [];\n  const ampaceReader = Array.isArray(readerConfig) ? readerConfig.find((reader) => reader && reader.equipmentId === 'AMPACE') : null;\n  const route = ampaceReader?.route || 'AMPACE';\n  const unitId = Number(ampaceReader?.unitId || 1);\n  const generated = lib.telemetry.buildAmpaceBcu42kEquipmentConfig({\n    count: bcuCount,\n    route,\n    modelName: config?.system?.systemProfile || 'eSpire Mini AMPACE BCU',\n    manufacturer: 'Ampace'\n  });\n\n  const equipmentConfig = Object.assign({}, getAnyContext(flow, 'telemetryEquipmentConfig') || {}, generated);\n  const result = lib.telemetry.buildSs40kLookup(equipmentConfig);\n  setBothContext(flow, 'telemetryEquipmentConfig', equipmentConfig);\n  setBothContext(global, 'ss40kLookup', result.lookup);\n  setBothContext(global, 'ss40kEquipmentToProfile', result.equipmentToProfile);\n  setBothContext(global, 'ss40kModelIndexMap', result.modelIndexMap);\n  setBothContext(flow, 'ampaceBcu42kStartedCount', bcuCount);\n\n  const compileMessages = [];\n  const startMessages = [];\n  for (const [equipmentId, entry] of Object.entries(generated)) {\n    compileMessages.push({\n      payload: { cmd: 'compile', profileName: entry.profileName, template: entry.template, instance: { equipmentId, serverKey: route, unitId } },\n      equipmentId,\n      serverKey: route\n    });\n    startMessages.push({ payload: { cmd: 'start', equipmentId }, equipmentId, serverKey: route });\n  }\n\n  node.status({ fill: 'green', shape: 'dot', text: `starting ${bcuCount} BCU 42K reader(s)` });\n  node.send([null, null, { payload: { state: 'ampace-bcu42k-derived', bcuCount, route, equipmentIds: Object.keys(generated) } }]);\n  for (const message of compileMessages) node.send([null, message, null]);\n  setTimeout(() => {\n    for (const message of startMessages) node.send([null, message, null]);\n  }, 1500);\n}\n\nmaybeStartAmpaceBcuReaders();\nreturn [msg, null, null];\n",
+    "outputs": 3,
+    "timeout": "",
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 720,
+    "y": 400,
+    "wires": [
+      [
+        "platform_debug"
+      ],
+      [
+        "platform_telemetry_runtime"
+      ],
+      [
+        "platform_errors"
+      ]
+    ]
+  },
+  {
+    "id": "platform_read_telemetry",
+    "type": "function",
+    "z": "unified_platform_tab",
+    "name": "Read telemetry",
+    "func": "const requested = msg.equipmentId || msg.payload?.equipment || 'MBMU';\nconst store = global.get('NEW_telemetry') || global.get('telemetry') || {};\nmsg.payload = {\n  equipment: requested,\n  NEW_telemetry: Array.isArray(store[requested]) ? store[requested] : []\n};\nreturn msg;\n",
+    "outputs": 1,
+    "timeout": "",
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 430,
+    "y": 400,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "platform_build_lookup",
+    "type": "function",
+    "z": "unified_platform_tab",
+    "name": "Build Template Lookup",
+    "func": "const lib = global.get('lib');\nif (!lib || !lib.telemetry || typeof lib.telemetry.buildSs40kLookup !== 'function') {\n  node.status({ fill: 'red', shape: 'ring', text: 'ss40k API missing' });\n  return { payload: { error: 'SS40K_API_MISSING' } };\n}\n\nconst equipmentConfig = flow.get('telemetryEquipmentConfig') || {\n  PCS: { profileName: 'Delta_280_ss40k', route: 'slot2' },\n  MBMU: { profileName: 'MBMU_280_ss40k', route: 'slot1' }\n};\nconst result = lib.telemetry.buildSs40kLookup(equipmentConfig);\n\nglobal.set('ss40kLookup', result.lookup);\nglobal.set('ss40kEquipmentToProfile', result.equipmentToProfile);\nglobal.set('ss40kModelIndexMap', result.modelIndexMap);\nflow.set('telemetryRouteMap', result.routeMap || flow.get('telemetryRouteMap') || {});\n\nnode.status({ fill: 'green', shape: 'dot', text: `${Object.keys(result.lookup).length} mapped tags` });\nmsg.payload = {\n  lookupCount: Object.keys(result.lookup).length,\n  equipmentToProfile: result.equipmentToProfile,\n  routeMap: flow.get('telemetryRouteMap'),\n  modelIndexMap: result.modelIndexMap,\n  sample: Object.fromEntries(Object.entries(result.lookup).slice(0, 10))\n};\nreturn msg;\n",
+    "outputs": 1,
+    "timeout": "",
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 430,
+    "y": 740,
+    "wires": [
+      [
+        "platform_debug"
+      ]
+    ]
+  },
+  {
+    "id": "platform_build_cloud_payloads",
+    "type": "function",
+    "z": "unified_platform_tab",
+    "name": "Build Fixed Payloads",
+    "func": "const lib = global.get('lib');\nif (!lib || !lib.telemetry || typeof lib.telemetry.buildSs40kFixedPayloads !== 'function') {\n  node.status({ fill: 'red', shape: 'ring', text: 'ss40k API missing' });\n  return [null, { payload: { error: 'SS40K_API_MISSING' } }, null];\n}\n\nconst lookup = global.get('ss40kLookup') || {};\nconst telemetry = global.get('NEW_telemetry') || global.get('telemetry') || {};\nconst config = flow.get('controlConfig') || global.get('controlConfig') || global.get('unifiedControlConfig') || {};\nif (!Object.keys(lookup).length) {\n  node.status({ fill: 'yellow', shape: 'ring', text: 'lookup missing' });\n  return [null, { payload: { error: 'SS40K_LOOKUP_MISSING' } }, null];\n}\n\nconst thingId = config?.cloud?.thingId || config?.cloud?.gsn || config?.site?.thingId || config?.site?.gsn || global.get('thingId') || '25000752';\nconst topic = config?.cloud?.telemetryTopic || `fort/v1/things/${thingId}/telem`;\nconst fixedSerialNumber = config?.cloud?.serialNumber || config?.site?.serialNumber || global.get('fixedSerialNumber');\nconst messages = lib.telemetry.buildSs40kFixedPayloads({ lookup, telemetry, topic, version: '3.0', fixedSerialNumber });\n\nnode.status({ fill: 'green', shape: 'dot', text: `${messages.length} payloads` });\nreturn [messages, null, { payload: messages.map((msg) => msg.ss40k) }];\n",
+    "outputs": 3,
+    "timeout": "",
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 430,
+    "y": 820,
+    "wires": [
+      [
+        "platform_prepare_aws_output"
+      ],
+      [
+        "platform_errors"
+      ],
+      [
+        "platform_debug"
+      ]
+    ]
+  },
+  {
+    "id": "platform_read_lookup",
+    "type": "function",
+    "z": "unified_platform_tab",
+    "name": "Read Lookup Cache",
+    "func": "msg.payload = {\n  equipmentToProfile: global.get('ss40kEquipmentToProfile') || {},\n  modelIndexMap: global.get('ss40kModelIndexMap') || {},\n  lookup: global.get('ss40kLookup') || {}\n};\nreturn msg;\n",
+    "outputs": 1,
+    "timeout": "",
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 720,
+    "y": 740,
+    "wires": [
+      [
+        "platform_debug"
+      ]
+    ]
+  },
+  {
+    "id": "platform_prepare_aws_output",
+    "type": "function",
+    "z": "unified_platform_tab",
+    "name": "Prepare for AWSFeedModule",
+    "func": "const payload = msg.payload;\nconst timestamp = msg.timestamp || new Date().toISOString();\n\nif (payload && typeof payload === 'object' && !Array.isArray(payload)) {\n  for (const key of Object.keys(payload)) {\n    const record = payload[key];\n    if (record && typeof record === 'object' && !Array.isArray(record) && !record.timestamp) {\n      record.timestamp = timestamp;\n    }\n  }\n}\n\nmsg.topic = msg.topic || global.get('telemetryTopic') || 'fort/v1/things/25000752/telem';\nmsg.payload = payload;\nmsg.timestamp = timestamp;\nmsg.awsOutput = 'awsOutput';\nreturn msg;",
+    "outputs": 1,
+    "timeout": "",
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 720,
+    "y": 820,
+    "wires": [
+      [
+        "platform_debug",
+        "platform_aws_module_output"
+      ]
+    ]
+  },
+  {
+    "id": "platform_cloud_payload_tick",
+    "type": "inject",
+    "z": "unified_platform_tab",
+    "name": "Build cloud payloads every 60s",
+    "props": [
+      {
+        "p": "payload"
+      }
+    ],
+    "repeat": "60",
+    "crontab": "",
+    "once": true,
+    "onceDelay": "20",
+    "topic": "",
+    "payload": "{}",
+    "payloadType": "json",
+    "x": 160,
+    "y": 820,
+    "wires": [
+      [
+        "platform_build_cloud_payloads"
+      ]
+    ]
+  },
+  {
+    "id": "platform_lookup_tick",
+    "type": "inject",
+    "z": "unified_platform_tab",
+    "name": "Build lookup after setup",
+    "props": [
+      {
+        "p": "payload"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": true,
+    "onceDelay": "8",
+    "topic": "",
+    "payload": "{}",
+    "payloadType": "json",
+    "x": 160,
+    "y": 740,
+    "wires": [
+      [
+        "platform_build_lookup"
+      ]
+    ]
+  },
+  {
+    "id": "platform_aws_module_output",
+    "type": "moduleoutput",
+    "z": "unified_platform_tab",
+    "name": "AWSFeedModule output",
+    "x": 1010,
+    "y": 820,
+    "wires": [],
+    "client": "27fda477.05255c",
+    "output": "awsOutput"
+  },
+  {
+    "id": "platform_tslot1_client",
+    "type": "modbus-client",
+    "name": "telemetry_slot_1",
+    "clienttype": "tcp",
+    "bufferCommands": true,
+    "stateLogEnabled": false,
+    "queueLogEnabled": false,
+    "failureLogEnabled": false,
+    "tcpHost": "127.0.0.1",
+    "tcpPort": "502",
+    "tcpType": "DEFAULT",
+    "serialPort": "/dev/ttyUSB",
+    "serialType": "RTU-BUFFERD",
+    "serialBaudrate": "9600",
+    "serialDatabits": "8",
+    "serialStopbits": "1",
+    "serialParity": "none",
+    "serialConnectionDelay": "100",
+    "serialAsciiResponseStartDelimiter": "",
+    "unit_id": 1,
+    "commandDelay": 1,
+    "clientTimeout": 1500,
+    "reconnectOnTimeout": true,
+    "reconnectTimeout": 2000,
+    "parallelUnitIdsAllowed": true
+  },
+  {
+    "id": "platform_tslot1_connector",
+    "type": "modbus-flex-connector",
+    "z": "unified_platform_tab",
+    "name": "Configure telemetry slot 1",
+    "maxReconnectsPerMinute": 10,
+    "emptyQueue": true,
+    "showStatusActivities": false,
+    "showErrors": true,
+    "server": "platform_tslot1_client",
+    "x": 1010,
+    "y": 100,
+    "wires": [
+      [
+        "platform_errors"
+      ]
+    ]
+  },
+  {
+    "id": "platform_tslot1_getter",
+    "type": "modbus-flex-getter",
+    "z": "unified_platform_tab",
+    "name": "Telemetry Slot 1 Getter",
+    "showStatusActivities": false,
+    "showErrors": true,
+    "showWarnings": true,
+    "logIOActivities": false,
+    "server": "platform_tslot1_client",
+    "useIOFile": false,
+    "ioFile": "",
+    "useIOForPayload": false,
+    "emptyMsgOnFail": false,
+    "keepMsgProperties": true,
+    "delayOnStart": false,
+    "startDelayTime": "",
+    "x": 1010,
+    "y": 265,
+    "wires": [
+      [
+        "platform_telemetry_runtime"
+      ],
+      [
+        "platform_errors"
+      ]
+    ]
+  },
+  {
+    "id": "platform_tslot2_client",
+    "type": "modbus-client",
+    "name": "telemetry_slot_2",
+    "clienttype": "tcp",
+    "bufferCommands": true,
+    "stateLogEnabled": false,
+    "queueLogEnabled": false,
+    "failureLogEnabled": false,
+    "tcpHost": "127.0.0.1",
+    "tcpPort": "502",
+    "tcpType": "DEFAULT",
+    "serialPort": "/dev/ttyUSB",
+    "serialType": "RTU-BUFFERD",
+    "serialBaudrate": "9600",
+    "serialDatabits": "8",
+    "serialStopbits": "1",
+    "serialParity": "none",
+    "serialConnectionDelay": "100",
+    "serialAsciiResponseStartDelimiter": "",
+    "unit_id": 1,
+    "commandDelay": 1,
+    "clientTimeout": 1500,
+    "reconnectOnTimeout": true,
+    "reconnectTimeout": 2000,
+    "parallelUnitIdsAllowed": true
+  },
+  {
+    "id": "platform_tslot2_connector",
+    "type": "modbus-flex-connector",
+    "z": "unified_platform_tab",
+    "name": "Configure telemetry slot 2",
+    "maxReconnectsPerMinute": 10,
+    "emptyQueue": true,
+    "showStatusActivities": false,
+    "showErrors": true,
+    "server": "platform_tslot2_client",
+    "x": 1010,
+    "y": 140,
+    "wires": [
+      [
+        "platform_errors"
+      ]
+    ]
+  },
+  {
+    "id": "platform_tslot2_getter",
+    "type": "modbus-flex-getter",
+    "z": "unified_platform_tab",
+    "name": "Telemetry Slot 2 Getter",
+    "showStatusActivities": false,
+    "showErrors": true,
+    "showWarnings": true,
+    "logIOActivities": false,
+    "server": "platform_tslot2_client",
+    "useIOFile": false,
+    "ioFile": "",
+    "useIOForPayload": false,
+    "emptyMsgOnFail": false,
+    "keepMsgProperties": true,
+    "delayOnStart": false,
+    "startDelayTime": "",
+    "x": 1010,
+    "y": 310,
+    "wires": [
+      [
+        "platform_telemetry_runtime"
+      ],
+      [
+        "platform_errors"
+      ]
+    ]
+  },
+  {
+    "id": "platform_tslot3_client",
+    "type": "modbus-client",
+    "name": "telemetry_slot_3",
+    "clienttype": "tcp",
+    "bufferCommands": true,
+    "stateLogEnabled": false,
+    "queueLogEnabled": false,
+    "failureLogEnabled": false,
+    "tcpHost": "127.0.0.1",
+    "tcpPort": "502",
+    "tcpType": "DEFAULT",
+    "serialPort": "/dev/ttyUSB",
+    "serialType": "RTU-BUFFERD",
+    "serialBaudrate": "9600",
+    "serialDatabits": "8",
+    "serialStopbits": "1",
+    "serialParity": "none",
+    "serialConnectionDelay": "100",
+    "serialAsciiResponseStartDelimiter": "",
+    "unit_id": 1,
+    "commandDelay": 1,
+    "clientTimeout": 1500,
+    "reconnectOnTimeout": true,
+    "reconnectTimeout": 2000,
+    "parallelUnitIdsAllowed": true
+  },
+  {
+    "id": "platform_tslot3_connector",
+    "type": "modbus-flex-connector",
+    "z": "unified_platform_tab",
+    "name": "Configure telemetry slot 3",
+    "maxReconnectsPerMinute": 10,
+    "emptyQueue": true,
+    "showStatusActivities": false,
+    "showErrors": true,
+    "server": "platform_tslot3_client",
+    "x": 1010,
+    "y": 180,
+    "wires": [
+      [
+        "platform_errors"
+      ]
+    ]
+  },
+  {
+    "id": "platform_tslot3_getter",
+    "type": "modbus-flex-getter",
+    "z": "unified_platform_tab",
+    "name": "Telemetry Slot 3 Getter",
+    "showStatusActivities": false,
+    "showErrors": true,
+    "showWarnings": true,
+    "logIOActivities": false,
+    "server": "platform_tslot3_client",
+    "useIOFile": false,
+    "ioFile": "",
+    "useIOForPayload": false,
+    "emptyMsgOnFail": false,
+    "keepMsgProperties": true,
+    "delayOnStart": false,
+    "startDelayTime": "",
+    "x": 1010,
+    "y": 355,
+    "wires": [
+      [
+        "platform_telemetry_runtime"
+      ],
+      [
+        "platform_errors"
+      ]
+    ]
+  },
+  {
+    "id": "platform_tslot4_client",
+    "type": "modbus-client",
+    "name": "telemetry_slot_4",
+    "clienttype": "tcp",
+    "bufferCommands": true,
+    "stateLogEnabled": false,
+    "queueLogEnabled": false,
+    "failureLogEnabled": false,
+    "tcpHost": "127.0.0.1",
+    "tcpPort": "502",
+    "tcpType": "DEFAULT",
+    "serialPort": "/dev/ttyUSB",
+    "serialType": "RTU-BUFFERD",
+    "serialBaudrate": "9600",
+    "serialDatabits": "8",
+    "serialStopbits": "1",
+    "serialParity": "none",
+    "serialConnectionDelay": "100",
+    "serialAsciiResponseStartDelimiter": "",
+    "unit_id": 1,
+    "commandDelay": 1,
+    "clientTimeout": 1500,
+    "reconnectOnTimeout": true,
+    "reconnectTimeout": 2000,
+    "parallelUnitIdsAllowed": true
+  },
+  {
+    "id": "platform_tslot4_connector",
+    "type": "modbus-flex-connector",
+    "z": "unified_platform_tab",
+    "name": "Configure telemetry slot 4",
+    "maxReconnectsPerMinute": 10,
+    "emptyQueue": true,
+    "showStatusActivities": false,
+    "showErrors": true,
+    "server": "platform_tslot4_client",
+    "x": 1010,
+    "y": 220,
+    "wires": [
+      [
+        "platform_errors"
+      ]
+    ]
+  },
+  {
+    "id": "platform_tslot4_getter",
+    "type": "modbus-flex-getter",
+    "z": "unified_platform_tab",
+    "name": "Telemetry Slot 4 Getter",
+    "showStatusActivities": false,
+    "showErrors": true,
+    "showWarnings": true,
+    "logIOActivities": false,
+    "server": "platform_tslot4_client",
+    "useIOFile": false,
+    "ioFile": "",
+    "useIOForPayload": false,
+    "emptyMsgOnFail": false,
+    "keepMsgProperties": true,
+    "delayOnStart": false,
+    "startDelayTime": "",
+    "x": 1010,
+    "y": 400,
+    "wires": [
+      [
+        "platform_telemetry_runtime"
+      ],
+      [
+        "platform_errors"
+      ]
+    ]
+  },
+  {
+    "id": "platform_tslot5_client",
+    "type": "modbus-client",
+    "name": "telemetry_slot_5",
+    "clienttype": "tcp",
+    "bufferCommands": true,
+    "stateLogEnabled": false,
+    "queueLogEnabled": false,
+    "failureLogEnabled": false,
+    "tcpHost": "127.0.0.1",
+    "tcpPort": "502",
+    "tcpType": "DEFAULT",
+    "serialPort": "/dev/ttyUSB",
+    "serialType": "RTU-BUFFERD",
+    "serialBaudrate": "9600",
+    "serialDatabits": "8",
+    "serialStopbits": "1",
+    "serialParity": "none",
+    "serialConnectionDelay": "100",
+    "serialAsciiResponseStartDelimiter": "",
+    "unit_id": 1,
+    "commandDelay": 1,
+    "clientTimeout": 1500,
+    "reconnectOnTimeout": true,
+    "reconnectTimeout": 2000,
+    "parallelUnitIdsAllowed": true
+  },
+  {
+    "id": "platform_tslot5_connector",
+    "type": "modbus-flex-connector",
+    "z": "unified_platform_tab",
+    "name": "Configure telemetry slot 5",
+    "maxReconnectsPerMinute": 10,
+    "emptyQueue": true,
+    "showStatusActivities": false,
+    "showErrors": true,
+    "server": "platform_tslot5_client",
+    "x": 1010,
+    "y": 260,
+    "wires": [
+      [
+        "platform_errors"
+      ]
+    ]
+  },
+  {
+    "id": "platform_tslot5_getter",
+    "type": "modbus-flex-getter",
+    "z": "unified_platform_tab",
+    "name": "Telemetry Slot 5 Getter",
+    "showStatusActivities": false,
+    "showErrors": true,
+    "showWarnings": true,
+    "logIOActivities": false,
+    "server": "platform_tslot5_client",
+    "useIOFile": false,
+    "ioFile": "",
+    "useIOForPayload": false,
+    "emptyMsgOnFail": false,
+    "keepMsgProperties": true,
+    "delayOnStart": false,
+    "startDelayTime": "",
+    "x": 1010,
+    "y": 445,
+    "wires": [
+      [
+        "platform_telemetry_runtime"
+      ],
+      [
+        "platform_errors"
+      ]
+    ]
+  },
+  {
+    "id": "platform_tslot6_client",
+    "type": "modbus-client",
+    "name": "telemetry_slot_6",
+    "clienttype": "tcp",
+    "bufferCommands": true,
+    "stateLogEnabled": false,
+    "queueLogEnabled": false,
+    "failureLogEnabled": false,
+    "tcpHost": "127.0.0.1",
+    "tcpPort": "502",
+    "tcpType": "DEFAULT",
+    "serialPort": "/dev/ttyUSB",
+    "serialType": "RTU-BUFFERD",
+    "serialBaudrate": "9600",
+    "serialDatabits": "8",
+    "serialStopbits": "1",
+    "serialParity": "none",
+    "serialConnectionDelay": "100",
+    "serialAsciiResponseStartDelimiter": "",
+    "unit_id": 1,
+    "commandDelay": 1,
+    "clientTimeout": 1500,
+    "reconnectOnTimeout": true,
+    "reconnectTimeout": 2000,
+    "parallelUnitIdsAllowed": true
+  },
+  {
+    "id": "platform_tslot6_connector",
+    "type": "modbus-flex-connector",
+    "z": "unified_platform_tab",
+    "name": "Configure telemetry slot 6",
+    "maxReconnectsPerMinute": 10,
+    "emptyQueue": true,
+    "showStatusActivities": false,
+    "showErrors": true,
+    "server": "platform_tslot6_client",
+    "x": 1010,
+    "y": 300,
+    "wires": [
+      [
+        "platform_errors"
+      ]
+    ]
+  },
+  {
+    "id": "platform_tslot6_getter",
+    "type": "modbus-flex-getter",
+    "z": "unified_platform_tab",
+    "name": "Telemetry Slot 6 Getter",
+    "showStatusActivities": false,
+    "showErrors": true,
+    "showWarnings": true,
+    "logIOActivities": false,
+    "server": "platform_tslot6_client",
+    "useIOFile": false,
+    "ioFile": "",
+    "useIOForPayload": false,
+    "emptyMsgOnFail": false,
+    "keepMsgProperties": true,
+    "delayOnStart": false,
+    "startDelayTime": "",
+    "x": 1010,
+    "y": 490,
+    "wires": [
+      [
+        "platform_telemetry_runtime"
+      ],
+      [
+        "platform_errors"
+      ]
+    ]
+  },
+  {
+    "id": "platform_setup_writers",
+    "type": "function",
+    "z": "unified_platform_tab",
+    "name": "Setup writers from site config",
+    "func": "const lib = global.get('lib');\nif (!lib || !lib.writer || typeof lib.writer.buildTemplateWriteProfile !== 'function') {\n  node.status({ fill: 'red', shape: 'ring', text: 'writer API missing' });\n  return [null, null, { payload: { error: 'WRITER_API_MISSING' } }];\n}\nfunction getAnyContext(ctx, key) {\n  let value = ctx.get(key);\n  if (value !== undefined && value !== null) return value;\n  try { return ctx.get(key, 'file'); } catch (error) { return value; }\n}\nfunction setBothContext(ctx, key, value) {\n  ctx.set(key, value);\n  try { ctx.set(key, value, 'file'); } catch (error) {}\n}\nfunction asNumber(value, fallback) { const n = Number(value); return Number.isFinite(n) ? n : fallback; }\nfunction normalizeProfile(profile) { if (!profile) return ''; const s = String(profile); if (s === 'udt_eGauge_V1') return 'eGauge_280_ss40k'; return s; }\nfunction assetLookup(config) { const byKey = {}; for (const asset of config?.network?.assets || []) { if (!asset || typeof asset !== 'object') continue; if (asset.id) byKey[String(asset.id)] = asset; if (asset.role) byKey[String(asset.role)] = asset; } return byKey; }\nfunction ipOf(source, fallback) { return String((source && (source.ip || source.host || source.tcpHost)) || fallback || ''); }\nfunction portOf(source, fallback) { return asNumber(source && (source.port || source.tcpPort), fallback || 502); }\nfunction unitOf(source, fallback) { return asNumber(source && (source.unitId || source.unit_id), fallback || 1); }\nfunction productDefaultIp(profile, equipmentId) {\n  const id = String(equipmentId || '');\n  if (String(profile || '').startsWith('MINI-')) {\n    if (id === 'AMPACE') return '192.168.1.100';\n    if (['PCS', 'Load', 'PVDC1', 'PVDC2', 'PVDC3'].includes(id)) return '192.168.1.10';\n  }\n  if (String(profile || '') === 'eSpire280') {\n    if (id === 'PCS') return '192.168.1.136';\n    if (id === 'MBMU') return '192.168.1.50';\n  }\n  return '';\n}\nfunction productIp(profile, equipmentId, source, asset, fallback) {\n  return ipOf(source, ipOf(asset, productDefaultIp(profile, equipmentId) || fallback));\n}\nfunction addTarget(targets, target) {\n  if (!target || !target.equipmentId || !target.profileName || !target.ip) return;\n  if (targets.some((existing) => existing.equipmentId === target.equipmentId)) return;\n  targets.push({ equipmentId: String(target.equipmentId), profileName: normalizeProfile(target.profileName), ip: ipOf(target, ''), port: portOf(target, 502), unitId: unitOf(target, 1), route: String(target.route || target.serverKey || target.equipmentId) });\n}\nfunction buildTargets(config) {\n  const targets = [];\n  const profile = String(config?.system?.systemProfile || 'eSpire280');\n  const isMini = profile.startsWith('MINI-');\n  const sources = config?.signalMapping?.sources || {};\n  const assets = assetLookup(config);\n  const pcsAsset = assets.PCS || assets.pcs || {};\n  const bmsAsset = assets.AMPACE || assets.ampace || assets.BMS || assets.bms || assets.MBMU || assets.mbmu || {};\n  const pcsSource = sources.PCS || {};\n  const pcsIp = productIp(profile, 'PCS', pcsSource, pcsAsset, config?.network?.controller?.modbusServer?.ip);\n  const pcsPort = portOf(pcsSource, portOf(pcsAsset, config?.network?.controller?.modbusServer?.port || 502));\n  const pcsUnit = unitOf(pcsSource, unitOf(pcsAsset, 1));\n  if (Array.isArray(config?.writerTargets)) {\n    for (const target of config.writerTargets) addTarget(targets, target);\n    return targets;\n  }\n  if (isMini) {\n    addTarget(targets, { equipmentId: 'PCS', profileName: 'Sinexcel_Mini_PCS_ss40k', ip: pcsIp, port: pcsPort, unitId: pcsUnit, route: 'PCS' });\n    const dcPvKw = asNumber(String(profile).split('-')[2], 0);\n    const modules = Math.max(0, Math.min(3, Math.round(dcPvKw / 45)));\n    for (let i = 1; i <= modules; i++) addTarget(targets, { equipmentId: 'PVDC' + i, profileName: 'Sinexcel_Mini_PVDC_Module' + i + '_ss40k', ip: productIp(profile, 'PVDC' + i, sources['PVDC' + i], assets['PVDC' + i], pcsIp), port: portOf(assets['PVDC' + i], pcsPort), unitId: unitOf(assets['PVDC' + i], 1), route: 'PVDC' + i });\n    addTarget(targets, { equipmentId: 'AMPACE', profileName: 'AMPACE_Mini_ss40k', ip: productIp(profile, 'AMPACE', sources.AMPACE, bmsAsset, pcsIp), port: portOf(sources.AMPACE, pcsPort), unitId: unitOf(sources.AMPACE, 1), route: sources.AMPACE?.route || 'AMPACE' });\n  } else {\n    addTarget(targets, { equipmentId: 'PCS', profileName: 'Delta_280_ss40k', ip: pcsIp, port: pcsPort, unitId: pcsUnit, route: 'PCS' });\n    addTarget(targets, { equipmentId: 'MBMU', profileName: 'MBMU_280_ss40k', ip: productIp(profile, 'MBMU', sources.MBMU, bmsAsset, pcsIp), port: portOf(sources.MBMU, pcsPort), unitId: unitOf(sources.MBMU, 1), route: sources.MBMU?.route || 'MBMU' });\n  }\n  const productOwned = new Set(isMini ? ['PCS', 'MBMU', 'AMPACE', 'Load', 'PVDC1', 'PVDC2', 'PVDC3'] : ['PCS', 'MBMU']);\n  for (let i = 0; i < (config?.pv?.acInverters || []).length; i++) {\n    const inv = config.pv.acInverters[i];\n    const equipmentId = inv.id || `${inv.type || 'PV'}${i + 1}`;\n    addTarget(targets, { equipmentId, profileName: inv.modbusProfile || inv.profileName || inv.profile, ip: inv.ip, port: inv.port, unitId: inv.unitId || 1, route: equipmentId });\n  }\n  for (const [equipmentId, source] of Object.entries(sources)) {\n    if (productOwned.has(equipmentId)) continue;\n    const profileName = source.profileName || source.profile || source.modbusProfile;\n    const ip = ipOf(source, '');\n    if (!profileName || !ip) continue;\n    try {\n      const compiled = lib.writer.buildTemplateWriteProfile(normalizeProfile(profileName), { equipmentId, serverKey: equipmentId, unitId: unitOf(source, 1) });\n      if (compiled.profile.tagsById.size > 0) addTarget(targets, { equipmentId, profileName, ip, port: portOf(source, 502), unitId: unitOf(source, 1), route: source.route || equipmentId });\n    } catch (error) {}\n  }\n  return targets;\n}\nconst config = msg.controlConfig || msg.payload?.controlConfig || getAnyContext(flow, 'controlConfig') || getAnyContext(global, 'controlConfig') || getAnyContext(global, 'unifiedControlConfig') || getAnyContext(global, 'siteConfig') || {};\nconst targets = buildTargets(config);\nconst slotNames = ['slot1','slot2','slot3','slot4','slot5','slot6'];\nconst routeMap = {};\nconst endpointSlots = {};\nconst endpointTargets = [];\nconst compileMessages = [];\nconst connectorMessages = [];\nfunction endpointKey(item) { return [item.ip, item.port || 502, item.unitId || 1].join(':'); }\nfunction slotForEndpoint(item) {\n  const key = endpointKey(item);\n  if (!endpointSlots[key]) {\n    const slot = slotNames[Object.keys(endpointSlots).length];\n    if (!slot) return null;\n    endpointSlots[key] = slot;\n    endpointTargets.push(Object.assign({}, item, { route: slot, groupedEquipmentIds: [] }));\n  }\n  return endpointSlots[key];\n}\nfor (let i = 0; i < targets.length; i++) {\n  const target = targets[i];\n  const slot = slotForEndpoint(target);\n  if (!slot) continue;\n  const grouped = endpointTargets.find((entry) => entry.route === slot);\n  if (grouped) grouped.groupedEquipmentIds.push(target.equipmentId);\n  routeMap[target.route] = slot;\n  routeMap[target.equipmentId] = slot;\n  // Production uses hard-coded modbus-client slot IPs patched from site config before restart.\n  compileMessages.push({ payload: { cmd: 'compile', profileName: target.profileName, instance: { equipmentId: target.equipmentId, serverKey: slot, unitId: target.unitId } }, equipmentId: target.equipmentId, serverKey: slot });\n}\nsetBothContext(flow, 'writerRouteMap', routeMap);\nsetBothContext(flow, 'writerTargets', targets);\nsetBothContext(global, 'writerTargets', targets);\nsetBothContext(global, 'writerRouteMap', routeMap);\nsetBothContext(flow, 'writerEndpointTargets', endpointTargets);\nsetBothContext(global, 'writerEndpointTargets', endpointTargets);\nnode.status({ fill: targets.length ? 'green' : 'yellow', shape: targets.length ? 'dot' : 'ring', text: `${targets.length} writer target(s) / ${endpointTargets.length} endpoint(s): ${targets.map((t) => t.equipmentId).join(',')}` });\nreturn [compileMessages, connectorMessages, { payload: { writerTargets: targets, writerEndpointTargets: endpointTargets, writerRouteMap: routeMap, profile: config?.system?.systemProfile } }];",
+    "outputs": 3,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 430,
+    "y": 500,
+    "wires": [
+      [
+        "platform_writer_runtime"
+      ],
+      [
+        "platform_route_writer_connectors"
+      ],
+      [
+        "platform_debug"
+      ]
+    ]
+  },
+  {
+    "id": "platform_writer_runtime",
+    "type": "function",
+    "z": "unified_platform_tab",
+    "name": "Writer Runtime",
+    "func": "const lib = global.get('lib');\nif (!lib || !lib.writer || typeof lib.writer.handleWriterMessage !== 'function') {\n  node.status({ fill: 'red', shape: 'ring', text: 'writer API missing' });\n  return [null, null, { payload: { error: 'WRITER_API_MISSING' } }];\n}\n\nconst writer = lib.writer;\nconst state = flow.get('platformWriterState') || writer.createWriterRuntimeState();\nconst incoming = msg.payload && typeof msg.payload === 'object' && !Array.isArray(msg.payload)\n  ? { ...msg, ...msg.payload }\n  : msg;\n\nconst asNodeRedMsg = (value) => {\n  if (value == null) return null;\n  if (typeof value === 'object' && !Array.isArray(value) && Object.prototype.hasOwnProperty.call(value, 'payload')) {\n    return value;\n  }\n  return { payload: value };\n};\n\nconst emittedWrites = [];\nconst envCfg = {\n  MODBUS_ZERO_BASED: false,\n  maxRegistersPerFrame: 120,\n  maxCoilsPerFrame: 120\n};\n\ntry {\n  const result = writer.handleWriterMessage(\n    incoming,\n    envCfg,\n    state,\n    (o1) => {\n      if (o1 != null) emittedWrites.push(asNodeRedMsg(o1));\n    }\n  );\n\n  flow.set('platformWriterState', result.state);\n  node.status({ fill: 'green', shape: 'dot', text: incoming.cmd || 'write' });\n\n  return [\n    emittedWrites.length ? emittedWrites : null,\n    emittedWrites.length ? { payload: emittedWrites } : null,\n    asNodeRedMsg(result.out3)\n  ];\n} catch (err) {\n  node.status({ fill: 'red', shape: 'ring', text: 'runtime threw' });\n  return [null, null, { payload: { error: String(err) } }];\n}\n",
+    "outputs": 3,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 720,
+    "y": 620,
+    "wires": [
+      [
+        "platform_route_writer_requests"
+      ],
+      [
+        "platform_writer_diag"
+      ],
+      [
+        "platform_errors"
+      ]
+    ]
+  },
+  {
+    "id": "platform_route_writer_requests",
+    "type": "function",
+    "z": "unified_platform_tab",
+    "name": "Route writer requests",
+    "func": "const routing = Object.assign({}, flow.get('writerRouteMap') || global.get('writerRouteMap') || {});\nconst routeKey = msg.serverKey || msg.equipmentId || msg.topic || msg._writer?.equipmentId;\nconst target = routeKey ? routing[routeKey] : null;\nconst slot = target || routeKey;\nconst outputs = { slot1: 0, slot2: 1, slot3: 2, slot4: 3, slot5: 4, slot6: 5, PCS: 0, MBMU: 1, PVDC1: 0, PVDC2: 0, PVDC3: 0 };\nconst idx = outputs[slot];\nif (idx !== undefined) {\n  const out = new Array(7).fill(null);\n  out[idx] = msg;\n  return out;\n}\nnode.status({ fill: 'yellow', shape: 'ring', text: `no writer route ${routeKey || '?'}` });\nreturn [null, null, null, null, null, null, { payload: { error: 'NO_WRITER_ROUTE', routeKey, target, routing, msg } }];",
+    "outputs": 7,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 1010,
+    "y": 620,
+    "wires": [
+      [
+        "platform_wslot1_write"
+      ],
+      [
+        "platform_wslot2_write"
+      ],
+      [
+        "platform_wslot3_write"
+      ],
+      [
+        "platform_wslot4_write"
+      ],
+      [
+        "platform_wslot5_write"
+      ],
+      [
+        "platform_wslot6_write"
+      ],
+      [
+        "platform_errors"
+      ]
+    ]
+  },
+  {
+    "id": "platform_route_writer_connectors",
+    "type": "function",
+    "z": "unified_platform_tab",
+    "name": "Route writer connector setup",
+    "func": "const slot = msg.slot || msg.route || msg.equipmentId;\nconst outputs = { slot1: 0, slot2: 1, slot3: 2, slot4: 3, slot5: 4, slot6: 5 };\nconst idx = outputs[slot];\nif (idx === undefined) {\n  node.status({ fill: 'yellow', shape: 'ring', text: `no writer connector slot ${slot || '?'}` });\n  return [null, null, null, null, null, null, { payload: { error: 'NO_WRITER_CONNECTOR_SLOT', slot, msg } }];\n}\nconst out = new Array(7).fill(null);\nout[idx] = msg;\nreturn out;",
+    "outputs": 7,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 720,
+    "y": 500,
+    "wires": [
+      [
+        "platform_wslot1_connector"
+      ],
+      [
+        "platform_wslot2_connector"
+      ],
+      [
+        "platform_wslot3_connector"
+      ],
+      [
+        "platform_wslot4_connector"
+      ],
+      [
+        "platform_wslot5_connector"
+      ],
+      [
+        "platform_wslot6_connector"
+      ],
+      [
+        "platform_errors"
+      ]
+    ]
+  },
+  {
+    "id": "platform_wslot1_client",
+    "type": "modbus-client",
+    "name": "writer_slot_1",
+    "clienttype": "tcp",
+    "bufferCommands": true,
+    "stateLogEnabled": false,
+    "queueLogEnabled": false,
+    "failureLogEnabled": false,
+    "tcpHost": "127.0.0.1",
+    "tcpPort": "502",
+    "tcpType": "DEFAULT",
+    "serialPort": "/dev/ttyUSB",
+    "serialType": "RTU-BUFFERD",
+    "serialBaudrate": "9600",
+    "serialDatabits": "8",
+    "serialStopbits": "1",
+    "serialParity": "none",
+    "serialConnectionDelay": "100",
+    "serialAsciiResponseStartDelimiter": "",
+    "unit_id": 1,
+    "commandDelay": 1,
+    "clientTimeout": 3000,
+    "reconnectOnTimeout": true,
+    "reconnectTimeout": 2000,
+    "parallelUnitIdsAllowed": true
+  },
+  {
+    "id": "platform_wslot1_connector",
+    "type": "modbus-flex-connector",
+    "z": "unified_platform_tab",
+    "name": "Configure writer slot 1",
+    "maxReconnectsPerMinute": 10,
+    "emptyQueue": true,
+    "showStatusActivities": false,
+    "showErrors": true,
+    "server": "platform_wslot1_client",
+    "x": 1010,
+    "y": 495,
+    "wires": [
+      [
+        "platform_errors"
+      ]
+    ]
+  },
+  {
+    "id": "platform_wslot1_write",
+    "type": "modbus-flex-write",
+    "z": "unified_platform_tab",
+    "name": "Writer Slot 1",
+    "showStatusActivities": false,
+    "showErrors": true,
+    "showWarnings": true,
+    "server": "platform_wslot1_client",
+    "emptyMsgOnFail": false,
+    "keepMsgProperties": true,
+    "delayOnStart": false,
+    "startDelayTime": "",
+    "x": 1260,
+    "y": 545,
+    "wires": [
+      [
+        "platform_writer_diag"
+      ],
+      [
+        "platform_errors"
+      ]
+    ]
+  },
+  {
+    "id": "platform_wslot2_client",
+    "type": "modbus-client",
+    "name": "writer_slot_2",
+    "clienttype": "tcp",
+    "bufferCommands": true,
+    "stateLogEnabled": false,
+    "queueLogEnabled": false,
+    "failureLogEnabled": false,
+    "tcpHost": "127.0.0.1",
+    "tcpPort": "502",
+    "tcpType": "DEFAULT",
+    "serialPort": "/dev/ttyUSB",
+    "serialType": "RTU-BUFFERD",
+    "serialBaudrate": "9600",
+    "serialDatabits": "8",
+    "serialStopbits": "1",
+    "serialParity": "none",
+    "serialConnectionDelay": "100",
+    "serialAsciiResponseStartDelimiter": "",
+    "unit_id": 1,
+    "commandDelay": 1,
+    "clientTimeout": 3000,
+    "reconnectOnTimeout": true,
+    "reconnectTimeout": 2000,
+    "parallelUnitIdsAllowed": true
+  },
+  {
+    "id": "platform_wslot2_connector",
+    "type": "modbus-flex-connector",
+    "z": "unified_platform_tab",
+    "name": "Configure writer slot 2",
+    "maxReconnectsPerMinute": 10,
+    "emptyQueue": true,
+    "showStatusActivities": false,
+    "showErrors": true,
+    "server": "platform_wslot2_client",
+    "x": 1010,
+    "y": 530,
+    "wires": [
+      [
+        "platform_errors"
+      ]
+    ]
+  },
+  {
+    "id": "platform_wslot2_write",
+    "type": "modbus-flex-write",
+    "z": "unified_platform_tab",
+    "name": "Writer Slot 2",
+    "showStatusActivities": false,
+    "showErrors": true,
+    "showWarnings": true,
+    "server": "platform_wslot2_client",
+    "emptyMsgOnFail": false,
+    "keepMsgProperties": true,
+    "delayOnStart": false,
+    "startDelayTime": "",
+    "x": 1260,
+    "y": 590,
+    "wires": [
+      [
+        "platform_writer_diag"
+      ],
+      [
+        "platform_errors"
+      ]
+    ]
+  },
+  {
+    "id": "platform_wslot3_client",
+    "type": "modbus-client",
+    "name": "writer_slot_3",
+    "clienttype": "tcp",
+    "bufferCommands": true,
+    "stateLogEnabled": false,
+    "queueLogEnabled": false,
+    "failureLogEnabled": false,
+    "tcpHost": "127.0.0.1",
+    "tcpPort": "502",
+    "tcpType": "DEFAULT",
+    "serialPort": "/dev/ttyUSB",
+    "serialType": "RTU-BUFFERD",
+    "serialBaudrate": "9600",
+    "serialDatabits": "8",
+    "serialStopbits": "1",
+    "serialParity": "none",
+    "serialConnectionDelay": "100",
+    "serialAsciiResponseStartDelimiter": "",
+    "unit_id": 1,
+    "commandDelay": 1,
+    "clientTimeout": 3000,
+    "reconnectOnTimeout": true,
+    "reconnectTimeout": 2000,
+    "parallelUnitIdsAllowed": true
+  },
+  {
+    "id": "platform_wslot3_connector",
+    "type": "modbus-flex-connector",
+    "z": "unified_platform_tab",
+    "name": "Configure writer slot 3",
+    "maxReconnectsPerMinute": 10,
+    "emptyQueue": true,
+    "showStatusActivities": false,
+    "showErrors": true,
+    "server": "platform_wslot3_client",
+    "x": 1010,
+    "y": 565,
+    "wires": [
+      [
+        "platform_errors"
+      ]
+    ]
+  },
+  {
+    "id": "platform_wslot3_write",
+    "type": "modbus-flex-write",
+    "z": "unified_platform_tab",
+    "name": "Writer Slot 3",
+    "showStatusActivities": false,
+    "showErrors": true,
+    "showWarnings": true,
+    "server": "platform_wslot3_client",
+    "emptyMsgOnFail": false,
+    "keepMsgProperties": true,
+    "delayOnStart": false,
+    "startDelayTime": "",
+    "x": 1260,
+    "y": 635,
+    "wires": [
+      [
+        "platform_writer_diag"
+      ],
+      [
+        "platform_errors"
+      ]
+    ]
+  },
+  {
+    "id": "platform_wslot4_client",
+    "type": "modbus-client",
+    "name": "writer_slot_4",
+    "clienttype": "tcp",
+    "bufferCommands": true,
+    "stateLogEnabled": false,
+    "queueLogEnabled": false,
+    "failureLogEnabled": false,
+    "tcpHost": "127.0.0.1",
+    "tcpPort": "502",
+    "tcpType": "DEFAULT",
+    "serialPort": "/dev/ttyUSB",
+    "serialType": "RTU-BUFFERD",
+    "serialBaudrate": "9600",
+    "serialDatabits": "8",
+    "serialStopbits": "1",
+    "serialParity": "none",
+    "serialConnectionDelay": "100",
+    "serialAsciiResponseStartDelimiter": "",
+    "unit_id": 1,
+    "commandDelay": 1,
+    "clientTimeout": 3000,
+    "reconnectOnTimeout": true,
+    "reconnectTimeout": 2000,
+    "parallelUnitIdsAllowed": true
+  },
+  {
+    "id": "platform_wslot4_connector",
+    "type": "modbus-flex-connector",
+    "z": "unified_platform_tab",
+    "name": "Configure writer slot 4",
+    "maxReconnectsPerMinute": 10,
+    "emptyQueue": true,
+    "showStatusActivities": false,
+    "showErrors": true,
+    "server": "platform_wslot4_client",
+    "x": 1010,
+    "y": 600,
+    "wires": [
+      [
+        "platform_errors"
+      ]
+    ]
+  },
+  {
+    "id": "platform_wslot4_write",
+    "type": "modbus-flex-write",
+    "z": "unified_platform_tab",
+    "name": "Writer Slot 4",
+    "showStatusActivities": false,
+    "showErrors": true,
+    "showWarnings": true,
+    "server": "platform_wslot4_client",
+    "emptyMsgOnFail": false,
+    "keepMsgProperties": true,
+    "delayOnStart": false,
+    "startDelayTime": "",
+    "x": 1260,
+    "y": 680,
+    "wires": [
+      [
+        "platform_writer_diag"
+      ],
+      [
+        "platform_errors"
+      ]
+    ]
+  },
+  {
+    "id": "platform_wslot5_client",
+    "type": "modbus-client",
+    "name": "writer_slot_5",
+    "clienttype": "tcp",
+    "bufferCommands": true,
+    "stateLogEnabled": false,
+    "queueLogEnabled": false,
+    "failureLogEnabled": false,
+    "tcpHost": "127.0.0.1",
+    "tcpPort": "502",
+    "tcpType": "DEFAULT",
+    "serialPort": "/dev/ttyUSB",
+    "serialType": "RTU-BUFFERD",
+    "serialBaudrate": "9600",
+    "serialDatabits": "8",
+    "serialStopbits": "1",
+    "serialParity": "none",
+    "serialConnectionDelay": "100",
+    "serialAsciiResponseStartDelimiter": "",
+    "unit_id": 1,
+    "commandDelay": 1,
+    "clientTimeout": 3000,
+    "reconnectOnTimeout": true,
+    "reconnectTimeout": 2000,
+    "parallelUnitIdsAllowed": true
+  },
+  {
+    "id": "platform_wslot5_connector",
+    "type": "modbus-flex-connector",
+    "z": "unified_platform_tab",
+    "name": "Configure writer slot 5",
+    "maxReconnectsPerMinute": 10,
+    "emptyQueue": true,
+    "showStatusActivities": false,
+    "showErrors": true,
+    "server": "platform_wslot5_client",
+    "x": 1010,
+    "y": 635,
+    "wires": [
+      [
+        "platform_errors"
+      ]
+    ]
+  },
+  {
+    "id": "platform_wslot5_write",
+    "type": "modbus-flex-write",
+    "z": "unified_platform_tab",
+    "name": "Writer Slot 5",
+    "showStatusActivities": false,
+    "showErrors": true,
+    "showWarnings": true,
+    "server": "platform_wslot5_client",
+    "emptyMsgOnFail": false,
+    "keepMsgProperties": true,
+    "delayOnStart": false,
+    "startDelayTime": "",
+    "x": 1260,
+    "y": 725,
+    "wires": [
+      [
+        "platform_writer_diag"
+      ],
+      [
+        "platform_errors"
+      ]
+    ]
+  },
+  {
+    "id": "platform_wslot6_client",
+    "type": "modbus-client",
+    "name": "writer_slot_6",
+    "clienttype": "tcp",
+    "bufferCommands": true,
+    "stateLogEnabled": false,
+    "queueLogEnabled": false,
+    "failureLogEnabled": false,
+    "tcpHost": "127.0.0.1",
+    "tcpPort": "502",
+    "tcpType": "DEFAULT",
+    "serialPort": "/dev/ttyUSB",
+    "serialType": "RTU-BUFFERD",
+    "serialBaudrate": "9600",
+    "serialDatabits": "8",
+    "serialStopbits": "1",
+    "serialParity": "none",
+    "serialConnectionDelay": "100",
+    "serialAsciiResponseStartDelimiter": "",
+    "unit_id": 1,
+    "commandDelay": 1,
+    "clientTimeout": 3000,
+    "reconnectOnTimeout": true,
+    "reconnectTimeout": 2000,
+    "parallelUnitIdsAllowed": true
+  },
+  {
+    "id": "platform_wslot6_connector",
+    "type": "modbus-flex-connector",
+    "z": "unified_platform_tab",
+    "name": "Configure writer slot 6",
+    "maxReconnectsPerMinute": 10,
+    "emptyQueue": true,
+    "showStatusActivities": false,
+    "showErrors": true,
+    "server": "platform_wslot6_client",
+    "x": 1010,
+    "y": 670,
+    "wires": [
+      [
+        "platform_errors"
+      ]
+    ]
+  },
+  {
+    "id": "platform_wslot6_write",
+    "type": "modbus-flex-write",
+    "z": "unified_platform_tab",
+    "name": "Writer Slot 6",
+    "showStatusActivities": false,
+    "showErrors": true,
+    "showWarnings": true,
+    "server": "platform_wslot6_client",
+    "emptyMsgOnFail": false,
+    "keepMsgProperties": true,
+    "delayOnStart": false,
+    "startDelayTime": "",
+    "x": 1260,
+    "y": 770,
+    "wires": [
+      [
+        "platform_writer_diag"
+      ],
+      [
+        "platform_errors"
+      ]
+    ]
+  },
+  {
+    "id": "platform_run",
+    "type": "function",
+    "z": "unified_platform_tab",
+    "name": "Run unified control cycle",
+    "func": "const lib = global.get('lib');\nif (!lib || !lib.coreControl || typeof lib.coreControl.runUnifiedControlCycle !== 'function') {\n  node.status({ fill: 'red', shape: 'ring', text: 'global.lib.coreControl missing' });\n  return [null, null, { payload: { error: 'global.lib.coreControl.runUnifiedControlCycle is unavailable' } }];\n}\n\nfunction getAnyContext(ctx, key) {\n  let value = ctx.get(key);\n  if (value !== undefined && value !== null) return value;\n  try { return ctx.get(key, 'file'); } catch (error) { return value; }\n}\n\nfunction clone(value) {\n  return JSON.parse(JSON.stringify(value));\n}\n\nfunction defaultConfig() {\n  return {\n    system: { systemProfile: 'eSpire280', controllerTimezone: 'America/Los_Angeles', nominal: { voltageVll: 480, frequencyHz: 60 } },\n    network: { controller: { ip: '192.168.1.10', modbusServer: { ip: '192.168.1.20', port: 502 } } },\n    operation: { mode: 'grid-tied', gridCode: 'IEEE1547-2018', crdMode: 'no-export', siteExportMode: 'no-restriction', siteExportTargetImportKw: 0, siteExportDeadbandKw: 0, scheduledControlEnabled: false },\n    pcs: { pcsDaisyChain: [1, 1], maxChargeKw: 250, maxDischargeKw: 250 },\n    mbmu: { sbmuStrings: [2, 2] },\n    battery: { minSoc: 0.1, maxSoc: 0.95, socLow: 0.3, socLowRecover: 0.22, socHigh: 0.95, socHighRecover: 0.92, forceGridChargeSoc: 0.15, forceGridChargeMinCellVoltageV: 2.95, forceGridChargeKw: 10, powerHeadroomKw: 2, commandRampKwPerSec: 25 },\n    pv: { acInverters: [], curtailmentMethod: null },\n    metering: { meterType: 'eGauge-4015', modbusProfile: 'udt_eGauge_V1', ip: '', reads: { pv: true, pvFromInverter: false, utility: true, load: true }, calculations: {} }\n  };\n}\n\n\nfunction normalizeMeteringCalculations(calculations) {\n  const out = {};\n  for (const [key, value] of Object.entries(calculations || {})) {\n    if (typeof value === 'string') {\n      out[key] = { source: 'tag', tagID: value };\n    } else if (value && typeof value === 'object') {\n      out[key] = value;\n    }\n  }\n  return out;\n}\n\nfunction normalizeControlConfig(raw) {\n  const defaults = defaultConfig();\n  const cfg = clone(raw || defaults);\n  cfg.system = Object.assign({}, defaults.system, cfg.system || {});\n  cfg.system.nominal = Object.assign({}, defaults.system.nominal, (cfg.system && cfg.system.nominal) || {});\n  cfg.operation = Object.assign({}, defaults.operation, cfg.operation || {});\n  cfg.battery = Object.assign({}, defaults.battery, cfg.battery || cfg.batteryPolicy || {});\n  cfg.pv = Object.assign({}, defaults.pv, cfg.pv || {});\n  if (!Array.isArray(cfg.pv.acInverters)) cfg.pv.acInverters = [];\n  cfg.metering = Object.assign({}, defaults.metering, cfg.metering || {});\n  cfg.metering.reads = Object.assign({}, defaults.metering.reads, cfg.metering.reads || {});\n  cfg.metering.calculations = normalizeMeteringCalculations(cfg.metering.calculations || defaults.metering.calculations);\n  cfg.network = Object.assign({}, defaults.network, cfg.network || {});\n  cfg.network.controller = Object.assign({}, defaults.network.controller, cfg.network.controller || {});\n  cfg.network.controller.modbusServer = Object.assign({}, defaults.network.controller.modbusServer, cfg.network.controller.modbusServer || {});\n  if (!cfg.network.controller.modbusServer.ip && cfg.metering.ip) cfg.network.controller.modbusServer.ip = cfg.metering.ip;\n  if (!cfg.islanding && cfg.protection && cfg.protection.islanding) cfg.islanding = cfg.protection.islanding;\n  if (cfg.system.systemProfile && String(cfg.system.systemProfile).startsWith('MINI-')) {\n    delete cfg.mbmu;\n    if (cfg.pcs && Array.isArray(cfg.pcs.pcsDaisyChain) && cfg.pcs.pcsDaisyChain.length > 0) {\n      cfg.pcs = Object.assign({}, cfg.pcs, { pcsDaisyChain: [] });\n    }\n  }\n  global.set('siteConfig', cfg);\n  global.set('unifiedControlConfig', cfg);\n  return cfg;\n}\n\nfunction defaultSignalMapping() {\n  return {\n    sources: {\n      Meter: { profile: 'udt_eGauge_V1', role: 'siteMeter' },\n      Meter2: { profile: 'udt_eGauge_V1', role: 'pvMeter' },\n      PCS: { profile: 'Delta_280_ss40k', role: 'pcs' }\n    },\n    deadbands: { pvKw: 0.3 },\n    signals: {\n      utilityPowerKw: { expr: 'Meter.Utility_Total_Power', invertSign: false },\n      pvKw: { expr: 'deadband(Meter2.Solar, 0.3)', invertSign: false },\n      pcsActivePowerKw: { expr: 'PCS.SYSTEM_POWER_ACTIVE_ALL', invertSign: false },\n      siteLoadKw: { expr: 'utilityPowerKw + pvKw + pcsActivePowerKw' },\n      generatorRunning: { expr: 'Meter.Generator_Total_Power > 1' }\n    }\n  };\n}\n\nfunction indexTelemetry(telemetry) {\n  const index = {};\n  const roots = {};\n  function put(tagID, value) {\n    index[tagID] = value;\n    const parts = String(tagID).split('.');\n    if (parts.length >= 2) {\n      const root = parts.shift();\n      const leaf = parts.join('.');\n      roots[root] = roots[root] || {};\n      roots[root][leaf] = value;\n    }\n  }\n  for (const [key, value] of Object.entries(telemetry || {})) {\n    if (Array.isArray(value)) {\n      for (const sample of value) {\n        if (sample && sample.tagID) put(sample.tagID, sample.value);\n      }\n    } else if (value && typeof value === 'object' && 'value' in value && value.tagID) {\n      put(value.tagID, value.value);\n    } else {\n      index[key] = value;\n      if (key.includes('.')) put(key, value);\n    }\n  }\n  return { index, roots };\n}\n\nfunction numeric(value, fallback) {\n  const n = Number(value);\n  return Number.isFinite(n) ? n : fallback;\n}\n\nfunction firstNumber(index, keys, fallback) {\n  for (const key of keys) {\n    if (key in index) {\n      const n = Number(index[key]);\n      if (Number.isFinite(n)) return n;\n    }\n  }\n  return fallback;\n}\n\nfunction activeRealtimeDispatch() {\n  const rt = global.get('realtimeDispatch') || flow.get('realtimeDispatch') || {};\n  if (rt.enabled === false) return {};\n  if (Number.isFinite(Number(rt.expiresAtMs)) && Date.now() > Number(rt.expiresAtMs)) return {};\n  return rt;\n}\n\nfunction evalSignal(expr, scope) {\n  const deadband = (value, threshold) => Math.abs(Number(value) || 0) < Math.abs(Number(threshold) || 0) ? 0 : Number(value);\n  const names = Object.keys(scope).concat(['deadband', 'max', 'min', 'abs', 'round', 'Math']);\n  const values = Object.keys(scope).map((name) => scope[name]).concat([deadband, Math.max, Math.min, Math.abs, Math.round, Math]);\n  const fn = new Function(...names, '\"use strict\"; return (' + expr + ');');\n  return fn(...values);\n}\n\nfunction buildSchedule(config) {\n  const plans = getAnyContext(global, 'schedulePlans') || getAnyContext(flow, 'plans') || getAnyContext(flow, 'schedulePlans');\n  if (plans && lib.scheduler && typeof lib.scheduler.matchActiveSchedulePlan === 'function') {\n    const activePlan = lib.scheduler.matchActiveSchedulePlan(plans, { now: new Date(), timezone: config.system.controllerTimezone });\n    const output = activePlan ? lib.scheduler.scheduleOutputFromActivePlan(activePlan) : {};\n    global.set('scheduleOutput', output);\n    try { global.set('scheduleOutput', output, 'file'); } catch (error) {}\n    return output;\n  }\n  return getAnyContext(global, 'scheduleOutput') || getAnyContext(flow, 'scheduleOutput') || {};\n}\n\ntry {\n  const rawConfig = msg.controlConfig || getAnyContext(flow, 'controlConfig') || getAnyContext(global, 'controlConfig') || getAnyContext(global, 'unifiedControlConfig') || getAnyContext(global, 'siteConfig') || defaultConfig();\n  const config = normalizeControlConfig(rawConfig);\n  const signalMapping = config.signalMapping || flow.get('signalMapping') || global.get('signalMapping') || defaultSignalMapping();\n  const rawTelemetry = msg.telemetry || (msg.payload && msg.payload.telemetry) || global.get('telemetry') || msg.payload || {};\n  const telemetryIndex = indexTelemetry(rawTelemetry);\n  const scope = Object.assign({}, telemetryIndex.roots);\n  const canonical = {};\n  const errors = [];\n  const order = ['utilityPowerKw', 'pvKw', 'pcsActivePowerKw', 'siteLoadKw', 'generatorRunning'];\n\n  for (const key of order) {\n    const spec = signalMapping.signals && signalMapping.signals[key];\n    if (!spec || !spec.expr) continue;\n    try {\n      const value = evalSignal(spec.expr, Object.assign({}, scope, canonical));\n      const finalValue = spec.invertSign ? -Number(value) : value;\n      canonical[key] = typeof finalValue === 'boolean' ? finalValue : numeric(finalValue, undefined);\n    } catch (error) {\n      errors.push({ signal: key, expr: spec.expr, error: error.message || String(error) });\n    }\n  }\n\n  config.metering = config.metering || { meterType: '', modbusProfile: '', ip: '', reads: { pv: true, pvFromInverter: false, utility: true, load: true }, calculations: {} };\n  config.metering.calculations = {\n    utilityPowerKw: { source: 'tag', tagID: 'utilityPowerKw' },\n    siteLoadKw: { source: 'tag', tagID: 'siteLoadKw' },\n    pvKw: { source: 'tag', tagID: 'pvKw' }\n  };\n\n  const gridStatus = config.operation && config.operation.mode === 'off-grid' ? 'island' : 'normal';\n  const realtime = activeRealtimeDispatch();\n  const baseTelemetry = {\n    soc: firstNumber(telemetryIndex.index, ['MBMU.System_SOC_pct', 'MBMU.system_SOC_raw', 'AMPACE.BamsSOC', 'BMS.SOC', 'soc'], 0.5),\n    gridStatus,\n    pcsActivePowerKw: canonical.pcsActivePowerKw,\n    generatorRunning: canonical.generatorRunning === true,\n    realtimeActivePowerKwRequest: numeric(realtime.activePowerKw ?? realtime.realtimeActivePowerKwRequest, undefined),\n    realtimeReactivePowerKvarRequest: numeric(realtime.reactivePowerKvar ?? realtime.realtimeReactivePowerKvarRequest, undefined),\n    machineStatus: {\n      batteryVoltageV: firstNumber(telemetryIndex.index, ['MBMU.System_Voltage_V', 'AMPACE.BamsTotalVol', 'PCS.DCInputVoltage'], undefined),\n      maxChargeCurrentAllowedA: firstNumber(telemetryIndex.index, ['MBMU.Max_Charge_Current_Allowed_A', 'AMPACE.BamsPermitChgCurr', 'PCS.MaxChgCurrent'], undefined),\n      maxDischargeCurrentAllowedA: firstNumber(telemetryIndex.index, ['MBMU.Max_Discharge_Current_Allowed_A', 'AMPACE.BamsPermitDsgCurr', 'PCS.MaxDsgCurrent'], undefined),\n      maxCellVoltageV: firstNumber(telemetryIndex.index, ['MBMU.Max_Cell_Voltage_V', 'AMPACE.BamsMaxCellVol'], undefined),\n      minCellVoltageV: firstNumber(telemetryIndex.index, ['MBMU.Min_Cell_Voltage_V', 'AMPACE.BamsMinCellVol'], undefined),\n      maxCellTemperatureC: firstNumber(telemetryIndex.index, ['MBMU.Max_Cell_Temperature_C', 'AMPACE.BamsMaxCellTemp'], undefined),\n      minCellTemperatureC: firstNumber(telemetryIndex.index, ['MBMU.Min_Cell_Temperature_C', 'AMPACE.BamsMinCellTemp'], undefined),\n      bmsStatus: firstNumber(telemetryIndex.index, ['MBMU.BMS_Status', 'AMPACE.BamsStatus'], undefined),\n      pcsGlobalState: firstNumber(telemetryIndex.index, ['PCS.SYSTEM_GLOBAL_STATE', 'PCS.SystemStatusMap'], undefined)\n    }\n  };\n\n  const controlState = flow.get('controlState') || {};\n  const cycle = lib.coreControl.runUnifiedControlCycle(config, {\n    telemetry: Object.assign({}, telemetryIndex.index, canonical),\n    baseTelemetry,\n    schedule: buildSchedule(config),\n    state: controlState,\n    nowMs: Date.now()\n  });\n\n  flow.set('controlState', controlState);\n  flow.set('lastUnifiedControlCycle', cycle);\n  global.set('lastUnifiedControlCycle', cycle);\n\n  const writerMessages = (cycle.writerEnvelopes || []).map((envelope) => ({\n    topic: envelope.topic,\n    payload: envelope.payload,\n    envelope,\n    controlCommand: cycle.command\n  }));\n\n  node.status({ fill: errors.length ? 'yellow' : 'green', shape: errors.length ? 'ring' : 'dot', text: `${writerMessages.length} writer envelope(s)` });\n\n  return [\n    writerMessages,\n    { payload: { canonical, realtime, command: cycle.command, pipeline: cycle.pipeline, diagnostics: cycle.diagnostics, writerEnvelopeCount: writerMessages.length, signalMappingErrors: errors } },\n    errors.length ? { payload: { errors, canonical } } : null\n  ];\n} catch (error) {\n  node.status({ fill: 'red', shape: 'ring', text: 'control cycle failed' });\n  return [null, null, { payload: { error: error.message || String(error), stack: error.stack } }];\n}\n",
+    "outputs": 3,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 430,
+    "y": 620,
+    "wires": [
+      [
+        "platform_writer_runtime",
+        "platform_writer_diag"
+      ],
+      [
+        "platform_debug"
+      ],
+      [
+        "platform_errors"
+      ]
+    ]
+  },
+  {
+    "id": "platform_status_handler",
+    "type": "function",
+    "z": "unified_platform_tab",
+    "name": "Build control status",
+    "func": "const getAnyContext = (ctx, key) => {\n  let value = ctx.get(key);\n  if (value !== undefined && value !== null) return value;\n  try { return ctx.get(key, 'file'); } catch (error) { return value; }\n};\nconst cycle = global.get('lastUnifiedControlCycle') || {};\nconst config = getAnyContext(global, 'siteConfig') || getAnyContext(global, 'unifiedControlConfig') || getAnyContext(global, 'controlConfig') || getAnyContext(flow, 'controlConfig') || {};\nconst groups = getAnyContext(global, 'schedulePlans') || getAnyContext(flow, 'plans') || getAnyContext(flow, 'schedulePlans') || [];\nconst planCount = Array.isArray(groups) ? groups.reduce((total, group) => total + (Array.isArray(group && group.timed) ? group.timed.length : 0), 0) : 0;\nconst telemetry = global.get('telemetry') || flow.get('telemetry') || {};\nmsg.headers = { 'content-type': 'application/json' };\nmsg.payload = {\n  data: {\n    ok: true,\n    updatedAt: new Date().toISOString(),\n    systemProfile: config.system && config.system.systemProfile,\n    productLine: cycle.design && cycle.design.productLine,\n    operationMode: config.operation && config.operation.mode,\n    schedulePlanCount: planCount,\n    realtimeDispatch: global.get('realtimeDispatch') || flow.get('realtimeDispatch') || {},\n    command: cycle.command || null,\n    pipeline: cycle.pipeline || null,\n    diagnostics: cycle.diagnostics || null,\n    writerEnvelopes: cycle.writerEnvelopes || [],\n    telemetryKeys: Object.keys(telemetry).slice(0, 50),\n    telemetryReaderConfig: getAnyContext(global, 'telemetryReaderConfig') || getAnyContext(flow, 'telemetryReaderConfig') || [],\n    writerTargets: getAnyContext(global, 'writerTargets') || getAnyContext(flow, 'writerTargets') || [],\n    restartRequired: getAnyContext(global, 'restartRequired') || null\n  }\n};\nreturn msg;",
+    "outputs": 1,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "wires": [
+      [
+        "platform_status_response"
+      ]
+    ],
+    "x": 430,
+    "y": 1100
+  },
+  {
+    "id": "platform_rt_handler",
+    "type": "function",
+    "z": "unified_platform_tab",
+    "name": "Save realtime dispatch",
+    "func": "let body = msg.payload || {};\nif (typeof body === 'string') {\n  try { body = JSON.parse(body); } catch (error) {\n    msg.statusCode = 400;\n    msg.payload = { error: 'invalid JSON body' };\n    return msg;\n  }\n}\nconst numberOrUndefined = (value) => {\n  const n = Number(value);\n  return Number.isFinite(n) ? n : undefined;\n};\nconst ttlSec = Math.max(1, numberOrUndefined(body.ttlSec ?? body.ttlSeconds) || 300);\nconst dispatch = {\n  enabled: body.enabled !== false,\n  activePowerKw: numberOrUndefined(body.activePowerKw),\n  reactivePowerKvar: numberOrUndefined(body.reactivePowerKvar),\n  realtimeActivePowerKwRequest: numberOrUndefined(body.realtimeActivePowerKwRequest ?? body.activePowerKw),\n  expiresAtMs: Date.now() + ttlSec * 1000,\n  updatedAt: new Date().toISOString(),\n  source: body.source || 'api'\n};\nif (dispatch.enabled === false) {\n  dispatch.activePowerKw = undefined;\n  dispatch.realtimeActivePowerKwRequest = undefined;\n}\nglobal.set('realtimeDispatch', dispatch);\nflow.set('realtimeDispatch', dispatch);\nmsg.headers = { 'content-type': 'application/json' };\nmsg.payload = { data: dispatch };\nreturn msg;",
+    "outputs": 1,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "wires": [
+      [
+        "platform_rt_response"
+      ]
+    ],
+    "x": 430,
+    "y": 1160
+  },
+  {
+    "id": "platform_control_tick",
+    "type": "inject",
+    "z": "unified_platform_tab",
+    "name": "1s unified control tick",
+    "props": [
+      {
+        "p": "payload"
+      }
+    ],
+    "repeat": "1",
+    "crontab": "",
+    "once": true,
+    "onceDelay": "12",
+    "topic": "",
+    "payload": "{}",
+    "payloadType": "json",
+    "x": 160,
+    "y": 620,
+    "wires": [
+      [
+        "platform_run"
+      ]
+    ]
+  },
+  {
+    "id": "platform_sched_api_esr_handler",
+    "type": "function",
+    "z": "unified_platform_tab",
+    "name": "Parse & Handle ESR",
+    "func": "function parseBody(input) {\n  let body = input;\n  if (body && body.type === 'Buffer' && Array.isArray(body.data)) {\n    try { body = Buffer.from(body.data).toString('utf8'); } catch (e) {}\n  }\n  if (typeof body === 'string') {\n    try { body = JSON.parse(body); }\n    catch (e) {\n      try {\n        const probe = JSON.parse(`{\"${body}\":\"\"}`);\n        const keys = Object.keys(probe);\n        if (keys.length === 1 && /^[\\[{]/.test(keys[0])) body = JSON.parse(keys[0]);\n      } catch (e2) {}\n    }\n  }\n  if (typeof body === 'object' && body && !Array.isArray(body)) {\n    const keys = Object.keys(body);\n    if (keys.length === 1 && /^[\\[{]/.test(keys[0])) {\n      try { body = JSON.parse(keys[0]); } catch (e3) {}\n    }\n  }\n  return body;\n}\n\nfunction normalizeToGroupArray(input) {\n  if (Array.isArray(input)) return input;\n  if (input && Array.isArray(input.timed)) return [input];\n  if (input && input.data && Array.isArray(input.data)) return input.data;\n  if (input && input.data && Array.isArray(input.data.plans)) return input.data.plans;\n  if (input && Array.isArray(input.plans)) return input.plans;\n  return [];\n}\n\nfunction numericValue(value) {\n  const raw = value && typeof value === 'object' && 'value' in value ? value.value : value;\n  const n = Number(String(raw ?? '').replace(/[^0-9+-.]/g, '').trim());\n  return Number.isFinite(n) ? n : undefined;\n}\n\nfunction normalizeConstraints(input) {\n  const c = input || {};\n  const minSoc = numericValue(c.min_soc) ?? 0;\n  const maxSoc = numericValue(c.max_soc) ?? 100;\n  const maxCharge = numericValue(c.max_charge_power) ?? 100;\n  const maxDischarge = numericValue(c.max_discharge_power) ?? 100;\n  return {\n    ...c,\n    min_soc: { value: Math.max(0, Math.min(100, minSoc)), unit: '%' },\n    max_soc: { value: Math.max(0, Math.min(100, maxSoc)), unit: '%' },\n    max_charge_power: { value: Math.max(0, Math.min(100, maxCharge)), unit: '%' },\n    max_discharge_power: { value: Math.max(0, Math.min(100, maxDischarge)), unit: '%' }\n  };\n}\n\nfunction validateAndSanitizeGroups(groupsIn) {\n  const supportedPv = new Set(['SelfConsumption', 'GridSupplement', 'Off', 'GridSell', 'ReserveBattery', 'NoChange']);\n  const errors = [];\n  const warnings = [];\n  const groups = JSON.parse(JSON.stringify(groupsIn || []));\n\n  for (let gi = 0; gi < groups.length; gi += 1) {\n    const group = groups[gi];\n    if (!group || typeof group !== 'object') {\n      errors.push(`group[${gi}] is not an object`);\n      continue;\n    }\n    if (!Array.isArray(group.timed)) {\n      errors.push(`group[${gi}].timed missing/invalid`);\n      group.timed = [];\n    }\n    for (let pi = 0; pi < group.timed.length; pi += 1) {\n      const plan = group.timed[pi] || {};\n      const path = `group[${gi}].timed[${pi}]`;\n      if (!plan.planID) errors.push(`${path}: missing planID`);\n\n      if (plan.time && (plan.time.start || plan.time.end)) {\n        const start = new Date(plan.time.start);\n        const end = new Date(plan.time.end);\n        if (isNaN(start.getTime())) errors.push(`${path}.time.start invalid`);\n        if (isNaN(end.getTime())) errors.push(`${path}.time.end invalid`);\n        if (!isNaN(start.getTime()) && !isNaN(end.getTime()) && end <= start) errors.push(`${path}: time.end <= time.start`);\n      } else {\n        if (!plan.cron || String(plan.cron).trim().split(/\\s+/).length !== 5) errors.push(`${path}.cron must have 5 fields`);\n        const duration = Number(plan?.duration?.value ?? plan.duration);\n        if (!Number.isFinite(duration) || duration < 1) errors.push(`${path}.duration.value must be minutes >= 1`);\n        else plan.duration = { unit: 'minutes', value: Math.trunc(duration) };\n      }\n\n      if (plan.start && isNaN(new Date(plan.start).getTime())) errors.push(`${path}.start invalid`);\n      if (plan.until && isNaN(new Date(plan.until).getTime())) errors.push(`${path}.until invalid`);\n\n      plan.constraints = normalizeConstraints(plan.constraints);\n      if (numericValue(plan.constraints.min_soc) >= numericValue(plan.constraints.max_soc)) {\n        errors.push(`${path}: constraints.min_soc >= max_soc`);\n      }\n\n      const strategy = plan.strategy || {};\n      if (!strategy.meter_rule && !strategy.pv_rule && plan.activePowerKwSetpoint == null && plan.setpoint?.activePowerKw == null) {\n        errors.push(`${path}: strategy or active setpoint is required`);\n      }\n      if (strategy.pv_rule) {\n        const name = String(strategy.pv_rule.name || '').trim();\n        if (!name) errors.push(`${path}: pv_rule.name missing`);\n        else if (!supportedPv.has(name)) errors.push(`${path}: pv_rule.name '${name}' not supported`);\n      }\n      for (const side of ['charge', 'discharge']) {\n        const branch = strategy.meter_rule && strategy.meter_rule[side];\n        if (!branch) continue;\n        const keys = ['net_load_threshold', 'net_load_threshold_percent', 'fixed_output'].filter((key) => branch[key] != null);\n        if (keys.length > 1) errors.push(`${path}: meter_rule.${side} mixes control types`);\n        if (branch.net_load_threshold) branch.net_load_threshold = { unit: 'kW', value: numericValue(branch.net_load_threshold) };\n        if (branch.fixed_output) branch.fixed_output = { unit: branch.fixed_output.unit || '%', value: numericValue(branch.fixed_output) };\n      }\n      plan.strategy = strategy;\n      plan.default = plan.default === true || String(plan.default).toLowerCase() === 'true';\n    }\n  }\n\n  return { ok: errors.length === 0, errors, warnings, groupsSanitized: groups };\n}\n\nfunction flattenPlans(groups) {\n  const flat = [];\n  for (const group of groups || []) {\n    for (const plan of Array.isArray(group?.timed) ? group.timed : []) {\n      const meter = plan?.strategy?.meter_rule || {};\n      const charge = meter.charge || {};\n      const discharge = meter.discharge || {};\n      let type = 'Unknown';\n      if (discharge.fixed_output) type = 'Discharge';\n      else if (charge.fixed_output) type = 'Charge';\n      else if (discharge.net_load_threshold) type = 'DischargeThreshold';\n      else if (charge.net_load_threshold) type = 'ChargeThreshold';\n      flat.push({\n        planID: plan.planID || 'unknown',\n        name: plan.name || 'Unnamed',\n        description: plan.description || '',\n        default: !!plan.default,\n        runState: plan.runState || 'Idle',\n        duration: Number(plan?.duration?.value ?? plan.duration ?? 0) || 0,\n        start: plan.start || '',\n        until: plan.until || '',\n        time: plan.time || undefined,\n        cron: plan.cron || '',\n        type,\n        fixed_output: discharge.fixed_output || charge.fixed_output || undefined,\n        net_load_threshold: { charge: charge.net_load_threshold, discharge: discharge.net_load_threshold },\n        net_load_threshold_percent: { charge: charge.net_load_threshold_percent, discharge: discharge.net_load_threshold_percent },\n        min_soc: plan?.constraints?.min_soc,\n        max_soc: plan?.constraints?.max_soc,\n        max_charge_power: plan?.constraints?.max_charge_power,\n        max_discharge_power: plan?.constraints?.max_discharge_power,\n        constraints: plan.constraints || {},\n        strategy: plan.strategy || {},\n        activePowerKwSetpoint: plan.activePowerKwSetpoint,\n        setpoint: plan.setpoint,\n        exclude_holidays: plan.exclude_holidays || null\n      });\n    }\n  }\n  return flat;\n}\n\n\nfunction getAnyContext(ctx, key) {\n  let value = ctx.get(key);\n  if (value !== undefined && value !== null) return value;\n  try { return ctx.get(key, 'file'); } catch (error) { return value; }\n}\nfunction setBothContext(ctx, key, value) {\n  ctx.set(key, value);\n  try { ctx.set(key, value, 'file'); } catch (error) {}\n}\n\nfunction publishPlans(groups) {\n  setBothContext(flow, 'plans', groups);\n  setBothContext(global, 'schedulePlans', groups);\n  setBothContext(global, 'scheduleRaw', groups);\n  setBothContext(global, 'scheduleUpdatedAt', new Date().toISOString());\n  const config = global.get('controlConfig') || global.get('unifiedControlConfig');\n  if (config && config.operation) {\n    config.operation.scheduledControlEnabled = true;\n    setBothContext(global, 'controlConfig', config);\n    setBothContext(global, 'unifiedControlConfig', config);\n  }\n}\n\nfunction storedControlConfig() {\n  return getAnyContext(global, 'controlConfig') || getAnyContext(global, 'unifiedControlConfig') || getAnyContext(flow, 'controlConfig') || null;\n}\n\nfunction saveControlConfig(config) {\n  setBothContext(global, 'controlConfig', config);\n  setBothContext(global, 'unifiedControlConfig', config);\n  setBothContext(flow, 'controlConfig', config);\n}\n\nconst payload = parseBody(msg.req && msg.req.body !== undefined ? msg.req.body : msg.payload) || {};\nconst method = payload.method || payload?.data?.method || payload?.action || '';\nconst response = {\n  code: 0,\n  message: 'Success',\n  version: payload.version || '1.0',\n  requestId: payload.requestId || 0,\n  timestamp: Math.floor(Date.now() / 1000),\n  data: { code: 0, message: 'Success' }\n};\n\nlet plans = getAnyContext(flow, 'plans') || getAnyContext(global, 'schedulePlans') || [];\nlet configToApply = null;\n\nswitch (method) {\n  case 'GetControlConfig':\n    response.data = { config: storedControlConfig() };\n    break;\n  case 'SaveControlConfig':\n    if (!payload?.data?.config) {\n      response.code = -5;\n      response.message = 'Missing config';\n      response.data = { code: -5, message: 'Missing config' };\n      break;\n    }\n    configToApply = payload.data.config;\n    saveControlConfig(configToApply);\n    const restartRequired = true;\n    const restart = { code: 0, message: 'OK', restartRequired, reason: 'site config changed; fixed Modbus slot topology/IP changes require NodeRedModule restart' };\n    setBothContext(global, 'restartRequired', restart);\n    response.data = restart;\n    break;\n  case 'Append': {\n    const groups = normalizeToGroupArray(payload.data !== undefined ? payload.data : payload);\n    const valid = validateAndSanitizeGroups(groups);\n    if (!groups.length || !valid.ok) {\n      response.code = -4;\n      response.message = !groups.length ? 'No timed groups to append' : 'Validation failed';\n      response.data = { code: response.code, message: response.message, errors: valid.errors, warnings: valid.warnings };\n      break;\n    }\n    const incomingHasDefault = valid.groupsSanitized.some((group) => (group.timed || []).some((plan) => plan.default));\n    if (incomingHasDefault) {\n      plans = plans.map((group) => ({ ...group, timed: (group.timed || []).filter((plan) => !plan.default) })).filter((group) => group.timed.length);\n    }\n    plans = plans.concat(valid.groupsSanitized);\n    publishPlans(plans);\n    response.data = { code: 0, message: 'Appended', count: valid.groupsSanitized.length, warnings: valid.warnings };\n    break;\n  }\n  case 'GetList':\n    response.data = { code: 0, message: 'Success', plans: flattenPlans(plans), devices: [] };\n    break;\n  case 'Reset':\n    plans = [];\n    publishPlans(plans);\n    response.data = { code: 0, message: 'Reset', count: 0 };\n    break;\n  case 'Delete': {\n    const planID = payload?.data?.planID || payload.planID;\n    if (!planID) {\n      response.code = -3;\n      response.message = 'Missing planID';\n      response.data = { code: -3, message: 'Missing planID' };\n      break;\n    }\n    plans = plans.map((group) => ({ ...group, timed: (group.timed || []).filter((plan) => plan.planID !== planID) })).filter((group) => group.timed.length);\n    publishPlans(plans);\n    response.data = { code: 0, message: 'Deleted', planID };\n    break;\n  }\n  default: {\n    const groups = normalizeToGroupArray(payload);\n    const valid = validateAndSanitizeGroups(groups);\n    if (!groups.length || !valid.ok) {\n      response.code = -1;\n      response.message = !groups.length ? 'Unknown method or empty payload' : 'Validation failed';\n      response.data = { code: response.code, message: response.message, errors: valid.errors, warnings: valid.warnings };\n      break;\n    }\n    plans = valid.groupsSanitized;\n    publishPlans(plans);\n    response.data = { code: 0, message: 'Saved', count: plans.length, warnings: valid.warnings };\n  }\n}\n\nmsg.payload = response;\nif (configToApply && response.code === 0) {\n  return [msg, { payload: { controlConfig: configToApply } }, { payload: { controlConfig: configToApply } }];\n}\nreturn [msg, null, null];",
+    "outputs": 3,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 430,
+    "y": 980,
+    "wires": [
+      [
+        "platform_esr_response"
+      ],
+      [
+        "platform_setup_telemetry"
+      ],
+      [
+        "platform_setup_writers"
+      ]
+    ]
+  },
+  {
+    "id": "platform_sched_api_rt_handler",
+    "type": "function",
+    "z": "unified_platform_tab",
+    "name": "Build realtime signal payload",
+    "func": "const telemetry = global.get('telemetry') || global.get('Telemetry') || global.get('latestTelemetry') || {};\nconst now = new Date();\nconst t = now.getTime() / 1000;\n\nfunction numericSample(value) {\n  if (typeof value === 'number' && Number.isFinite(value)) return value;\n  if (value && typeof value.value === 'number' && Number.isFinite(value.value)) return value.value;\n  const n = Number(value && value.value !== undefined ? value.value : value);\n  return Number.isFinite(n) ? n : undefined;\n}\n\nfunction readTag(tag) {\n  if (!tag) return undefined;\n  const direct = numericSample(telemetry[tag]);\n  if (direct !== undefined) return direct;\n\n  const parts = String(tag).split('.');\n  const root = parts[0];\n  const leaf = parts.slice(1).join('.');\n  const bucket = telemetry[root];\n  if (Array.isArray(bucket)) {\n    const sample = bucket.find((item) => item && (item.tagID === tag || item.tagID === leaf || String(item.tagID).endsWith('.' + leaf)));\n    const value = numericSample(sample);\n    if (value !== undefined) return value;\n  }\n\n  let current = telemetry;\n  for (const part of parts) {\n    if (!current || typeof current !== 'object') return undefined;\n    current = current[part];\n  }\n  return numericSample(current);\n}\n\nfunction numberOrFallback(value, fallback) {\n  return typeof value === 'number' && Number.isFinite(value) ? value : fallback;\n}\n\nconst utilityRaw = readTag('Meter.Utility_Total_Power') ?? readTag('Meter.POI_kW');\nconst pvRaw = readTag('Meter2.Solar') ?? readTag('PCS.DcPv_kW') ?? readTag('Meter.PV_Total_Power');\nconst pcsRaw = readTag('PCS.SYSTEM_POWER_ACTIVE_ALL') ?? readTag('PCS.ACBusTotalActivePower');\nconst generatorRaw = readTag('Meter.Generator_Total_Power');\nconst hasTelemetry = [utilityRaw, pvRaw, pcsRaw, generatorRaw].some((value) => typeof value === 'number');\nconst utilityPowerKw = numberOrFallback(utilityRaw, Math.round((35 + Math.sin(t / 9) * 12) * 10) / 10);\nconst pvKw = numberOrFallback(pvRaw, Math.round(Math.max(0, 18 + Math.sin(t / 7) * 18) * 10) / 10);\nconst pcsActivePowerKw = numberOrFallback(pcsRaw, Math.round(Math.sin(t / 5) * 22 * 10) / 10);\nconst siteLoadKw = Math.round((utilityPowerKw + pvKw + pcsActivePowerKw) * 10) / 10;\nconst generatorRunning = numberOrFallback(generatorRaw, 0) > 1;\n\nmsg.headers = { 'content-type': 'application/json' };\nmsg.payload = {\n  data: {\n    signals: { utilityPowerKw, pvKw, pcsActivePowerKw, siteLoadKw, generatorRunning },\n    raw: {\n      'Meter.Utility_Total_Power': utilityRaw,\n      'Meter2.Solar': pvRaw,\n      'PCS.SYSTEM_POWER_ACTIVE_ALL': pcsRaw,\n      'Meter.Generator_Total_Power': generatorRaw\n    },\n    source: hasTelemetry ? 'node-red-global-telemetry' : 'node-red-test-waveform',\n    updatedAt: now.toISOString()\n  }\n};\nreturn msg;",
+    "outputs": 1,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 430,
+    "y": 1040,
+    "wires": [
+      [
+        "platform_realtime_response"
+      ]
+    ]
+  },
+  {
+    "id": "platform_esr_http",
+    "type": "http in",
+    "z": "unified_platform_tab",
+    "name": "POST /api/esr",
+    "url": "/api/esr",
+    "method": "post",
+    "upload": false,
+    "x": 160,
+    "y": 980,
+    "wires": [
+      [
+        "platform_sched_api_esr_handler"
+      ]
+    ]
+  },
+  {
+    "id": "platform_esr_response",
+    "type": "http response",
+    "z": "unified_platform_tab",
+    "name": "ESR response",
+    "statusCode": "",
+    "headers": {},
+    "x": 720,
+    "y": 980,
+    "wires": []
+  },
+  {
+    "id": "platform_realtime_http",
+    "type": "http in",
+    "z": "unified_platform_tab",
+    "name": "GET /api/realtime-signals",
+    "url": "/api/realtime-signals",
+    "method": "get",
+    "upload": false,
+    "x": 160,
+    "y": 1040,
+    "wires": [
+      [
+        "platform_sched_api_rt_handler"
+      ]
+    ]
+  },
+  {
+    "id": "platform_realtime_response",
+    "type": "http response",
+    "z": "unified_platform_tab",
+    "name": "Realtime response",
+    "statusCode": "",
+    "headers": {},
+    "x": 720,
+    "y": 1040,
+    "wires": []
+  },
+  {
+    "id": "platform_status_http",
+    "type": "http in",
+    "z": "unified_platform_tab",
+    "name": "GET /api/control/status",
+    "url": "/api/control/status",
+    "method": "get",
+    "upload": false,
+    "x": 160,
+    "y": 1100,
+    "wires": [
+      [
+        "platform_status_handler"
+      ]
+    ]
+  },
+  {
+    "id": "platform_status_response",
+    "type": "http response",
+    "z": "unified_platform_tab",
+    "name": "Control status response",
+    "statusCode": "",
+    "headers": {},
+    "x": 720,
+    "y": 1100,
+    "wires": []
+  },
+  {
+    "id": "platform_rt_http",
+    "type": "http in",
+    "z": "unified_platform_tab",
+    "name": "POST /api/control/realtime-dispatch",
+    "url": "/api/control/realtime-dispatch",
+    "method": "post",
+    "upload": false,
+    "x": 160,
+    "y": 1160,
+    "wires": [
+      [
+        "platform_rt_handler"
+      ]
+    ]
+  },
+  {
+    "id": "platform_rt_response",
+    "type": "http response",
+    "z": "unified_platform_tab",
+    "name": "Realtime dispatch response",
+    "statusCode": "",
+    "headers": {},
+    "x": 720,
+    "y": 1160,
+    "wires": []
+  },
+  {
+    "id": "platform_config_apply_http",
+    "type": "http in",
+    "z": "unified_platform_tab",
+    "name": "POST /api/control/config/apply",
+    "url": "/api/control/config/apply",
+    "method": "post",
+    "upload": false,
+    "x": 160,
+    "y": 1220,
+    "wires": [
+      [
+        "platform_config_apply"
+      ]
+    ]
+  },
+  {
+    "id": "platform_config_apply",
+    "type": "function",
+    "z": "unified_platform_tab",
+    "name": "Apply site config",
+    "func": "const setBothContext = (ctx, key, value) => {\n  ctx.set(key, value);\n  try { ctx.set(key, value, 'file'); } catch (error) {}\n};\nlet body = msg.payload || {};\nif (typeof body === 'string') {\n  try { body = JSON.parse(body); } catch (error) { msg.statusCode = 400; msg.payload = { error: 'invalid JSON body' }; return [msg, null, null]; }\n}\nconst config = body.config || body.controlConfig || body.data?.config;\nif (!config || typeof config !== 'object') {\n  msg.statusCode = 400;\n  msg.payload = { error: 'missing config' };\n  return [msg, null, null];\n}\nsetBothContext(global, 'controlConfig', config);\nsetBothContext(global, 'unifiedControlConfig', config);\nsetBothContext(global, 'siteConfig', config);\nsetBothContext(flow, 'controlConfig', config);\nconst result = { code: 0, message: 'OK', restartRequired: true, reason: 'site config applied; topology/server-slot changes require NodeRedModule restart' };\nsetBothContext(global, 'restartRequired', result);\nmsg.headers = { 'content-type': 'application/json' };\nmsg.payload = { data: result };\nreturn [msg, { payload: { controlConfig: config } }, { payload: { controlConfig: config } }];",
+    "outputs": 3,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 430,
+    "y": 1220,
+    "wires": [
+      [
+        "platform_config_apply_response"
+      ],
+      [
+        "platform_setup_telemetry"
+      ],
+      [
+        "platform_setup_writers"
+      ]
+    ]
+  },
+  {
+    "id": "platform_config_apply_response",
+    "type": "http response",
+    "z": "unified_platform_tab",
+    "name": "Config apply response",
+    "statusCode": "",
+    "headers": {},
+    "x": 720,
+    "y": 1220,
+    "wires": []
+  },
+  {
+    "id": "platform_comment",
+    "type": "comment",
+    "z": "unified_platform_tab",
+    "name": "Unified Platform Runtime - fixed Modbus slots are patched from site config during restart/apply",
+    "info": "",
+    "x": 520,
+    "y": 40,
+    "wires": []
+  },
+  {
+    "id": "27fda477.05255c",
+    "type": "edgeclient"
+  },
+  {
+    "id": "platform_comment_boot",
+    "type": "comment",
+    "z": "unified_platform_tab",
+    "name": "1. Boot / profile apply: derive telemetry and writer runtime plans",
+    "info": "",
+    "x": 430,
+    "y": 90,
+    "wires": []
+  },
+  {
+    "id": "platform_comment_telemetry",
+    "type": "comment",
+    "z": "unified_platform_tab",
+    "name": "2. Telemetry read path: compile readers, poll fixed slots, store canonical telemetry",
+    "info": "",
+    "x": 430,
+    "y": 220,
+    "wires": []
+  },
+  {
+    "id": "platform_comment_control",
+    "type": "comment",
+    "z": "unified_platform_tab",
+    "name": "3. Control loop: scheduler/realtime/config feed unified control and writer runtime",
+    "info": "",
+    "x": 430,
+    "y": 560,
+    "wires": []
+  },
+  {
+    "id": "platform_comment_cloud",
+    "type": "comment",
+    "z": "unified_platform_tab",
+    "name": "4. Cloud/API/debug: status endpoints, ESR API, realtime API, AWS output, errors",
+    "info": "",
+    "x": 430,
+    "y": 920,
+    "wires": []
+  },
+  {
+    "id": "platform_comment_slots",
+    "type": "comment",
+    "z": "unified_platform_tab",
+    "name": "Fixed Modbus clients: production uses hard-coded IPs; connector nodes are commissioning-only",
+    "info": "",
+    "x": 1010,
+    "y": 180,
+    "wires": []
+  }
+]

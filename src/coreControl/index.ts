@@ -15,6 +15,10 @@ import {
   type MeteringCalculationDiagnostic,
   type MeteringTelemetryInput,
 } from "./meteringCalculations";
+import {
+  evaluateSignalMapping,
+  type SignalMappingDiagnostic,
+} from "./signalMapping";
 
 export {
   assertUnifiedControlDesignCoverage,
@@ -35,6 +39,11 @@ export {
   type MeteringTelemetryInput,
   type TelemetrySampleLike,
 } from "./meteringCalculations";
+export {
+  evaluateSignalMapping,
+  type SignalMappingDiagnostic,
+  type SignalMappingResult,
+} from "./signalMapping";
 export {
   evaluateGeneratorSequencer,
   generatorCommandsToWriterEnvelopes,
@@ -57,6 +66,30 @@ export {
   type IslandingSequencerTelemetry,
   type IslandingWriterOptions,
 } from "./islandingSequencer";
+export {
+  classifyMiniFaults,
+  evaluateMiniFaultRecovery,
+  miniFaultRecoveryCommandsToWriterEnvelopes,
+  type MiniFaultClassification,
+  type MiniFaultRecoveryCommand,
+  type MiniFaultRecoveryMode,
+  type MiniFaultRecoveryOptions,
+  type MiniFaultRecoveryResult,
+  type MiniFaultRecoveryState,
+  type MiniFaultRecoveryWriterOptions,
+  type MiniFaultTelemetry,
+} from "./miniFaultRecovery";
+export {
+  evaluateMiniStandaloneSequencer,
+  miniStandaloneCommandsToWriterEnvelopes,
+  type MiniStandaloneCommand,
+  type MiniStandaloneMode,
+  type MiniStandaloneOptions,
+  type MiniStandaloneResult,
+  type MiniStandaloneState,
+  type MiniStandaloneTelemetry,
+  type MiniStandaloneWriterOptions,
+} from "./miniStandaloneSequencer";
 export type {
   ControlCommandDesign,
   ControlDesignRole,
@@ -89,6 +122,11 @@ export interface ESpire280MachineStatus {
   pcsGlobalState?: number;
   epoActive?: boolean;
   contactorsClosed?: boolean;
+  miniFaulted?: boolean;
+  miniFaultReasons?: string[];
+  actualBatteryPowerKw?: number;
+  onOffGridSwitch?: number;
+  gridAvailable?: boolean;
 }
 
 export interface TelemetrySnapshot {
@@ -158,6 +196,7 @@ export interface CoreControlState {
       lastPct?: number;
     }
   >;
+  miniSelfConsumptionCorrectionKw?: number;
 }
 
 export type ControlPipelineStageId =
@@ -214,6 +253,7 @@ export interface UnifiedControlCycleInput {
 
 export interface UnifiedControlCycleDiagnostics {
   metering: MeteringCalculationDiagnostic[];
+  signalMapping: SignalMappingDiagnostic[];
 }
 
 export interface UnifiedControlCycleResult {
@@ -254,24 +294,50 @@ export function runUnifiedControlCycle(
 ): UnifiedControlCycleResult {
   const design = buildUnifiedControlDesign(config);
   const routePlan = buildUnifiedControlRoutePlan(design);
+  const signalMapping = evaluateSignalMapping(
+    config.signalMapping,
+    input.telemetry
+  );
+  const signalMeteringReadings = pickSignalMeteringReadings(
+    signalMapping.signals
+  );
+  const telemetryForMetering = mergeTelemetryInput(
+    input.telemetry,
+    signalMapping.signals
+  );
   const metering = evaluateMeteringCalculations(
     config.metering.calculations,
-    input.telemetry
+    telemetryForMetering
+  );
+  const meteringDiagnostics = metering.diagnostics.filter(
+    (diagnostic) =>
+      !Object.prototype.hasOwnProperty.call(
+        signalMeteringReadings,
+        diagnostic.reading
+      )
   );
   const measuredPcsActivePowerKw =
     input.baseTelemetry.pcsActivePowerKw ??
+    numericSignal(signalMapping.signals.pcsActivePowerKw) ??
     readTelemetryNumber(
       input.telemetry,
       "PCS.SYSTEM_POWER_ACTIVE_ALL",
+      "PCS.ACBusTotalActivePower",
       "SYSTEM_POWER_ACTIVE_ALL",
+      "ACBusTotalActivePower",
       "Meter.BESS_Total_Power",
       "BESS_KW"
     );
+  const generatorRunning =
+    input.baseTelemetry.generatorRunning ??
+    booleanSignal(signalMapping.signals.generatorRunning);
   const telemetry: TelemetrySnapshot = {
     ...input.baseTelemetry,
     ...(measuredPcsActivePowerKw != null
       ? { pcsActivePowerKw: measuredPcsActivePowerKw }
       : {}),
+    ...(generatorRunning != null ? { generatorRunning } : {}),
+    ...signalMeteringReadings,
     ...metering.readings,
   };
   const command = evaluateCoreControl(
@@ -295,7 +361,7 @@ export function runUnifiedControlCycle(
       routePlan,
       telemetry,
       command,
-      metering.diagnostics
+      meteringDiagnostics
     ),
     telemetry,
     command,
@@ -304,9 +370,49 @@ export function runUnifiedControlCycle(
       nowMs: input.nowMs,
     }),
     diagnostics: {
-      metering: metering.diagnostics,
+      metering: meteringDiagnostics,
+      signalMapping: signalMapping.diagnostics,
     },
   };
+}
+
+function pickSignalMeteringReadings(
+  signals: Partial<Record<string, unknown>>
+): Partial<Pick<TelemetrySnapshot, "utilityPowerKw" | "siteLoadKw" | "pvKw">> {
+  const readings: Partial<
+    Pick<TelemetrySnapshot, "utilityPowerKw" | "siteLoadKw" | "pvKw">
+  > = {};
+
+  for (const key of ["utilityPowerKw", "siteLoadKw", "pvKw"] as const) {
+    const value = numericSignal(signals[key]);
+    if (value != null) {
+      readings[key] = value;
+    }
+  }
+
+  return readings;
+}
+
+function mergeTelemetryInput(
+  telemetry: MeteringTelemetryInput,
+  signals: Partial<Record<string, unknown>>
+): MeteringTelemetryInput {
+  return {
+    ...(telemetry as Record<string, unknown>),
+    ...signals,
+  };
+}
+
+function numericSignal(value: unknown): number | undefined {
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? numeric : undefined;
+}
+
+function booleanSignal(value: unknown): boolean | undefined {
+  if (typeof value === "boolean") return value;
+  if (value == null) return undefined;
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? numeric !== 0 : undefined;
 }
 
 function buildControlPipelineResult(
@@ -565,6 +671,7 @@ function isSafetyGateReason(reason: string): boolean {
     reason === "e280-pcs-faulted" ||
     reason === "e280-epo-active" ||
     reason === "e280-contactors-open" ||
+    reason === "mini-faulted" ||
     reason === "crd-missing-utility-power" ||
     reason === "pcs-dispatch-unavailable" ||
     isProtectionReason(reason)
@@ -730,6 +837,7 @@ function evaluateSafetyGates(
   }
 
   applyESpire280MachineSafetyGates(ctx, telemetry, reasons);
+  applyMiniMachineSafetyGates(ctx, telemetry, reasons);
 
   if (
     ctx.design.routing.pcsDispatch === "none" ||
@@ -772,6 +880,23 @@ function applyESpire280MachineSafetyGates(
   }
   if (machine.contactorsClosed === false) {
     reasons.push("e280-contactors-open");
+  }
+}
+
+function applyMiniMachineSafetyGates(
+  ctx: CoreControlContext,
+  telemetry: TelemetrySnapshot,
+  reasons: string[]
+) {
+  if (ctx.design.productLine !== "Mini") return;
+  const machine = telemetry.machineStatus;
+  if (!machine) return;
+
+  if (machine.miniFaulted === true) {
+    reasons.push("mini-faulted");
+    if (machine.miniFaultReasons) {
+      reasons.push(...machine.miniFaultReasons);
+    }
   }
 }
 
@@ -1431,6 +1556,16 @@ interface BatteryControlPolicy {
   commandRampKwPerSec: number;
 }
 
+interface CellVoltageControlPolicy {
+  maxCellVoltageChargeBlockV: number;
+  maxCellVoltageChargeRecoverV: number;
+  minCellVoltageDischargeBlockV: number;
+  minCellVoltageDischargeRecoverV: number;
+  chargeTaperStartV: number;
+  chargeTaperEndV: number;
+  chargeTaperMinFraction: number;
+}
+
 function resolveBatteryControlPolicy(ctx: CoreControlContext): BatteryControlPolicy {
   const battery = ctx.config.battery;
   return {
@@ -1452,6 +1587,41 @@ function resolveBatteryControlPolicy(ctx: CoreControlContext): BatteryControlPol
   };
 }
 
+function resolveCellVoltagePolicy(ctx: CoreControlContext): CellVoltageControlPolicy {
+  const override = ctx.config.battery.cellVoltagePolicy || {};
+  const isMini = ctx.design.productLine === "Mini";
+  const chargeBlockDefault = isMini
+    ? MINI_VCELL_MAX_BLOCK_CHG_ON
+    : E280_VCELL_MAX_BLOCK_CHG_ON;
+  const dischargeBlockDefault = isMini
+    ? MINI_VCELL_MIN_BLOCK_DIS_ON
+    : E280_VCELL_MIN_BLOCK_DIS;
+
+  return {
+    maxCellVoltageChargeBlockV:
+      finiteNumber(override.maxCellVoltageChargeBlockV) ??
+      chargeBlockDefault,
+    maxCellVoltageChargeRecoverV:
+      finiteNumber(override.maxCellVoltageChargeRecoverV) ??
+      (isMini ? MINI_VCELL_MAX_BLOCK_CHG_OFF : E280_VCELL_MAX_BLOCK_CHG_OFF),
+    minCellVoltageDischargeBlockV:
+      finiteNumber(override.minCellVoltageDischargeBlockV) ??
+      dischargeBlockDefault,
+    minCellVoltageDischargeRecoverV:
+      finiteNumber(override.minCellVoltageDischargeRecoverV) ??
+      (isMini ? MINI_VCELL_MIN_BLOCK_DIS_OFF : dischargeBlockDefault),
+    chargeTaperStartV:
+      finiteNumber(override.chargeTaperStartV) ?? E280_VCELL_TAPER_START,
+    chargeTaperEndV:
+      finiteNumber(override.chargeTaperEndV) ??
+      finiteNumber(override.maxCellVoltageChargeBlockV) ??
+      E280_VCELL_TAPER_END,
+    chargeTaperMinFraction:
+      finiteNumber(override.chargeTaperMinFraction) ??
+      E280_VCELL_TAPER_MIN_FRAC,
+  };
+}
+
 function applySharedBatteryPolicy(
   ctx: CoreControlContext,
   telemetry: TelemetrySnapshot,
@@ -1461,9 +1631,14 @@ function applySharedBatteryPolicy(
   let targetKw = currentTargetKw;
   const machine = telemetry.machineStatus;
   const batteryPolicy = resolveBatteryControlPolicy(ctx);
+  const cellVoltagePolicy = resolveCellVoltagePolicy(ctx);
   const socState = resolveSocHysteresisState(ctx, telemetry, reasons);
   const caps = machine
-    ? resolveESpire280MachinePowerCaps(machine, batteryPolicy.powerHeadroomKw)
+    ? resolveESpire280MachinePowerCaps(
+        machine,
+        batteryPolicy.powerHeadroomKw,
+        cellVoltagePolicy
+      )
     : {};
   const maxChargeKw =
     ctx.design.productLine === "Mini"
@@ -1577,6 +1752,7 @@ function resolveVcellChargeBlock(
   reasons: string[]
 ): boolean {
   const maxCellVoltageV = finiteNumber(machine?.maxCellVoltageV);
+  const cellVoltagePolicy = resolveCellVoltagePolicy(ctx);
 
   if (ctx.design.productLine === "Mini") {
     let blocked = ctx.state?.miniCellVoltageChargeBlocked ?? false;
@@ -1584,9 +1760,13 @@ function resolveVcellChargeBlock(
     if (maxCellVoltageV == null) {
       blocked = true;
       reasons.push("mini-cell-voltage-max-missing");
-    } else if (maxCellVoltageV >= MINI_VCELL_MAX_BLOCK_CHG_ON) {
+    } else if (
+      maxCellVoltageV >= cellVoltagePolicy.maxCellVoltageChargeBlockV
+    ) {
       blocked = true;
-    } else if (maxCellVoltageV <= MINI_VCELL_MAX_BLOCK_CHG_OFF) {
+    } else if (
+      maxCellVoltageV <= cellVoltagePolicy.maxCellVoltageChargeRecoverV
+    ) {
       blocked = false;
     }
 
@@ -1600,11 +1780,14 @@ function resolveVcellChargeBlock(
 
   let blocked = ctx.state?.vcellChargeBlocked ?? false;
 
-  if (maxCellVoltageV != null && maxCellVoltageV >= E280_VCELL_MAX_BLOCK_CHG_ON) {
+  if (
+    maxCellVoltageV != null &&
+    maxCellVoltageV >= cellVoltagePolicy.maxCellVoltageChargeBlockV
+  ) {
     blocked = true;
   } else if (
     maxCellVoltageV != null &&
-    maxCellVoltageV <= E280_VCELL_MAX_BLOCK_CHG_OFF
+    maxCellVoltageV <= cellVoltagePolicy.maxCellVoltageChargeRecoverV
   ) {
     blocked = false;
   }
@@ -1623,6 +1806,7 @@ function resolveVcellDischargeBlock(
   reasons: string[]
 ): boolean {
   const minCellVoltageV = finiteNumber(machine?.minCellVoltageV);
+  const cellVoltagePolicy = resolveCellVoltagePolicy(ctx);
 
   if (ctx.design.productLine === "Mini") {
     let blocked = ctx.state?.miniCellVoltageDischargeBlocked ?? false;
@@ -1630,9 +1814,13 @@ function resolveVcellDischargeBlock(
     if (minCellVoltageV == null) {
       blocked = true;
       reasons.push("mini-cell-voltage-min-missing");
-    } else if (minCellVoltageV <= MINI_VCELL_MIN_BLOCK_DIS_ON) {
+    } else if (
+      minCellVoltageV <= cellVoltagePolicy.minCellVoltageDischargeBlockV
+    ) {
       blocked = true;
-    } else if (minCellVoltageV >= MINI_VCELL_MIN_BLOCK_DIS_OFF) {
+    } else if (
+      minCellVoltageV >= cellVoltagePolicy.minCellVoltageDischargeRecoverV
+    ) {
       blocked = false;
     }
 
@@ -1644,7 +1832,10 @@ function resolveVcellDischargeBlock(
     return blocked;
   }
 
-  if (minCellVoltageV != null && minCellVoltageV <= E280_VCELL_MIN_BLOCK_DIS) {
+  if (
+    minCellVoltageV != null &&
+    minCellVoltageV <= cellVoltagePolicy.minCellVoltageDischargeBlockV
+  ) {
     reasons.push("e280-cell-low-discharge-block");
     return true;
   }
@@ -1669,7 +1860,8 @@ function applyESpire280MachineAvailabilityPolicy(
   if (
     targetKw > 0 &&
     minCellVoltageV != null &&
-    minCellVoltageV <= E280_VCELL_MIN_BLOCK_DIS
+    minCellVoltageV <=
+      resolveCellVoltagePolicy(ctx).minCellVoltageDischargeBlockV
   ) {
     reasons.push("e280-cell-low-discharge-block");
     targetKw = 0;
@@ -1677,7 +1869,8 @@ function applyESpire280MachineAvailabilityPolicy(
 
   const caps = resolveESpire280MachinePowerCaps(
     machine,
-    resolveBatteryControlPolicy(ctx).powerHeadroomKw
+    resolveBatteryControlPolicy(ctx).powerHeadroomKw,
+    resolveCellVoltagePolicy(ctx)
   );
   if (targetKw < 0 && caps.maxChargeKw != null) {
     const clamped = Math.max(targetKw, -caps.maxChargeKw);
@@ -1699,7 +1892,16 @@ function applyESpire280MachineAvailabilityPolicy(
 
 function resolveESpire280MachinePowerCaps(
   machine: ESpire280MachineStatus,
-  powerHeadroomKw = DEFAULT_BATT_HEADROOM_KW
+  powerHeadroomKw = DEFAULT_BATT_HEADROOM_KW,
+  cellVoltagePolicy: CellVoltageControlPolicy = {
+    maxCellVoltageChargeBlockV: E280_VCELL_MAX_BLOCK_CHG_ON,
+    maxCellVoltageChargeRecoverV: E280_VCELL_MAX_BLOCK_CHG_OFF,
+    minCellVoltageDischargeBlockV: E280_VCELL_MIN_BLOCK_DIS,
+    minCellVoltageDischargeRecoverV: E280_VCELL_MIN_BLOCK_DIS,
+    chargeTaperStartV: E280_VCELL_TAPER_START,
+    chargeTaperEndV: E280_VCELL_TAPER_END,
+    chargeTaperMinFraction: E280_VCELL_TAPER_MIN_FRAC,
+  }
 ): {
   maxChargeKw?: number;
   maxDischargeKw?: number;
@@ -1735,23 +1937,25 @@ function resolveESpire280MachinePowerCaps(
   if (
     maxChargeKw != null &&
     maxCellVoltageV != null &&
-    maxCellVoltageV >= E280_VCELL_TAPER_START &&
-    maxCellVoltageV < E280_VCELL_TAPER_END
+    maxCellVoltageV >= cellVoltagePolicy.chargeTaperStartV &&
+    maxCellVoltageV < cellVoltagePolicy.chargeTaperEndV
   ) {
     const frac = clamp(
-      (E280_VCELL_TAPER_END - maxCellVoltageV) /
-        (E280_VCELL_TAPER_END - E280_VCELL_TAPER_START),
+      (cellVoltagePolicy.chargeTaperEndV - maxCellVoltageV) /
+        (cellVoltagePolicy.chargeTaperEndV -
+          cellVoltagePolicy.chargeTaperStartV),
       0,
       1
     );
     const taperFrac =
-      E280_VCELL_TAPER_MIN_FRAC + (1 - E280_VCELL_TAPER_MIN_FRAC) * frac;
+      cellVoltagePolicy.chargeTaperMinFraction +
+      (1 - cellVoltagePolicy.chargeTaperMinFraction) * frac;
     maxChargeKw *= taperFrac;
   }
   if (
     maxChargeKw != null &&
     maxCellVoltageV != null &&
-    maxCellVoltageV >= E280_VCELL_TAPER_END
+    maxCellVoltageV >= cellVoltagePolicy.chargeTaperEndV
   ) {
     maxChargeKw = 0;
   }
@@ -1901,11 +2105,61 @@ function resolveMiniDispatch(
       : "mini-ac-pv-battery-setpoint"
   );
 
+  pcsActivePowerKw = applyMiniSelfConsumptionCorrection(
+    ctx,
+    telemetry,
+    batteryActivePowerKw,
+    pcsActivePowerKw,
+    reasons
+  );
+
   return {
     pcsActivePowerKw,
     pcsActivePowerSetpointEnabled: true,
     ...maxCurrents,
   };
+}
+
+function applyMiniSelfConsumptionCorrection(
+  ctx: CoreControlContext,
+  telemetry: TelemetrySnapshot,
+  batteryActivePowerKw: number,
+  pcsActivePowerKw: number,
+  reasons: string[]
+): number {
+  if (!hasMiniDcPvConverter(ctx)) return pcsActivePowerKw;
+  if (telemetry.gridStatus !== "normal") return pcsActivePowerKw;
+  const actualBatteryPowerKw = finiteNumber(
+    telemetry.machineStatus?.actualBatteryPowerKw
+  );
+  if (actualBatteryPowerKw == null) return pcsActivePowerKw;
+
+  const targetNearZero = Math.abs(batteryActivePowerKw) <= 1;
+  const maxCorrectionKw = 15;
+  const deadbandKw = 0.2;
+  const gain = 0.35;
+  const decay = 0.02;
+  let correction = ctx.state?.miniSelfConsumptionCorrectionKw ?? 0;
+
+  if (targetNearZero) {
+    let errorKw = actualBatteryPowerKw - batteryActivePowerKw;
+    if (Math.abs(errorKw) < deadbandKw) errorKw = 0;
+    correction = clamp(correction + errorKw * gain, -maxCorrectionKw, maxCorrectionKw);
+    reasons.push("mini-self-consumption-correction");
+  } else {
+    correction *= 1 - decay;
+    if (Math.abs(correction) < 0.1) correction = 0;
+  }
+
+  if (ctx.state) {
+    ctx.state.miniSelfConsumptionCorrectionKw = correction;
+  }
+
+  return clamp(
+    pcsActivePowerKw - correction,
+    -ctx.design.limits.pcs.maxChargeKw,
+    ctx.design.limits.pcs.maxDischargeKw
+  );
 }
 
 function hasMiniDcPvConverter(ctx: CoreControlContext): boolean {
@@ -2136,7 +2390,8 @@ function applyPvCurtailmentPolicy(
     const machineChargeCapKw = telemetry.machineStatus
       ? resolveESpire280MachinePowerCaps(
           telemetry.machineStatus,
-          resolveBatteryControlPolicy(ctx).powerHeadroomKw
+          resolveBatteryControlPolicy(ctx).powerHeadroomKw,
+          resolveCellVoltagePolicy(ctx)
         ).maxChargeKw
       : undefined;
     const maxChargeKw =
@@ -2190,7 +2445,8 @@ function applySiteNoExportPvPolicy(
   const caps = machine
     ? resolveESpire280MachinePowerCaps(
         machine,
-        resolveBatteryControlPolicy(ctx).powerHeadroomKw
+        resolveBatteryControlPolicy(ctx).powerHeadroomKw,
+        resolveCellVoltagePolicy(ctx)
       )
     : {};
   const chargeBlockedBySoc =

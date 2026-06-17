@@ -22,24 +22,26 @@ const MINI_VOLTAGE_VLL = [208, 480] as const;
 
 /**
  * Parse MINI-60-90-163-480 into product capabilities.
+ * Existing field configs may omit voltage, for example MINI-90-135-288.
+ * Omitted voltage defaults to 480 VLL.
  *
- * Format: MINI-XX-YY-ZZ-VVV
+ * Format: MINI-XX-YY-ZZ-VVV or MINI-XX-YY-ZZ
  * XX  = PCS kW, one of 30/50/60/90
  * YY  = DC PV kW, one of 0/45/90/135. 0 means no built-in DC converter.
  * ZZ  = battery kWh
- * VVV = AC line-line voltage, 208 or 480
+ * VVV = AC line-line voltage, 208 or 480. Defaults to 480 when omitted.
  */
 export function parseMiniModel(systemProfile: string): MiniModelInfo | null {
   const match = systemProfile
     .trim()
-    .match(/^MINI-(\d+)-(\d+)-(\d+(?:\.\d+)?)-(\d+)$/i);
+    .match(/^MINI-(\d+)-(\d+)-(\d+(?:\.\d+)?)(?:-(\d+))?$/i);
   if (!match) return null;
 
   const [, pcsStr, pvStr, battStr, voltStr] = match;
   const pcsKw = Number(pcsStr);
   const dcPvKw = Number(pvStr);
   const batteryKwh = Number(battStr);
-  const voltage = Number(voltStr);
+  const voltage = Number(voltStr ?? 480);
 
   if (
     [pcsKw, batteryKwh, voltage].some(

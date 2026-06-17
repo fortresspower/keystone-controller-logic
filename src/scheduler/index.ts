@@ -20,6 +20,10 @@ export interface SchedulePlan {
   duration?: ScheduleDuration | number | string;
   start?: string;
   until?: string;
+  time?: {
+    start?: string;
+    end?: string;
+  };
   strategy?: ScheduleStrategy;
   constraints?: ScheduleConstraints;
   activePowerKwSetpoint?: number;
@@ -39,7 +43,18 @@ export interface SchedulePlanGroup {
 export type SchedulePlanInput =
   | SchedulePlan[]
   | SchedulePlanGroup[]
-  | { plans?: SchedulePlan[] | SchedulePlanGroup[]; data?: { plans?: SchedulePlan[] | SchedulePlanGroup[] } }
+  | {
+      plans?: SchedulePlan[] | SchedulePlanGroup[];
+      timed?: SchedulePlan[];
+      default?: SchedulePlan;
+      schedule?: SchedulePlanInput;
+      data?: {
+        plans?: SchedulePlan[] | SchedulePlanGroup[];
+        timed?: SchedulePlan[];
+        default?: SchedulePlan;
+        schedule?: SchedulePlanInput;
+      };
+    }
   | undefined
   | null;
 
@@ -163,8 +178,7 @@ export function matchActiveSchedulePlan(
   for (let index = plans.length - 1; index >= 0; index -= 1) {
     const plan = plans[index];
     if (isDefaultPlan(plan)) continue;
-    if (!plan.cron) continue;
-    const active = getActiveWindow(plan, nowParts, nowLocalMs);
+    const active = getAbsoluteTimeWindow(plan, now) ?? getActiveWindow(plan, nowParts, nowLocalMs);
     if (!active) continue;
     if (!withinPlanBounds(plan, nowLocalMs)) continue;
 
@@ -191,7 +205,7 @@ export function matchActiveSchedulePlan(
     via: "default",
     isFallback: true,
     selectedReason: "default",
-    nextTimedStart: findNextTimedStart(plans, nowParts, nowLocalMs),
+    nextTimedStart: findNextTimedStart(plans, now, nowParts, nowLocalMs),
   };
 }
 
@@ -227,10 +241,16 @@ export function scheduleOutputFromActivePlan(activePlan: ActiveSchedulePlan): Sc
 
 function normalizePlans(plansRaw: SchedulePlanInput): SchedulePlan[] {
   const raw =
-    Array.isArray(plansRaw) ? plansRaw : plansRaw?.data?.plans ?? plansRaw?.plans ?? [];
-  if (!Array.isArray(raw)) return [];
-
+    Array.isArray(plansRaw) ? plansRaw : plansRaw?.data?.plans ?? plansRaw?.plans ?? plansRaw?.schedule ?? plansRaw?.data?.schedule ?? [];
   const plans: SchedulePlan[] = [];
+  const defaults = Array.isArray(plansRaw)
+    ? []
+    : [plansRaw?.default, plansRaw?.data?.default].filter(isSchedulePlan);
+  plans.push(...defaults);
+  if (!Array.isArray(plansRaw) && Array.isArray(plansRaw?.timed)) plans.push(...plansRaw.timed);
+  if (!Array.isArray(plansRaw) && Array.isArray(plansRaw?.data?.timed)) plans.push(...plansRaw.data.timed);
+  if (!Array.isArray(raw)) return plans;
+
   for (const item of raw) {
     if (isSchedulePlanGroup(item)) {
       const grouped = Array.isArray(item.timed) ? item.timed : item.plans;
@@ -314,6 +334,21 @@ function getActiveWindow(
   return null;
 }
 
+function getAbsoluteTimeWindow(
+  plan: SchedulePlan,
+  now: Date
+): { startMs: number; endMs: number } | null {
+  const startMs = parseAbsoluteDateMs(plan.time?.start);
+  const endMs = parseAbsoluteDateMs(plan.time?.end);
+  if (startMs == null || endMs == null || endMs <= startMs) return null;
+
+  const nowMs = now.getTime();
+  if (nowMs >= startMs && nowMs < endMs) {
+    return { startMs, endMs };
+  }
+  return null;
+}
+
 function parseCron(cron: string | undefined): CronFields | null {
   if (!cron) return null;
   const fields = cron.trim().split(/\s+/);
@@ -386,8 +421,21 @@ function findDefaultPlan(plans: SchedulePlan[]): SchedulePlan | null {
   return null;
 }
 
-function findNextTimedStart(plans: SchedulePlan[], nowParts: LocalParts, nowLocalMs: number): Date | null {
+function findNextTimedStart(
+  plans: SchedulePlan[],
+  now: Date,
+  nowParts: LocalParts,
+  nowLocalMs: number
+): Date | null {
   let best: number | null = null;
+  const nowMs = now.getTime();
+
+  for (const plan of plans) {
+    if (isDefaultPlan(plan)) continue;
+    const startMs = parseAbsoluteDateMs(plan.time?.start);
+    if (startMs == null || startMs <= nowMs) continue;
+    if (best == null || startMs < best) best = startMs;
+  }
 
   for (let dayOffset = 0; dayOffset <= 31; dayOffset += 1) {
     const dayParts = addLocalDays(nowParts, dayOffset);
@@ -489,6 +537,12 @@ function parseLocalDateMs(value: string | undefined): number | null {
     Number(match[5] ?? 0),
     Number(match[6] ?? 0)
   );
+}
+
+function parseAbsoluteDateMs(value: string | undefined): number | null {
+  if (!value) return null;
+  const parsed = Date.parse(value);
+  return Number.isFinite(parsed) ? parsed : null;
 }
 
 function toDate(value: Date | string | number | undefined): Date {

@@ -36,6 +36,7 @@ type ParserKind =
   | "F32" | "F64"
   | "U64" | "S64"
   | "C"
+  | "STR16BE"
   | "STR";
 
 /**

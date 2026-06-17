@@ -881,6 +881,47 @@ export function validateSiteConfig(config: SiteConfig): SiteConfigValidationIssu
       message: "modbusServer port must be 1..65535",
     });
   }
+  for (let index = 0; index < (config.network?.serverSlots || []).length; index++) {
+    const slot = config.network!.serverSlots![index];
+    const basePath = `network.serverSlots.${index}`;
+    if (!slot.key) {
+      issues.push({ path: `${basePath}.key`, message: "server slot key is required" });
+    }
+    if (!slot.ip) {
+      issues.push({ path: `${basePath}.ip`, message: "server slot ip is required" });
+    }
+    if (!Number.isInteger(slot.port) || slot.port < 1 || slot.port > 65535) {
+      issues.push({ path: `${basePath}.port`, message: "server slot port must be 1..65535" });
+    }
+  }
+  const serverSlotKeys = new Set(
+    (config.network?.serverSlots || []).map((slot) => slot.key).filter(Boolean)
+  );
+  for (let index = 0; index < (config.network?.assets || []).length; index++) {
+    const asset = config.network!.assets![index];
+    const basePath = `network.assets.${index}`;
+    if (!asset.id) {
+      issues.push({ path: `${basePath}.id`, message: "asset id is required" });
+    }
+    if (!asset.role) {
+      issues.push({ path: `${basePath}.role`, message: "asset role is required" });
+    }
+    if (!asset.ip) {
+      issues.push({ path: `${basePath}.ip`, message: "asset ip is required" });
+    }
+    if (!Number.isInteger(asset.port) || asset.port < 1 || asset.port > 65535) {
+      issues.push({ path: `${basePath}.port`, message: "asset port must be 1..65535" });
+    }
+    if (!Number.isInteger(asset.unitId) || asset.unitId < 1 || asset.unitId > 247) {
+      issues.push({ path: `${basePath}.unitId`, message: "asset unitId must be 1..247" });
+    }
+    if (asset.serverSlot && serverSlotKeys.size && !serverSlotKeys.has(asset.serverSlot)) {
+      issues.push({
+        path: `${basePath}.serverSlot`,
+        message: "asset serverSlot must reference network.serverSlots",
+      });
+    }
+  }
 
   const validGridCodes = new Set([
     "IEEE1547-2018",
@@ -999,6 +1040,7 @@ export function validateSiteConfig(config: SiteConfig): SiteConfigValidationIssu
     "battery.commandRampKwPerSec",
     issues
   );
+  validateCellVoltagePolicy(config.battery.cellVoltagePolicy, issues);
 
   if (config.system.systemProfile === "eSpire280") {
     if (!config.pcs) {
@@ -1224,6 +1266,77 @@ function validateOptionalNonNegativeNumber(
   const numeric = Number(value);
   if (!Number.isFinite(numeric) || numeric < 0) {
     issues.push({ path, message: `${path} must be >= 0` });
+  }
+}
+
+function validateCellVoltagePolicy(
+  value: SiteConfig["battery"]["cellVoltagePolicy"],
+  issues: SiteConfigValidationIssue[]
+) {
+  if (!value) return;
+  const basePath = "battery.cellVoltagePolicy";
+  const numericFields = [
+    "maxCellVoltageChargeBlockV",
+    "maxCellVoltageChargeRecoverV",
+    "minCellVoltageDischargeBlockV",
+    "minCellVoltageDischargeRecoverV",
+    "chargeTaperStartV",
+    "chargeTaperEndV",
+  ] as const;
+
+  for (const field of numericFields) {
+    const fieldValue = value[field];
+    if (fieldValue == null) continue;
+    if (!Number.isFinite(Number(fieldValue)) || Number(fieldValue) <= 0) {
+      issues.push({
+        path: `${basePath}.${field}`,
+        message: `${field} must be a positive voltage`,
+      });
+    }
+  }
+
+  const minFraction = value.chargeTaperMinFraction;
+  if (
+    minFraction != null &&
+    (!Number.isFinite(Number(minFraction)) ||
+      Number(minFraction) < 0 ||
+      Number(minFraction) > 1)
+  ) {
+    issues.push({
+      path: `${basePath}.chargeTaperMinFraction`,
+      message: "chargeTaperMinFraction must be between 0 and 1",
+    });
+  }
+
+  if (
+    value.maxCellVoltageChargeBlockV != null &&
+    value.maxCellVoltageChargeRecoverV != null &&
+    value.maxCellVoltageChargeRecoverV > value.maxCellVoltageChargeBlockV
+  ) {
+    issues.push({
+      path: basePath,
+      message: "maxCellVoltageChargeRecoverV must be <= maxCellVoltageChargeBlockV",
+    });
+  }
+  if (
+    value.minCellVoltageDischargeBlockV != null &&
+    value.minCellVoltageDischargeRecoverV != null &&
+    value.minCellVoltageDischargeRecoverV < value.minCellVoltageDischargeBlockV
+  ) {
+    issues.push({
+      path: basePath,
+      message: "minCellVoltageDischargeRecoverV must be >= minCellVoltageDischargeBlockV",
+    });
+  }
+  if (
+    value.chargeTaperStartV != null &&
+    value.chargeTaperEndV != null &&
+    value.chargeTaperStartV >= value.chargeTaperEndV
+  ) {
+    issues.push({
+      path: basePath,
+      message: "chargeTaperStartV must be < chargeTaperEndV",
+    });
   }
 }
 

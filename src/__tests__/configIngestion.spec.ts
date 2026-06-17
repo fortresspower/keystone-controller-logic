@@ -911,4 +911,79 @@ describe("Cloud SiteConfig ingestion", () => {
       ])
     );
   });
+
+  test("validates configured Modbus assets and server slots", () => {
+    const valid = makeBaseConfig();
+    valid.network.serverSlots = [
+      { key: "server_1", ip: "192.168.1.20", port: 502 },
+    ];
+    valid.network.assets = [
+      {
+        id: "PCS",
+        role: "pcs",
+        template: "Delta_280_ss40k",
+        ip: "192.168.1.20",
+        port: 502,
+        unitId: 1,
+        serverSlot: "server_1",
+      },
+    ];
+
+    expect(validateSiteConfig(valid)).toEqual([]);
+
+    const invalid = makeBaseConfig();
+    invalid.network.serverSlots = [
+      { key: "server_1", ip: "192.168.1.20", port: 502 },
+    ];
+    invalid.network.assets = [
+      {
+        id: "PCS",
+        role: "pcs",
+        ip: "192.168.1.21",
+        port: 70000,
+        unitId: 300,
+        serverSlot: "server_99",
+      },
+    ];
+
+    expect(validateSiteConfig(invalid)).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ path: "network.assets.0.port" }),
+        expect.objectContaining({ path: "network.assets.0.unitId" }),
+        expect.objectContaining({ path: "network.assets.0.serverSlot" }),
+      ])
+    );
+  });
+
+  test("validates battery cell voltage policy ordering", () => {
+    const invalid = makeBaseConfig();
+    invalid.battery.cellVoltagePolicy = {
+      maxCellVoltageChargeBlockV: 3.5,
+      maxCellVoltageChargeRecoverV: 3.6,
+      minCellVoltageDischargeBlockV: 3.1,
+      minCellVoltageDischargeRecoverV: 3.0,
+      chargeTaperStartV: 3.6,
+      chargeTaperEndV: 3.5,
+      chargeTaperMinFraction: 1.2,
+    };
+
+    expect(validateSiteConfig(invalid)).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          message:
+            "maxCellVoltageChargeRecoverV must be <= maxCellVoltageChargeBlockV",
+        }),
+        expect.objectContaining({
+          message:
+            "minCellVoltageDischargeRecoverV must be >= minCellVoltageDischargeBlockV",
+        }),
+        expect.objectContaining({
+          message: "chargeTaperStartV must be < chargeTaperEndV",
+        }),
+        expect.objectContaining({
+          path: "battery.cellVoltagePolicy.chargeTaperMinFraction",
+        }),
+      ])
+    );
+  });
 });

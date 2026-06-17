@@ -11,6 +11,14 @@
   },
   "telemetry": [
     {
+      "id": "BcuCount",
+      "description": "AMPACE configured BCU count used to generate dynamic 42K BCU readers",
+      "category": "Topology",
+      "function": "HRUS",
+      "address": 0,
+      "pollClass": "startup"
+    },
+    {
       "id": "BamsVoltage",
       "description": "BAMS system voltage",
       "category": "Telemetry",
@@ -63,6 +71,40 @@
         "rawHigh": 10,
         "scaledLow": 0,
         "scaledHigh": 1
+      }
+    },
+    {
+      "id": "BamsDischargePower",
+      "description": "BAMS discharge power derived from signed system power. Positive BamsPower is discharge.",
+      "category": "Telemetry",
+      "pollClass": "normal",
+      "calc": {
+        "inputs": {
+          "p": "BamsPower"
+        },
+        "expr": "max(p, 0)"
+      },
+      "ss40k": {
+        "name": "pBatDischg",
+        "model": "40101",
+        "exportMultiplier": 1000
+      }
+    },
+    {
+      "id": "BamsChargePower",
+      "description": "BAMS charge power derived from signed system power. Negative BamsPower is charge.",
+      "category": "Telemetry",
+      "pollClass": "normal",
+      "calc": {
+        "inputs": {
+          "p": "BamsPower"
+        },
+        "expr": "max(-p, 0)"
+      },
+      "ss40k": {
+        "name": "pBatChg",
+        "model": "40101",
+        "exportMultiplier": 1000
       }
     },
     {

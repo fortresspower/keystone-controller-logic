@@ -273,6 +273,60 @@ describe("unified control cycle", () => {
     expect(result.diagnostics.metering).toEqual([]);
   });
 
+  test("uses signal mapping to replace Mini gateway load calculation", () => {
+    const config = makeMiniConfig();
+    config.operation.crdMode = "no-export";
+    config.metering.calculations = undefined;
+    config.signalMapping = {
+      sources: {
+        Meter: { profile: "udt_eGauge_V1", role: "siteMeter" },
+        PCS: { profile: "Sinexcel_Mini_PCS_ss40k", role: "pcs" },
+      },
+      signals: {
+        utilityPowerKw: {
+          expr: "Meter.Utility_Total_Power",
+        },
+        pcsActivePowerKw: {
+          expr: "PCS.ACBusTotalActivePower",
+          invertSign: true,
+        },
+        siteLoadKw: {
+          expr: "utilityPowerKw - PCS.ACBusTotalActivePower",
+        },
+        pvKw: {
+          expr: "PCS.DcPv_kW",
+        },
+      },
+    };
+
+    const result = runUnifiedControlCycle(config, {
+      telemetry: {
+        Meter: [{ tagID: "Meter.Utility_Total_Power", value: 40 }],
+        PCS: [
+          { tagID: "PCS.ACBusTotalActivePower", value: -12 },
+          { tagID: "PCS.DcPv_kW", value: 18 },
+        ],
+      },
+      baseTelemetry: {
+        soc: 0.5,
+        gridStatus: "normal",
+        machineStatus: miniMachineStatus(),
+      },
+    });
+
+    expect(result.telemetry).toEqual(
+      expect.objectContaining({
+        utilityPowerKw: 40,
+        pcsActivePowerKw: 12,
+        siteLoadKw: 52,
+        pvKw: 18,
+      })
+    );
+    expect(result.diagnostics.metering).toEqual([]);
+    expect(result.diagnostics.signalMapping).toEqual([]);
+    expect(result.pipeline.warnings).toEqual([]);
+  });
+
   test("keeps metering diagnostics with the cycle result", () => {
     const config = makeConfig();
     delete config.metering.calculations!.pvKw;
@@ -1600,6 +1654,42 @@ describe("unified control cycle", () => {
     expect(released.command.maxChargeCurrentA).toBe(100);
   });
 
+  test("Mini cell-voltage policy override changes charge release hysteresis", () => {
+    const config = makeMiniConfig();
+    config.battery.cellVoltagePolicy = {
+      maxCellVoltageChargeBlockV: 3.6,
+      maxCellVoltageChargeRecoverV: 3.42,
+    };
+    const state = {
+      miniCellVoltageChargeBlocked: true,
+    };
+
+    const released = runUnifiedControlCycle(config, {
+      state,
+      telemetry: {
+        "Meter.POI_kW": -40,
+        "Meter.Load_kW": 0,
+        "PCS.DcPv_kW": 40,
+      },
+      baseTelemetry: {
+        soc: 0.5,
+        gridStatus: "normal",
+        machineStatus: miniMachineStatus({
+          maxCellVoltageV: 3.4,
+        }),
+      },
+      schedule: {
+        activePowerKwSetpoint: -10,
+      },
+    });
+
+    expect(released.command.batteryActivePowerKw).toBe(-10);
+    expect(released.command.maxChargeCurrentA).toBe(100);
+    expect(released.command.reasons).not.toContain(
+      "mini-cell-high-charge-block"
+    );
+  });
+
   test("Mini missing cell-voltage telemetry fails safe for charge and discharge directions", () => {
     const charge = runUnifiedControlCycle(makeMiniConfig(), {
       telemetry: {
@@ -1696,6 +1786,72 @@ describe("unified control cycle", () => {
         ],
       },
     ]);
+  });
+
+  test("Mini faults hard-gate unified control to safe zero", () => {
+    const result = runUnifiedControlCycle(makeMiniConfig(), {
+      telemetry: {
+        "Meter.POI_kW": -10,
+        "Meter.Load_kW": 10,
+        "PCS.DcPv_kW": 20,
+      },
+      baseTelemetry: {
+        soc: 0.5,
+        gridStatus: "normal",
+        machineStatus: {
+          ...miniMachineStatus(),
+          miniFaulted: true,
+          miniFaultReasons: ["mini-pcs-fault"],
+        },
+      },
+      schedule: {
+        activePowerKwSetpoint: 10,
+      },
+    });
+
+    expect(result.command).toEqual(
+      expect.objectContaining({
+        controlMode: "idle",
+        pcsActivePowerKw: 0,
+      })
+    );
+    expect(result.command.reasons).toEqual(
+      expect.arrayContaining(["safe-zero", "mini-faulted", "mini-pcs-fault"])
+    );
+    expect(result.pipeline.blocked).toBe(true);
+  });
+
+  test("Mini self-consumption correction adjusts DC PV passthrough from battery power feedback", () => {
+    const state = {};
+    const result = runUnifiedControlCycle(makeMiniConfig(), {
+      state,
+      telemetry: {
+        "Meter.POI_kW": -12,
+        "Meter.Load_kW": 10,
+        "PCS.DcPv_kW": 20,
+      },
+      baseTelemetry: {
+        soc: 0.5,
+        gridStatus: "normal",
+        machineStatus: {
+          ...miniMachineStatus(),
+          actualBatteryPowerKw: 4,
+        },
+      },
+      schedule: {
+        activePowerKwSetpoint: 0,
+      },
+    });
+
+    expect(result.command.reasons).toEqual(
+      expect.arrayContaining(["mini-self-consumption-correction"])
+    );
+    expect(result.command.batteryActivePowerKw).toBe(0);
+    expect(result.command.pcsActivePowerKw).toBe(18.6);
+    expect(result.writerEnvelopes[0].payload[0]).toEqual({
+      tagID: "ActivePowerSetpoint",
+      value: -18.6,
+    });
   });
 
   test("Mini AC PV off-grid limits PV inverter active power like 280", () => {

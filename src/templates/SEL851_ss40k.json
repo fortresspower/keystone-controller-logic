@@ -1,0 +1,49 @@
+{
+  "version": "2",
+  "device": {
+    "vendor": "SEL",
+    "model": "851",
+    "protocol": "modbus-tcp",
+    "defaultByteOrder": "BE",
+    "defaultWordOrder32": "ABCD",
+    "name": "udt_SEL851_v1",
+    "sourceFormat": "legacy-node-red-global-components"
+  },
+  "telemetry": [
+    {
+      "id": "ROW_46",
+      "pollClass": "normal",
+      "function": "HRUS",
+      "address": 12,
+      "statusFlag": true
+    },
+    {
+      "id": "ROW_48",
+      "pollClass": "normal",
+      "function": "HRUS",
+      "address": 13,
+      "statusFlag": true
+    },
+    {
+      "id": "ROW_33",
+      "pollClass": "normal",
+      "function": "HRUS",
+      "address": 14,
+      "statusFlag": true
+    },
+    {
+      "id": "RB_1",
+      "pollClass": "normal",
+      "function": "C",
+      "address": 5,
+      "statusFlag": true
+    },
+    {
+      "id": "RB_2",
+      "pollClass": "normal",
+      "function": "C",
+      "address": 6,
+      "statusFlag": true
+    }
+  ]
+}
