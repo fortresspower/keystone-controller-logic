@@ -814,11 +814,12 @@ describe("Modbus function semantics", () => {
     expect(blk.fc).toBe(3);
     expect(blk.quantity).toBe(2);
 
-    const hi = 0x0001;
-    const lo = 0x0002;
+    const expected = 2350317571;
+    const hi = Math.floor(expected / 0x10000);
+    const lo = expected & 0xffff;
     const res = simulateReply(plan, 0, [hi, lo]);
     const sample = res.out2[0];
-    expect(sample.value).toBe(((hi << 16) | lo) >>> 0);
+    expect(sample.value).toBe(expected);
   });
 
   test("HRF (F32)", () => {
@@ -884,6 +885,88 @@ describe("Modbus function semantics", () => {
         }),
       ])
     );
+  });
+
+  test("calculated tags do not reuse stale cached inputs after freshness window", () => {
+    jest.useFakeTimers();
+    jest.setSystemTime(1_000_000);
+
+    const profile = {
+      profileId: "stale_calc_profile",
+      defaults: {
+        byteOrder: "BE",
+        wordOrder32: "ABCD",
+      },
+      tags: [
+        {
+          name: "StatusWord36",
+          function: "HRUS",
+          address: 36,
+          pollClass: "normal",
+        },
+        {
+          name: "FaultWord106",
+          function: "HRUS",
+          address: 106,
+          pollClass: "normal",
+        },
+        {
+          name: "pcsWarning",
+          calc: {
+            inputs: {
+              w36: "StatusWord36",
+              w106: "FaultWord106",
+            },
+            expr: "(((w36 >>> 5) & 1) << 0) | (((w106 >>> 13) & 1) << 4)",
+          },
+        },
+      ],
+    };
+    const plan = buildReadPlan(profile, instance, compilerEnv);
+    const sends: any[] = [];
+    reader.start(plan, { ...readerEnv, CALC_INPUT_MAX_AGE_MS: 1000 }, (...args) => {
+      sends.push(args);
+    });
+
+    try {
+      const faultBlockIdx = plan.blocks.findIndex((block: any) =>
+        block.map.some((item: any) => item.tagID === "FaultWord106")
+      );
+      const statusBlockIdx = plan.blocks.findIndex((block: any) =>
+        block.map.some((item: any) => item.tagID === "StatusWord36")
+      );
+
+      expect(faultBlockIdx).toBeGreaterThanOrEqual(0);
+      expect(statusBlockIdx).toBeGreaterThanOrEqual(0);
+
+      reader.onReply(
+        {
+          _reader: { equipmentId: plan.equipmentId, blockIdx: faultBlockIdx },
+          payload: [0x2000],
+        },
+        plan,
+        { ...readerEnv, CALC_INPUT_MAX_AGE_MS: 1000 }
+      );
+
+      jest.setSystemTime(1_002_500);
+      const result = reader.onReply(
+        {
+          _reader: { equipmentId: plan.equipmentId, blockIdx: statusBlockIdx },
+          payload: [0],
+        },
+        plan,
+        { ...readerEnv, CALC_INPUT_MAX_AGE_MS: 1000 }
+      );
+
+      expect(result.out2).toEqual(
+        expect.not.arrayContaining([
+          expect.objectContaining({ tagID: "pcsWarning" }),
+        ])
+      );
+    } finally {
+      reader.stop(plan.equipmentId);
+      jest.useRealTimers();
+    }
   });
 
   test("C (coil)", () => {
@@ -1176,7 +1259,7 @@ describe("Telemetry baseline lock", () => {
     ]);
   });
 
-  test("Sinexcel Mini template includes critical PVDC telemetry", () => {
+  test("Sinexcel Mini PCS template owns aggregate PV energy but excludes PVDC-owned status and power telemetry", () => {
     const template = resolveTelemetryTemplate("Sinexcel_Mini_PCS_ss40k");
     const legacyAliasTemplate = resolveTelemetryTemplate("Sinexcel_Mini_ss40k");
     const profile = adaptTelemetryTemplateToReadProfile(
@@ -1185,6 +1268,12 @@ describe("Telemetry baseline lock", () => {
     );
 
     expect(legacyAliasTemplate.device.model).toBe(template.device.model);
+    expect(profile.tags.map((tag) => tag.name)).not.toEqual(
+      expect.arrayContaining([
+        "PVDCStatusWord",
+        "PVSideTotalPower",
+      ])
+    );
     expect(profile.tags).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -1196,34 +1285,50 @@ describe("Telemetry baseline lock", () => {
           pollClass: "startup",
         }),
         expect.objectContaining({
-          name: "PVDCStatusWord",
+          name: "UnderVoltRegion1Boundary",
           function: "HRUS",
-          address: 34032,
-          bitfieldStatus: true,
+          address: 1345,
         }),
         expect.objectContaining({
-          name: "PVSideTotalPower",
-          function: "HR",
-          address: 34053,
-          scale: expect.objectContaining({
-            rawLow: 0,
-            rawHigh: 10,
-            engLow: 0,
-            engHigh: 1,
-          }),
+          name: "PVDC1GeneratedEnergyHighWord",
+          function: "HRUS",
+          address: 34082,
+          supportingTag: "Yes",
+        }),
+        expect.objectContaining({
+          name: "PVDC2GeneratedEnergyHighWord",
+          function: "HRUS",
+          address: 34382,
+          supportingTag: "Yes",
+        }),
+        expect.objectContaining({
+          name: "PVDC3GeneratedEnergyHighWord",
+          function: "HRUS",
+          address: 34682,
+          supportingTag: "Yes",
         }),
         expect.objectContaining({
           name: "PVGeneratedEnergy",
           calc: {
             inputs: {
-              hi: "PVGeneratedEnergyHighWord",
-              lo: "PVGeneratedEnergyLowWord",
+              hi1: "PVDC1GeneratedEnergyHighWord",
+              lo1: "PVDC1GeneratedEnergyLowWord",
+              hi2: "PVDC2GeneratedEnergyHighWord",
+              lo2: "PVDC2GeneratedEnergyLowWord",
+              hi3: "PVDC3GeneratedEnergyHighWord",
+              lo3: "PVDC3GeneratedEnergyLowWord",
             },
-            expr: "(hi * 65536 + lo) * 0.1",
+            expr: "((hi1 * 65536 + lo1) + (hi2 * 65536 + lo2) + (hi3 * 65536 + lo3)) * 0.1",
           },
         }),
       ])
     );
+
+    expect(template.telemetry.find((tag) => tag.id === "PVGeneratedEnergy")?.ss40k).toEqual({
+      name: "ePvTot",
+      model: "40102",
+      exportMultiplier: 1000,
+    });
   });
 
   test("Sinexcel Mini PCS template calculates SS40K 40103 fault fields", () => {
@@ -1310,6 +1415,19 @@ describe("Telemetry baseline lock", () => {
     );
     expect(pcsWarning?.calc?.expr).toContain("w36 >>> 5");
     expect(pcsWarning?.calc?.expr).toContain("w36 >>> 6");
+
+    expect(
+      template.telemetry.find((tag) => tag.id === "SinexcelFaultWord106")?.ss40k
+    ).toEqual({
+      name: "pcsFaultWord106",
+      model: "50103",
+    });
+    expect(
+      template.telemetry.find((tag) => tag.id === "SinexcelFaultWord121")?.ss40k
+    ).toEqual({
+      name: "pcsFaultWord121",
+      model: "50103",
+    });
   });
 
   test("Sinexcel Mini PVDC module templates apply supplier address offsets", () => {
@@ -1404,11 +1522,7 @@ describe("Telemetry baseline lock", () => {
       const pvEnergy = template.telemetry.find(
         (tag) => tag.id === "PVGeneratedEnergy"
       );
-      expect(pvEnergy?.ss40k).toEqual({
-        name: "ePvTot",
-        model: "40102",
-        exportMultiplier: 1000,
-      });
+      expect(pvEnergy?.ss40k).toBeUndefined();
 
       const dcPvWarning = template.telemetry.find(
         (tag) => tag.id === "dcPvWarning"

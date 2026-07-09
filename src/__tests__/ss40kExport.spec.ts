@@ -1,9 +1,12 @@
+import { readFileSync } from "fs";
+import path from "path";
 import {
   buildSs40kFixedPayloads,
   buildSs40kLookup,
   DEFAULT_SS40K_MODEL_INDEX_MAP,
 } from "../telemetry/ss40k";
 import { buildAmpaceBcu42kEquipmentConfig } from "../telemetry/ampaceBcu42k";
+import { resolveTelemetryTemplate } from "../telemetry/templateAdapter";
 
 describe("SS40K export helpers", () => {
   test("buildSs40kLookup carries exportMultiplier metadata from templates", () => {
@@ -99,27 +102,27 @@ describe("SS40K export helpers", () => {
 
     expect(byKey["MBMU.40101"]).toMatchObject({
       payload: {
-        "1": {
+        "0": {
           id: 40101,
           version: "3.0",
           fixed: {
             ID: 40101,
             socBat: 57,
-            vBat: 524,
+            vBat: 52.4,
           },
         },
       },
       ss40k: {
         equipment: "MBMU",
         model: "40101",
-        modelIndex: "1",
+        modelIndex: "0",
         timestamp: "2026-04-16T12:00:01.000Z",
       },
     });
 
     expect(byKey["PCS.40101"]).toMatchObject({
       payload: {
-        "1": {
+        "0": {
           id: 40101,
           version: "3.0",
           fixed: {
@@ -131,7 +134,7 @@ describe("SS40K export helpers", () => {
       ss40k: {
         equipment: "PCS",
         model: "40101",
-        modelIndex: "1",
+        modelIndex: "0",
         timestamp: "2026-04-16T12:00:02.000Z",
       },
     });
@@ -145,13 +148,13 @@ describe("SS40K export helpers", () => {
     expect(lookup["BMS.BamsSoc"]).toMatchObject({
       name: "socBat",
       model: "40101",
-      modelIndex: "1",
+      modelIndex: "0",
       exportMultiplier: 100,
     });
     expect(lookup["BMS.BamsVoltage"]).toMatchObject({
       name: "vBat",
       model: "40101",
-      exportMultiplier: 10,
+      exportMultiplier: 1,
     });
     expect(lookup["BMS.BamsDischargePower"]).toMatchObject({
       name: "pBatDischg",
@@ -165,26 +168,38 @@ describe("SS40K export helpers", () => {
     });
     expect(lookup["BMS.BamsPermitChgCurrent"]).toMatchObject({
       name: "iBatChgMaxBms",
-      model: "40201",
-      modelIndex: "5",
+      model: "40200",
+      modelIndex: "0",
       exportMultiplier: 100,
     });
     expect(lookup["BMS.BamsPermitDsgCurrent"]).toMatchObject({
       name: "iBatDischgMaxBms",
-      model: "40201",
-      modelIndex: "5",
+      model: "40200",
+      modelIndex: "0",
       exportMultiplier: 100,
+    });
+    expect(lookup["BMS.BamsTotalInEng"]).toMatchObject({
+      name: "eBatChgTot",
+      model: "40102",
+      modelIndex: "0",
+      exportMultiplier: 1000,
+    });
+    expect(lookup["BMS.BamsTotalOutEng"]).toMatchObject({
+      name: "eBatDischgTot",
+      model: "40102",
+      modelIndex: "0",
+      exportMultiplier: 1000,
     });
     expect(lookup["BMS.batWarning"]).toMatchObject({
       name: "batWarning",
       model: "40103",
-      modelIndex: "3",
+      modelIndex: "0",
       exportMultiplier: 1,
     });
     expect(lookup["BMS.batFault"]).toMatchObject({
       name: "batFault",
       model: "40103",
-      modelIndex: "3",
+      modelIndex: "0",
       exportMultiplier: 1,
     });
 
@@ -198,6 +213,8 @@ describe("SS40K export helpers", () => {
           { tagID: "BMS.BamsChargePower", value: 0 },
           { tagID: "BMS.BamsMaxCellVol", value: 3.42 },
           { tagID: "BMS.BamsPermitChgCurrent", value: 120.5 },
+          { tagID: "BMS.BamsTotalInEng", value: 1234.5 },
+          { tagID: "BMS.BamsTotalOutEng", value: 987.6 },
           { tagID: "BMS.batWarning", value: 20 },
           { tagID: "BMS.batFault", value: 1 },
         ],
@@ -211,12 +228,12 @@ describe("SS40K export helpers", () => {
 
     expect(byModel["40101"]).toMatchObject({
       payload: {
-        "1": {
+        "0": {
           id: 40101,
           fixed: {
             ID: 40101,
             socBat: 72,
-            vBat: 7005,
+            vBat: 700.5,
             pBatDischg: 23500,
             pBatChg: 0,
             vBatCellMax: 3420,
@@ -224,12 +241,24 @@ describe("SS40K export helpers", () => {
         },
       },
     });
-    expect(byModel["40201"]).toMatchObject({
+    expect(byModel["40102"]).toMatchObject({
       payload: {
-        "5": {
-          id: 40201,
+        "0": {
+          id: 40102,
           fixed: {
-            ID: 40201,
+            ID: 40102,
+            eBatChgTot: 1234500,
+            eBatDischgTot: 987600,
+          },
+        },
+      },
+    });
+    expect(byModel["40200"]).toMatchObject({
+      payload: {
+        "0": {
+          id: 40200,
+          fixed: {
+            ID: 40200,
             iBatChgMaxBms: 12050,
           },
         },
@@ -237,7 +266,7 @@ describe("SS40K export helpers", () => {
     });
     expect(byModel["40103"]).toMatchObject({
       payload: {
-        "3": {
+        "0": {
           id: 40103,
           fixed: {
             ID: 40103,
@@ -266,27 +295,36 @@ describe("SS40K export helpers", () => {
       equipment: "AMPACE_BCU_2",
       name: "SN",
       model: "42100",
-      modelIndex: "20",
+      modelIndex: "0",
     });
     expect(lookup["AMPACE_BCU_2.BcuCurrent"]).toMatchObject({
       name: "A",
       model: "42101",
-      modelIndex: "21",
-      exportMultiplier: 10,
+      modelIndex: "0",
     });
     expect(lookup["AMPACE_BCU_2.BcuPower"]).toMatchObject({
       name: "W",
       model: "42101",
-      exportMultiplier: 0.1,
+      exportMultiplier: 10,
+    });
+    expect(lookup["AMPACE_BCU_2.TotalInEng"]).toMatchObject({
+      name: "eBatChgTot",
+      model: "42101",
+      exportMultiplier: 1000,
+    });
+    expect(lookup["AMPACE_BCU_2.TotalOutEng"]).toMatchObject({
+      name: "eBatDischgTot",
+      model: "42101",
+      exportMultiplier: 1000,
     });
     expect(lookup["AMPACE_BCU_2.BcuBatteryFault"]).toMatchObject({
       name: "BatteryFault",
       model: "42103",
-      modelIndex: "23",
+      modelIndex: "0",
     });
   });
 
-  test("SS42K AMPACE BCU payloads keep per-BCU SN and BatteryId", () => {
+  test("SS42K AMPACE BCU payloads keep per-BCU SN without PCS SN or BatteryId", () => {
     const { lookup } = buildSs40kLookup(
       buildAmpaceBcu42kEquipmentConfig({ count: 1, route: "AMPACE" })
     );
@@ -296,7 +334,8 @@ describe("SS40K export helpers", () => {
       telemetry: {
         AMPACE_BCU_1: [
           { tagID: "AMPACE_BCU_1.SerialNumber", value: 2350317571 },
-          { tagID: "AMPACE_BCU_1.BatteryId", value: 1 },
+          { tagID: "AMPACE_BCU_1.Manufacturer", value: "AMPACE" },
+          { tagID: "AMPACE_BCU_1.BatteryType", value: 4 },
           { tagID: "AMPACE_BCU_1.USOC", value: 0.72 },
           { tagID: "AMPACE_BCU_1.SOH", value: 0.98 },
           { tagID: "AMPACE_BCU_1.InternalSumVoltage", value: 720.5 },
@@ -315,46 +354,52 @@ describe("SS40K export helpers", () => {
 
     expect(byModel["42100"]).toMatchObject({
       payload: {
-        "20": {
+        "0": {
           id: 42100,
           fixed: expect.objectContaining({
             ID: 42100,
             SN: "2350317571",
-            BatteryId: 1,
+            Mn: "AMPACE",
+            Typ: 4,
           }),
         },
       },
     });
     expect(byModel["42101"]).toMatchObject({
       payload: {
-        "21": {
+        "0": {
           id: 42101,
           fixed: expect.objectContaining({
             ID: 42101,
             SN: "2350317571",
-            BatteryId: 1,
             SoC: 72,
             SoH: 98,
-            V: 7205,
-            A: -123,
-            W: -886,
+            V: 720.5,
+            A: -12.3,
+            W: -88621,
           }),
         },
       },
     });
     expect(byModel["42103"]).toMatchObject({
       payload: {
-        "23": {
+        "0": {
           id: 42103,
           fixed: expect.objectContaining({
             ID: 42103,
             SN: "2350317571",
-            BatteryId: 1,
             BatteryFault: 1,
           }),
         },
       },
     });
+    for (const message of messages) {
+      const fixed = Object.values(message.payload)[0].fixed;
+      expect(fixed.SN).not.toBe("PCS-SN");
+      expect(fixed).not.toHaveProperty("BatteryId");
+      expect(fixed).not.toHaveProperty("Model");
+      expect(fixed).not.toHaveProperty("ModelName");
+    }
   });
 
   test("Sinexcel Mini PCS calculated faults export into SS40K 40103", () => {
@@ -365,18 +410,18 @@ describe("SS40K export helpers", () => {
     expect(lookup["PCS.pcsFault"]).toMatchObject({
       name: "pcsFault",
       model: "40103",
-      modelIndex: "3",
+      modelIndex: "0",
       exportMultiplier: 1,
     });
     expect(lookup["PCS.gridWarning"]).toMatchObject({
       name: "gridWarning",
       model: "40103",
-      modelIndex: "3",
+      modelIndex: "0",
     });
     expect(lookup["PCS.rsdEPOFault"]).toMatchObject({
       name: "rsdEPOFault",
       model: "40103",
-      modelIndex: "3",
+      modelIndex: "0",
     });
 
     const messages = buildSs40kFixedPayloads({
@@ -391,10 +436,10 @@ describe("SS40K export helpers", () => {
       topic: "fort/v1/things/test/telem",
     });
 
-    expect(messages).toEqual([
+    expect(messages).toMatchObject([
       expect.objectContaining({
         payload: {
-          "3": {
+          "0": {
             id: 40103,
             version: "3.0",
             fixed: {
@@ -409,7 +454,257 @@ describe("SS40K export helpers", () => {
     ]);
   });
 
-  test("SS40K payloads stamp one fixed SN across all 40K models", () => {
+  test("Sinexcel Mini PCS does not export PCS DC input voltage as battery voltage", () => {
+    const { lookup } = buildSs40kLookup({
+      PCS: "Sinexcel_Mini_PCS_ss40k",
+    });
+
+    expect(lookup["PCS.DCInputVoltage"]).toBeUndefined();
+
+    const messages = buildSs40kFixedPayloads({
+      lookup,
+      telemetry: {
+        PCS: [{ tagID: "PCS.DCInputVoltage", value: 675.1 }],
+      },
+      topic: "fort/v1/things/test/telem",
+    });
+
+    expect(messages).toEqual([]);
+  });
+
+  test("Sinexcel Mini PCS raw fault words export into product-neutral 50103", () => {
+    const { lookup } = buildSs40kLookup({
+      PCS: "Sinexcel_Mini_PCS_ss40k",
+    });
+
+    expect(DEFAULT_SS40K_MODEL_INDEX_MAP["50103"]).toBe("0");
+    expect(lookup["PCS.SinexcelStatusWord36"]).toMatchObject({
+      name: "pcsStatusWord36",
+      model: "50103",
+      modelIndex: "0",
+      exportMultiplier: 1,
+    });
+    expect(lookup["PCS.SinexcelFaultWord106"]).toMatchObject({
+      name: "pcsFaultWord106",
+      model: "50103",
+      modelIndex: "0",
+    });
+    expect(lookup["PCS.SinexcelFaultWord121"]).toMatchObject({
+      name: "pcsFaultWord121",
+      model: "50103",
+      modelIndex: "0",
+    });
+
+    const messages = buildSs40kFixedPayloads({
+      lookup,
+      telemetry: {
+        PCS: [
+          { tagID: "PCS.SerialNumber", value: "SH0P600458852403070035" },
+          { tagID: "PCS.SinexcelStatusWord36", value: 96 },
+          { tagID: "PCS.SinexcelFaultWord106", value: 1 },
+          { tagID: "PCS.SinexcelFaultWord121", value: 384 },
+        ],
+      },
+      topic: "fort/v1/things/test/telem",
+    });
+
+    const faultPayload = messages.find((message) => message.ss40k.model === "50103");
+    expect(faultPayload).toMatchObject({
+      payload: {
+        "0": {
+          id: 50103,
+          version: "3.0",
+          fixed: {
+            ID: 50103,
+            SN: "SH0P600458852403070035",
+            pcsStatusWord36: 96,
+            pcsFaultWord106: 1,
+            pcsFaultWord121: 384,
+          },
+        },
+      },
+      ss40k: expect.objectContaining({
+        equipment: "PCS",
+        model: "50103",
+        modelIndex: "0",
+        pointCount: 5,
+      }),
+    });
+  });
+
+  test("Sinexcel Mini PCS grid protection and curve readbacks export into 40104", () => {
+    const { lookup } = buildSs40kLookup({
+      PCS: "Sinexcel_Mini_PCS_ss40k",
+    });
+
+    expect(lookup["PCS.UnderVoltRegion1Boundary"]).toMatchObject({
+      name: "GridVoltLimit1Low",
+      model: "40104",
+      modelIndex: "10",
+    });
+    expect(lookup["PCS.OverFrequencyRegion1Boundary"]).toMatchObject({
+      name: "GridFreqLimit1High",
+      model: "40104",
+      modelIndex: "10",
+    });
+    expect(lookup["PCS.VoltVarV1"]).toMatchObject({
+      name: "UnderOverV1",
+      model: "40104",
+      modelIndex: "10",
+    });
+    expect(lookup["PCS.WattVarGenerationP1"]).toMatchObject({
+      name: "PQP1",
+      model: "40104",
+      modelIndex: "10",
+    });
+    expect(lookup["PCS.PVSideTotalPower"]).toBeUndefined();
+    expect(lookup["PCS.PVGeneratedEnergy"]).toMatchObject({
+      name: "ePvTot",
+      model: "40102",
+      modelIndex: "0",
+      exportMultiplier: 1000,
+    });
+
+    const messages = buildSs40kFixedPayloads({
+      lookup,
+      telemetry: {
+        PCS: [
+          { tagID: "PCS.UnderVoltRegion1Boundary", value: 0.88 },
+          { tagID: "PCS.OverFrequencyRegion1Boundary", value: 60.5 },
+          { tagID: "PCS.VoltVarV1", value: 0.92 },
+          { tagID: "PCS.WattVarGenerationP1", value: 50 },
+        ],
+      },
+      topic: "fort/v1/things/test/telem",
+    });
+
+    expect(messages).toEqual([
+      expect.objectContaining({
+        payload: {
+          "10": {
+            id: 40104,
+            version: "3.0",
+            fixed: {
+              ID: 40104,
+              GridVoltLimit1Low: 0.88,
+              GridFreqLimit1High: 60.5,
+              UnderOverV1: 0.92,
+              PQP1: 50,
+            },
+          },
+        },
+      }),
+    ]);
+  });
+
+  test("Sinexcel Mini PCS 40104 exports use canonical model names", () => {
+    const modelText = readFileSync(
+      path.resolve(__dirname, "../templates/ss40k_inverter.json"),
+      "utf8"
+    );
+    const canonical40104Names = new Set(
+      Array.from(modelText.matchAll(/Data code: 40104\.([A-Za-z0-9_]+)/g)).map(
+        (match) => match[1]
+      )
+    );
+    const template = resolveTelemetryTemplate("Sinexcel_Mini_PCS_ss40k");
+    const exportedNames = (template.telemetry || [])
+      .filter((tag) => String(tag.ss40k?.model || "") === "40104")
+      .map((tag) => tag.ss40k?.name)
+      .filter((name): name is string => typeof name === "string" && name.length > 0);
+
+    expect(exportedNames.length).toBeGreaterThan(0);
+    expect(exportedNames.filter((name) => !canonical40104Names.has(name))).toEqual([]);
+  });
+
+  test("inverter 40104 exposes visible daily schedule fields on component 10 by default", () => {
+    const template = resolveTelemetryTemplate("Sinexcel_Mini_PCS_ss40k");
+    const constants = Object.fromEntries(
+      (template.telemetry || [])
+        .filter((tag) =>
+          [
+            "BatteryScheduling",
+            "ACChargeStatus",
+            "chgST1",
+            "chgET1",
+            "dischgST1",
+            "dischgET1",
+            "acChgST1",
+            "acChgET1",
+          ].includes(tag.id || "")
+        )
+        .map((tag) => [tag.id, tag.constant])
+    );
+    expect(constants).toMatchObject({
+      BatteryScheduling: 1,
+      ACChargeStatus: 0,
+      chgST1: 0,
+      chgET1: 15127,
+      dischgST1: 0,
+      dischgET1: 15127,
+      acChgST1: 0,
+      acChgET1: 0,
+    });
+
+    const { lookup } = buildSs40kLookup({
+      PCS: "Sinexcel_Mini_PCS_ss40k",
+    });
+
+    expect(lookup["PCS.BatteryScheduling"]).toMatchObject({
+      name: "BatteryScheduling",
+      model: "40104",
+      modelIndex: "10",
+    });
+    expect(lookup["PCS.acChgST1"]).toMatchObject({
+      name: "acChgST1",
+      model: "40104",
+      modelIndex: "10",
+    });
+
+    const messages = buildSs40kFixedPayloads({
+      lookup,
+      telemetry: {
+        PCS: [
+          { tagID: "PCS.BatteryScheduling", value: 1 },
+          { tagID: "PCS.ACChargeStatus", value: 0 },
+          { tagID: "PCS.chgST1", value: 8 },
+          { tagID: "PCS.chgET1", value: 8 },
+          { tagID: "PCS.dischgST1", value: 8 },
+          { tagID: "PCS.dischgET1", value: 8 },
+          { tagID: "PCS.acChgST1", value: 0 },
+          { tagID: "PCS.acChgET1", value: 0 },
+        ],
+      },
+      topic: "fort/v1/things/test/telem",
+    });
+
+    expect(messages).toHaveLength(1);
+    expect(messages[0]).toMatchObject({
+      payload: {
+        "10": {
+          id: 40104,
+          fixed: expect.objectContaining({
+            ID: 40104,
+            BatteryScheduling: 1,
+            ACChargeStatus: 0,
+            chgST1: 8,
+            chgET1: 8,
+            dischgST1: 8,
+            dischgET1: 8,
+            acChgST1: 0,
+            acChgET1: 0,
+          }),
+        },
+      },
+      ss40k: expect.objectContaining({
+        equipment: "PCS",
+        model: "40104",
+        modelIndex: "10",
+      }),
+    });
+  });
+
+  test("SS40K and Mini PCS 50103 payloads stamp the PCS SN", () => {
     const { lookup } = buildSs40kLookup({
       PCS: "Sinexcel_Mini_PCS_ss40k",
       BMS: "AMPACE_Mini_ss40k",
@@ -427,6 +722,7 @@ describe("SS40K export helpers", () => {
           { tagID: "PCS.SerialNumber", value: "SH0P600458852403070035" },
           { tagID: "PCS.ACBusTotalActivePower", value: 44.4 },
           { tagID: "PCS.pcsFault", value: 8 },
+          { tagID: "PCS.SinexcelFaultWord106", value: 1 },
         ],
         BMS: [
           { tagID: "BMS.BamsSoc", value: 0.72 },
@@ -436,8 +732,15 @@ describe("SS40K export helpers", () => {
       topic: "fort/v1/things/test/telem",
     });
 
-    expect(messages.length).toBeGreaterThan(1);
-    for (const message of messages) {
+    const modelsWithPcsSn = messages.filter((message) =>
+      ["40101", "40103", "50103"].includes(message.ss40k.model)
+    );
+    expect(new Set(modelsWithPcsSn.map((message) => message.ss40k.model))).toEqual(new Set([
+      "40101",
+      "40103",
+      "50103",
+    ]));
+    for (const message of modelsWithPcsSn) {
       const modelPayload = Object.values(message.payload)[0];
       expect(modelPayload.fixed.SN).toBe("SH0P600458852403070035");
     }
@@ -451,13 +754,13 @@ describe("SS40K export helpers", () => {
     expect(lookup["PVDC1.dcPvWarning"]).toMatchObject({
       name: "dcPvWarning",
       model: "40103",
-      modelIndex: "3",
+      modelIndex: "0",
       exportMultiplier: 1,
     });
     expect(lookup["PVDC1.dcPvFault"]).toMatchObject({
       name: "dcPvFault",
       model: "40103",
-      modelIndex: "3",
+      modelIndex: "0",
       exportMultiplier: 1,
     });
 
@@ -475,7 +778,7 @@ describe("SS40K export helpers", () => {
     expect(messages).toEqual([
       expect.objectContaining({
         payload: {
-          "3": {
+          "0": {
             id: 40103,
             version: "3.0",
             fixed: {
@@ -497,7 +800,7 @@ describe("SS40K export helpers", () => {
     expect(lookup["LOAD.LoadTotalActivePower"]).toMatchObject({
       name: "pLoad",
       model: "40101",
-      modelIndex: "1",
+      modelIndex: "0",
       exportMultiplier: 1000,
     });
     expect(lookup["LOAD.LoadL2ReactivePower"]).toMatchObject({
@@ -528,7 +831,7 @@ describe("SS40K export helpers", () => {
     expect(messages).toEqual([
       expect.objectContaining({
         payload: {
-          "1": {
+          "0": {
             id: 40101,
             version: "3.0",
             fixed: {
@@ -553,25 +856,25 @@ describe("SS40K export helpers", () => {
     expect(lookup["Meter.Utility_Import_Power"]).toMatchObject({
       name: "pGridImpTot",
       model: "40101",
-      modelIndex: "1",
+      modelIndex: "0",
       exportMultiplier: 1000,
     });
     expect(lookup["Meter.Utility_Export_Power"]).toMatchObject({
       name: "pGridExpTot",
       model: "40101",
-      modelIndex: "1",
+      modelIndex: "0",
       exportMultiplier: 1000,
     });
     expect(lookup["Meter.Backup_Load_Total_Power"]).toMatchObject({
       name: "pBkupTot",
       model: "40101",
-      modelIndex: "1",
+      modelIndex: "0",
       exportMultiplier: 1000,
     });
     expect(lookup["Meter.Load_Active_Power"]).toMatchObject({
       name: "pLoad",
       model: "40101",
-      modelIndex: "1",
+      modelIndex: "0",
       exportMultiplier: 1000,
     });
 
@@ -591,7 +894,7 @@ describe("SS40K export helpers", () => {
     expect(messages).toEqual([
       expect.objectContaining({
         payload: {
-          "1": {
+          "0": {
             id: 40101,
             version: "3.0",
             fixed: expect.objectContaining({
@@ -615,7 +918,7 @@ describe("SS40K export helpers", () => {
     expect(lookup["Meter.Utility_Import_Power"]).toMatchObject({
       name: "pGridImpTot",
       model: "40101",
-      modelIndex: "1",
+      modelIndex: "0",
       exportMultiplier: 1000,
     });
     expect(lookup["Meter.Load_Active_Power"]).toMatchObject({
@@ -648,7 +951,7 @@ describe("SS40K export helpers", () => {
     expect(messages).toEqual([
       expect.objectContaining({
         payload: {
-          "1": {
+          "0": {
             id: 40101,
             version: "3.0",
             fixed: expect.objectContaining({
@@ -673,12 +976,12 @@ describe("SS40K export helpers", () => {
     expect(lookup["SolarEdge1.AC_POWER"]).toMatchObject({
       name: "pAcCplTot",
       model: "40101",
-      modelIndex: "1",
+      modelIndex: "0",
     });
     expect(lookup["SolarEdge1.AC_ENERGY_WH"]).toMatchObject({
       name: "ePvTot",
       model: "40102",
-      modelIndex: "2",
+      modelIndex: "0",
     });
 
     const messages = buildSs40kFixedPayloads({
@@ -698,7 +1001,7 @@ describe("SS40K export helpers", () => {
 
     expect(byModel["40101"]).toMatchObject({
       payload: {
-        "1": {
+        "0": {
           id: 40101,
           fixed: {
             ID: 40101,
@@ -709,7 +1012,7 @@ describe("SS40K export helpers", () => {
     });
     expect(byModel["40102"]).toMatchObject({
       payload: {
-        "2": {
+        "0": {
           id: 40102,
           fixed: {
             ID: 40102,
@@ -728,7 +1031,7 @@ describe("SS40K export helpers", () => {
     expect(lookup["Meter2.Solar"]).toMatchObject({
       name: "pAcCplTot",
       model: "40101",
-      modelIndex: "1",
+      modelIndex: "0",
       exportMultiplier: 1000,
     });
 
@@ -743,7 +1046,7 @@ describe("SS40K export helpers", () => {
     expect(messages).toEqual([
       expect.objectContaining({
         payload: {
-          "1": {
+          "0": {
             id: 40101,
             version: "3.0",
             fixed: {
@@ -756,7 +1059,7 @@ describe("SS40K export helpers", () => {
     ]);
   });
 
-  test("Sinexcel Mini PVDC telemetry reuses SS40K PV and energy points", () => {
+  test("Sinexcel Mini PVDC telemetry exports PV power while PCS exports total PV energy", () => {
     const { lookup } = buildSs40kLookup({
       PVDC1: "pvdc_module_1",
       PCS: "Sinexcel_Mini_PCS_ss40k",
@@ -765,17 +1068,18 @@ describe("SS40K export helpers", () => {
     expect(lookup["PVDC1.PVSideTotalPower"]).toMatchObject({
       name: "pPvTotal",
       model: "40101",
-      modelIndex: "1",
+      modelIndex: "0",
       exportMultiplier: 1000,
     });
     expect(lookup["PVDC1.PV1SideVoltage"]).toMatchObject({
       name: "vMppt1",
       model: "40101",
     });
-    expect(lookup["PVDC1.PVGeneratedEnergy"]).toMatchObject({
+    expect(lookup["PVDC1.PVGeneratedEnergy"]).toBeUndefined();
+    expect(lookup["PCS.PVGeneratedEnergy"]).toMatchObject({
       name: "ePvTot",
       model: "40102",
-      modelIndex: "2",
+      modelIndex: "0",
       exportMultiplier: 1000,
     });
     expect(lookup["PCS.ACBusTotalActivePower"]).toMatchObject({
@@ -791,9 +1095,11 @@ describe("SS40K export helpers", () => {
           { tagID: "PVDC1.PVSideTotalPower", value: 31.2 },
           { tagID: "PVDC1.PV1SideTotalPower", value: 10.1 },
           { tagID: "PVDC1.PV1SideVoltage", value: 620.5 },
-          { tagID: "PVDC1.PVGeneratedEnergy", value: 123.4 },
         ],
-        PCS: [{ tagID: "PCS.ACBusTotalActivePower", value: 44.4 }],
+        PCS: [
+          { tagID: "PCS.ACBusTotalActivePower", value: 44.4 },
+          { tagID: "PCS.PVGeneratedEnergy", value: 123.4 },
+        ],
       },
       topic: "fort/v1/things/test/telem",
     });
@@ -807,7 +1113,7 @@ describe("SS40K export helpers", () => {
 
     expect(byKey["PVDC1.40101"]).toMatchObject({
       payload: {
-        "1": {
+        "0": {
           id: 40101,
           fixed: {
             ID: 40101,
@@ -818,9 +1124,9 @@ describe("SS40K export helpers", () => {
         },
       },
     });
-    expect(byKey["PVDC1.40102"]).toMatchObject({
+    expect(byKey["PCS.40102"]).toMatchObject({
       payload: {
-        "2": {
+        "0": {
           id: 40102,
           fixed: {
             ID: 40102,
@@ -831,7 +1137,7 @@ describe("SS40K export helpers", () => {
     });
     expect(byKey["PCS.40101"]).toMatchObject({
       payload: {
-        "1": {
+        "0": {
           id: 40101,
           fixed: {
             ID: 40101,
@@ -863,12 +1169,16 @@ describe("SS40K export helpers", () => {
       mergeByModelIndex: true,
       signalMapping: {
         signals: {
-          utilityPowerKw: { expr: "Meter.Utility_Total_Power" },
-          pvKw: {
+          gridPowerKw: { expr: "Meter.Utility_Total_Power" },
+          pvPowerKw: {
             expr: "PVDC1.PVSideTotalPower + PVDC2.PVSideTotalPower + PVDC3.PVSideTotalPower",
           },
-          siteLoadKw: {
-            expr: "Meter.Utility_Total_Power - PCS.ACBusTotalActivePower",
+          pcsPowerKw: {
+            expr: "PCS.ACBusTotalActivePower",
+            invertSign: true,
+          },
+          loadPowerKw: {
+            expr: "gridPowerKw + pvPowerKw + pcsPowerKw",
           },
           backupLoadKw: { expr: "Meter.Backup_Load_Total_Power" },
           batteryPowerKw: { expr: "BMS.BamsPower" },
@@ -898,7 +1208,7 @@ describe("SS40K export helpers", () => {
             pPvTotal: 3400,
             pGridImpTot: 0,
             pGridExpTot: 13900,
-            pLoad: 25500,
+            pLoad: 28900,
             pBkupTot: 6180,
             pBatDischg: 26500,
             pBatChg: 0,
@@ -910,6 +1220,245 @@ describe("SS40K export helpers", () => {
         model: "40101",
         modelIndex: "0",
       },
+    });
+  });
+
+  test("canonical Mini PCS/PVDC signal mapping drives SS40K site power fields", () => {
+    const { lookup } = buildSs40kLookup(
+      {
+        PCS: "Sinexcel_Mini_PCS_ss40k",
+        Load: "Sinexcel_Mini_Load_ss40k",
+        PVDC1: "pvdc_module_1",
+        PVDC2: "pvdc_module_2",
+      },
+      {
+        ...DEFAULT_SS40K_MODEL_INDEX_MAP,
+        "40101": "0",
+      }
+    );
+
+    const messages = buildSs40kFixedPayloads({
+      lookup,
+      mergeByModelIndex: true,
+      signalMapping: {
+        signals: {
+          gridPowerKw: { expr: "PCS.GridTotalActivePower" },
+          loadPowerKw: { expr: "Load.LoadTotalActivePower" },
+          pvPowerKw: {
+            expr: "PVDC1.PVBusSidePower + PVDC2.PVBusSidePower",
+          },
+          pcsPowerKw: {
+            expr: "PCS.ACBusTotalActivePower",
+            invertSign: true,
+          },
+        },
+      },
+      telemetry: {
+        PCS: [
+          { tagID: "PCS.GridTotalActivePower", value: -34.1 },
+          { tagID: "PCS.ACBusTotalActivePower", value: -6.5 },
+        ],
+        Load: [{ tagID: "Load.LoadTotalActivePower", value: 2 }],
+        PVDC1: [{ tagID: "PVDC1.PVBusSidePower", value: 16.4 }],
+        PVDC2: [{ tagID: "PVDC2.PVBusSidePower", value: 17.9 }],
+      },
+      topic: "fort/v1/things/test/telem",
+    });
+
+    const site40101 = messages.find(
+      (message) => message.ss40k.equipment === "site" && message.ss40k.model === "40101"
+    );
+    expect(site40101).toMatchObject({
+      payload: {
+        "0": {
+          id: 40101,
+          fixed: expect.objectContaining({
+            ID: 40101,
+            pGridImpTot: 0,
+            pGridExpTot: 34100,
+            pLoad: 2000,
+            pPvTotal: 34300,
+          }),
+        },
+      },
+    });
+  });
+
+  test("40K-only merge sums PVDC production without merging BCU 42K payloads", () => {
+    const { lookup: baseLookup } = buildSs40kLookup({
+      PCS: "Sinexcel_Mini_PCS_ss40k",
+      PVDC1: "pvdc_module_1",
+      PVDC2: "pvdc_module_2",
+    });
+    const { lookup: bcuLookup } = buildSs40kLookup(
+      buildAmpaceBcu42kEquipmentConfig({ count: 2, route: "AMPACE" })
+    );
+    const lookup = { ...baseLookup, ...bcuLookup };
+
+    const messages = buildSs40kFixedPayloads({
+      lookup,
+      merge40kByModelIndex: true,
+      telemetry: {
+        PCS: [{ tagID: "PCS.ACBusTotalActivePower", value: 44.4 }],
+        PVDC1: [{ tagID: "PVDC1.PVSideTotalPower", value: 19.6 }],
+        PVDC2: [{ tagID: "PVDC2.PVSideTotalPower", value: 18.9 }],
+        AMPACE_BCU_1: [
+          { tagID: "AMPACE_BCU_1.SerialNumber", value: "2350317571" },
+          { tagID: "AMPACE_BCU_1.USOC", value: 0.71 },
+        ],
+        AMPACE_BCU_2: [
+          { tagID: "AMPACE_BCU_2.SerialNumber", value: "2350321667" },
+          { tagID: "AMPACE_BCU_2.USOC", value: 0.69 },
+        ],
+      },
+      topic: "fort/v1/things/test/telem",
+    });
+
+    const site40101 = messages.find(
+      (message) => message.ss40k.equipment === "site" && message.ss40k.model === "40101"
+    );
+    expect(site40101).toMatchObject({
+      payload: {
+        "0": {
+          id: 40101,
+          fixed: expect.objectContaining({
+            ID: 40101,
+            W: 44400,
+            pPvTotal: 38500,
+          }),
+        },
+      },
+    });
+
+    const bcu42101 = messages.filter((message) => message.ss40k.model === "42101");
+    expect(bcu42101).toHaveLength(2);
+    expect(bcu42101.map((message) => message.ss40k.equipment).sort()).toEqual([
+      "AMPACE_BCU_1",
+      "AMPACE_BCU_2",
+    ]);
+  });
+
+  test("Sinexcel Mini PCS profile exports grid telemetry from PCS grid-side registers", () => {
+    const { lookup } = buildSs40kLookup({
+      PCS: "Sinexcel_Mini_PCS_ss40k",
+    });
+
+    expect(Object.values(lookup)).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          equipment: "PCS",
+          sourceTagID: "PCS.GridFrequency",
+          name: "fGrid",
+          model: "40101",
+          modelIndex: "0",
+        }),
+      ])
+    );
+    expect(lookup["PCS.GridL1ActivePower"]).toMatchObject({
+      equipment: "PCS",
+      name: "pGridL1",
+      exportMultiplier: 1000,
+    });
+    expect(Object.values(lookup)).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          equipment: "PCS",
+          sourceTagID: "PCS.GridTotalActivePower",
+          name: "pGridImpTot",
+          model: "40101",
+          exportMultiplier: 1000,
+          exportExpr: "max(value, 0)",
+        }),
+        expect.objectContaining({
+          equipment: "PCS",
+          sourceTagID: "PCS.GridTotalActivePower",
+          name: "pGridExpTot",
+          model: "40101",
+          exportMultiplier: 1000,
+          exportExpr: "max(-value, 0)",
+        }),
+      ])
+    );
+
+    const messages = buildSs40kFixedPayloads({
+      lookup,
+      telemetry: {
+        PCS: [
+          { tagID: "PCS.GridTotalActivePower", value: -2.7 },
+          { tagID: "PCS.GridFrequency", value: 60.01 },
+          { tagID: "PCS.GridL1NVoltage", value: 272.9 },
+          { tagID: "PCS.GridL2NVoltage", value: 271.3 },
+          { tagID: "PCS.GridL3NVoltage", value: 275.3 },
+          { tagID: "PCS.GridL1ActivePower", value: -0.7 },
+          { tagID: "PCS.GridL2ActivePower", value: -0.3 },
+          { tagID: "PCS.GridL3ActivePower", value: 0.4 },
+        ],
+      },
+      topic: "fort/v1/things/test/telem",
+    });
+
+    expect(messages).toHaveLength(1);
+    expect(messages[0].payload["0"].id).toBe(40101);
+    expect(messages[0].payload["0"].fixed).toMatchObject({
+      ID: 40101,
+      fGrid: 60.01,
+      vGridL1N: 272.9,
+      vGridL2N: 271.3,
+      vGridL3N: 275.3,
+      pGridL1: -700,
+      pGridL2: -300,
+      pGridL3: 400,
+      pGridImpTot: 0,
+      pGridExpTot: 2700,
+    });
+    expect(messages[0].ss40k).toMatchObject({
+      equipment: "PCS",
+      model: "40101",
+      modelIndex: "0",
+    });
+  });
+
+  test("site signal mapping can override SS40K grid points from meter telemetry", () => {
+    const { lookup } = buildSs40kLookup({
+      PCS: "Sinexcel_Mini_PCS_ss40k",
+      Meter: "eGauge_Assisted_Living",
+    });
+
+    const messages = buildSs40kFixedPayloads({
+      lookup,
+      mergeByModelIndex: true,
+      signalMapping: {
+        ss40k: {
+          pGridImpTot: { expr: "max(Meter.GridPower, 0)" },
+          pGridExpTot: { expr: "max(-Meter.GridPower, 0)" },
+          pGridL1: { expr: "Meter.GridL1Power" },
+          fGrid: { expr: "Meter.GridFrequency" },
+          vGridL1N: { expr: "Meter.GridL1NVoltage" },
+        },
+      },
+      telemetry: {
+        PCS: [
+          { tagID: "PCS.GridTotalActivePower", value: 99.9 },
+          { tagID: "PCS.GridFrequency", value: 59 },
+          { tagID: "PCS.GridL1NVoltage", value: 111 },
+          { tagID: "PCS.GridL1ActivePower", value: 88.8 },
+        ],
+        Meter: [
+          { tagID: "Meter.GridPower", value: -4.2 },
+          { tagID: "Meter.GridL1Power", value: -1.4 },
+          { tagID: "Meter.GridFrequency", value: 60.03 },
+          { tagID: "Meter.GridL1NVoltage", value: 277.1 },
+        ],
+      },
+      topic: "fort/v1/things/test/telem",
+    });
+
+    expect(messages[0].payload["0"].fixed).toMatchObject({
+      pGridImpTot: 0,
+      pGridExpTot: 4200,
+      pGridL1: -1400,
+      fGrid: 60.03,
+      vGridL1N: 277.1,
     });
   });
 });

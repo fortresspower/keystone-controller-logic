@@ -14,5 +14,6 @@ export * as config from "./config";
 export * as cloudConfig from "./cloudConfig/engine";
 export * as coreControl from "./coreControl";
 export * as scheduler from "./scheduler";
+export * as signalMappingPresets from "./signalMappingPresets";
 
 // optional but useful

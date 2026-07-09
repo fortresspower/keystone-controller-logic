@@ -147,7 +147,7 @@ export function buildReadPlan(profile: any, instance: any, env: CompilerEnv): Re
 
   const pollFast = Number((env as any).PollFastMs ?? (env as any).pollFast ?? 250);
   const pollNormal = Number((env as any).PollNormalMs ?? (env as any).pollNormal ?? 1000);
-  const pollSlow = Number((env as any).PollSlowMs ?? (env as any).pollSlow ?? 5000);
+  const pollSlow = Number((env as any).PollSlowMs ?? (env as any).pollSlow ?? 300000);
 
   const defaultEndian =
     typeof profile?.defaults?.byteOrder === "string"

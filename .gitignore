@@ -5,3 +5,9 @@ dist.tar
 # runtime/controller copies
 settings.js
 settings.js.backup
+
+# local deployment/snapshot scratch
+.codex/
+.deploy-*/
+.remote-*
+scripts/__pycache__/

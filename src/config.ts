@@ -320,6 +320,27 @@ export interface MeterReadsConfig {
 
 export type MeteringReadingKey = "utilityPowerKw" | "siteLoadKw" | "pvKw";
 
+/**
+ * Site-level normalized power signals used by both control and cloud export.
+ *
+ * Sign convention:
+ * - gridPowerKw: + import from grid, - export to grid
+ * - loadPowerKw: + site consumption
+ * - pvPowerKw: + PV production
+ * - batteryPowerKw: + battery discharge, - battery charge
+ * - pcsPowerKw: + PCS discharge to AC bus, - PCS charge
+ * - backupLoadKw: + backup/critical load consumption
+ * - generatorPowerKw: + generator output
+ */
+export type CanonicalPowerSignalKey =
+  | "gridPowerKw"
+  | "loadPowerKw"
+  | "pvPowerKw"
+  | "batteryPowerKw"
+  | "pcsPowerKw"
+  | "backupLoadKw"
+  | "generatorPowerKw";
+
 export type MeteringRegisterFunction =
   | "HR"
   | "HRUS"
@@ -403,9 +424,9 @@ export interface MeteringConfig {
 // ---- Signal mapping / telemetry normalization ----
 
 export type CanonicalSignalKey =
+  | CanonicalPowerSignalKey
+  // Legacy aliases kept for existing site configs and flow functions.
   | MeteringReadingKey
-  | "backupLoadKw"
-  | "batteryPowerKw"
   | "pcsActivePowerKw"
   | "generatorRunning";
 
@@ -432,6 +453,12 @@ export interface SignalMappingConfig {
   sources?: Record<string, SignalMappingSourceConfig>;
   deadbands?: Record<string, number>;
   signals?: Partial<Record<CanonicalSignalKey, SignalMappingSignalConfig>>;
+  /**
+   * Optional direct fixed-model point overrides. Used when a site maps SS40K
+   * reporting points such as pGridImpTot or fGrid to eGauge/custom meter tags
+   * instead of product-default telemetry.
+   */
+  ss40k?: Partial<Record<string, SignalMappingSignalConfig>>;
 }
 
 // ---- Generator ----

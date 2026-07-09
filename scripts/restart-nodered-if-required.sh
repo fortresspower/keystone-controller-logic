@@ -66,6 +66,7 @@ status_json="$tmpdir/control-status.json"
 config_json="$tmpdir/control-config.json"
 flows_json="$tmpdir/flows.json"
 global_json="$tmpdir/global.json"
+flow_path_json="$tmpdir/flow-path.json"
 
 echo "Reading runtime slot plan from $HEALTH_URL"
 fetch_status() {
@@ -136,13 +137,68 @@ fetch_control_config() {
 }
 fetch_control_config > "$config_json"
 
+echo "Resolving active Node-RED flow file"
+docker exec -i "$CONTAINER" node - <<'NODE' > "$flow_path_json"
+const fs = require("fs");
+const path = require("path");
+
+const userDir = "/data/node-red";
+const projectsPath = path.join(userDir, ".config.projects.json");
+let flowPath = path.join(userDir, "flows.json");
+let activeProject = null;
+
+try {
+  const projects = JSON.parse(fs.readFileSync(projectsPath, "utf8"));
+  activeProject = projects && projects.activeProject;
+  if (activeProject) {
+    const projectFlowPath = path.join(
+      userDir,
+      "projects",
+      String(activeProject),
+      "flows.json"
+    );
+    if (fs.existsSync(projectFlowPath)) {
+      flowPath = projectFlowPath;
+    }
+  }
+} catch (error) {
+  activeProject = null;
+}
+
+process.stdout.write(JSON.stringify({ flowPath, activeProject }));
+NODE
+
+FLOW_PATH="$(python3 - "$flow_path_json" <<'PY'
+import json
+import sys
+
+with open(sys.argv[1], "r", encoding="utf-8") as fh:
+    data = json.load(fh)
+print(data["flowPath"], end="")
+PY
+)"
+ACTIVE_PROJECT="$(python3 - "$flow_path_json" <<'PY'
+import json
+import sys
+
+with open(sys.argv[1], "r", encoding="utf-8") as fh:
+    data = json.load(fh)
+print(data.get("activeProject") or "", end="")
+PY
+)"
+
+if [ -n "$ACTIVE_PROJECT" ]; then
+  echo "Active Node-RED project: $ACTIVE_PROJECT"
+fi
+echo "Using flow file: $FLOW_PATH"
+
 echo "Stopping container: $CONTAINER"
 docker stop "$CONTAINER" >/dev/null
 
-echo "Patching fixed Modbus slots in flows.json"
-docker cp "$CONTAINER:/data/node-red/flows.json" "$flows_json"
+echo "Patching fixed Modbus slots in $FLOW_PATH"
+docker cp "$CONTAINER:$FLOW_PATH" "$flows_json"
 python3 "$PATCHER" "$flows_json" "$status_json"
-docker cp "$flows_json" "$CONTAINER:/data/node-red/flows.json"
+docker cp "$flows_json" "$CONTAINER:$FLOW_PATH"
 
 if docker cp "$CONTAINER:/data/node-red/context/global/global.json" "$global_json" >/dev/null 2>&1; then
   python3 - "$global_json" "$config_json" <<'PY'

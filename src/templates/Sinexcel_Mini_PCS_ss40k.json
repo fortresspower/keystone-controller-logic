@@ -35,12 +35,6 @@
       }
     },
     {
-      "id": "SystemChgStatusMap",
-      "pollClass": "normal",
-      "function": "HRUS",
-      "address": 33
-    },
-    {
       "id": "ACBusTotalActivePower",
       "pollClass": "normal",
       "function": "HR",
@@ -284,43 +278,43 @@
     },
     {
       "id": "TotalStop",
-      "pollClass": "manual",
+      "pollClass": "slow",
       "function": "HRUS",
       "address": 1002
     },
     {
       "id": "ClearFault",
-      "pollClass": "manual",
+      "pollClass": "slow",
       "function": "HRUS",
       "address": 1003
     },
     {
       "id": "OnOffGridSwitch",
-      "pollClass": "normal",
+      "pollClass": "slow",
       "function": "HRUS",
       "address": 1006
     },
     {
       "id": "ControlMode",
-      "pollClass": "normal",
+      "pollClass": "slow",
       "function": "HRUS",
       "address": 1211
     },
     {
       "id": "ActivePowerControlMode",
-      "pollClass": "normal",
+      "pollClass": "slow",
       "function": "HRUS",
       "address": 1022
     },
     {
       "id": "ReactivePowerControlMode",
-      "pollClass": "normal",
+      "pollClass": "slow",
       "function": "HRUS",
       "address": 1023
     },
     {
       "id": "GridRegulation",
-      "pollClass": "normal",
+      "pollClass": "slow",
       "function": "HRUS",
       "address": 2816,
       "ss40k": {
@@ -330,13 +324,13 @@
     },
     {
       "id": "PowerChangeMode",
-      "pollClass": "normal",
+      "pollClass": "slow",
       "function": "HRUS",
       "address": 1301
     },
     {
       "id": "PermitService",
-      "pollClass": "normal",
+      "pollClass": "slow",
       "function": "HRUS",
       "address": 1307,
       "ss40k": {
@@ -346,7 +340,7 @@
     },
     {
       "id": "GridReconnectionDelay",
-      "pollClass": "normal",
+      "pollClass": "slow",
       "function": "HRUS",
       "address": 1304,
       "ss40k": {
@@ -356,9 +350,63 @@
     },
     {
       "id": "OverVoltRegion1Boundary",
-      "pollClass": "normal",
+      "pollClass": "slow",
       "function": "HRUS",
       "address": 1341,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1000,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "GridVoltLimit1High",
+        "model": "40104"
+      }
+    },
+    {
+      "id": "OverVoltRegion1TripTime",
+      "pollClass": "slow",
+      "function": "HRUS",
+      "address": 1342,
+      "ss40k": {
+        "name": "GridVoltLimit1HighTime",
+        "model": "40104"
+      }
+    },
+    {
+      "id": "OverVoltRegion2Boundary",
+      "pollClass": "slow",
+      "function": "HRUS",
+      "address": 1343,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 1000,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "GridVoltLimit2High",
+        "model": "40104"
+      }
+    },
+    {
+      "id": "OverVoltRegion2TripTime",
+      "pollClass": "slow",
+      "function": "HRUS",
+      "address": 1344,
+      "ss40k": {
+        "name": "GridVoltLimit2HighTime",
+        "model": "40104"
+      }
+    },
+    {
+      "id": "UnderVoltRegion1Boundary",
+      "pollClass": "slow",
+      "function": "HRUS",
+      "address": 1345,
       "scale": {
         "mode": "Linear",
         "rawLow": 0,
@@ -372,20 +420,20 @@
       }
     },
     {
-      "id": "OverVoltRegion1TripTime",
-      "pollClass": "normal",
+      "id": "UnderVoltRegion1TripTime",
+      "pollClass": "slow",
       "function": "HRUS",
-      "address": 1342,
+      "address": 1346,
       "ss40k": {
-        "name": "GridVoltLimit1High",
+        "name": "GridVoltLimit1LowTime",
         "model": "40104"
       }
     },
     {
-      "id": "OverVoltRegion2Boundary",
-      "pollClass": "normal",
+      "id": "UnderVoltRegion2Boundary",
+      "pollClass": "slow",
       "function": "HRUS",
-      "address": 1343,
+      "address": 1347,
       "scale": {
         "mode": "Linear",
         "rawLow": 0,
@@ -399,56 +447,18 @@
       }
     },
     {
-      "id": "OverVoltRegion2TripTime",
-      "pollClass": "normal",
+      "id": "UnderVoltRegion2TripTime",
+      "pollClass": "slow",
       "function": "HRUS",
-      "address": 1344,
+      "address": 1348,
       "ss40k": {
-        "name": "GridVoltLimit2High",
+        "name": "GridVoltLimit2LowTime",
         "model": "40104"
       }
     },
     {
-      "id": "UnderVoltRegion1Boundary",
-      "pollClass": "normal",
-      "function": "HRUS",
-      "address": 1345,
-      "scale": {
-        "mode": "Linear",
-        "rawLow": 0,
-        "rawHigh": 1000,
-        "scaledLow": 0,
-        "scaledHigh": 1
-      }
-    },
-    {
-      "id": "UnderVoltRegion1TripTime",
-      "pollClass": "normal",
-      "function": "HRUS",
-      "address": 1346
-    },
-    {
-      "id": "UnderVoltRegion2Boundary",
-      "pollClass": "normal",
-      "function": "HRUS",
-      "address": 1347,
-      "scale": {
-        "mode": "Linear",
-        "rawLow": 0,
-        "rawHigh": 1000,
-        "scaledLow": 0,
-        "scaledHigh": 1
-      }
-    },
-    {
-      "id": "UnderVoltRegion2TripTime",
-      "pollClass": "normal",
-      "function": "HRUS",
-      "address": 1348
-    },
-    {
       "id": "GridReconnectionUpperVoltageLimit",
-      "pollClass": "normal",
+      "pollClass": "slow",
       "function": "HRUS",
       "address": 1352,
       "scale": {
@@ -457,11 +467,15 @@
         "rawHigh": 1000,
         "scaledLow": 0,
         "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "ApplicableVoltageHigh",
+        "model": "40104"
       }
     },
     {
       "id": "GridReconnectionLowerVoltageLimit",
-      "pollClass": "normal",
+      "pollClass": "slow",
       "function": "HRUS",
       "address": 1353,
       "scale": {
@@ -470,11 +484,15 @@
         "rawHigh": 1000,
         "scaledLow": 0,
         "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "ApplicableVoltageLow",
+        "model": "40104"
       }
     },
     {
       "id": "GridReconnectFrequencyUpperLimit",
-      "pollClass": "normal",
+      "pollClass": "slow",
       "function": "HRUS",
       "address": 1369,
       "scale": {
@@ -483,11 +501,15 @@
         "rawHigh": 1000,
         "scaledLow": 0,
         "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "ApplicableFrequencyHigh",
+        "model": "40104"
       }
     },
     {
       "id": "GridReconnectFrequencyLowerLimit",
-      "pollClass": "normal",
+      "pollClass": "slow",
       "function": "HRUS",
       "address": 1370,
       "scale": {
@@ -496,11 +518,15 @@
         "rawHigh": 1000,
         "scaledLow": 0,
         "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "ApplicableFrequencyLow",
+        "model": "40104"
       }
     },
     {
       "id": "OverFrequencyRegion1Boundary",
-      "pollClass": "normal",
+      "pollClass": "slow",
       "function": "HRUS",
       "address": 1361,
       "scale": {
@@ -509,11 +535,15 @@
         "rawHigh": 1000,
         "scaledLow": 0,
         "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "GridFreqLimit1High",
+        "model": "40104"
       }
     },
     {
       "id": "OverFrequencyRegion1TripTime",
-      "pollClass": "normal",
+      "pollClass": "slow",
       "function": "HRUS",
       "address": 1362,
       "scale": {
@@ -522,11 +552,15 @@
         "rawHigh": 10,
         "scaledLow": 0,
         "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "GridFreqLimit1HighTime",
+        "model": "40104"
       }
     },
     {
       "id": "OverFrequencyRegion2Boundary",
-      "pollClass": "normal",
+      "pollClass": "slow",
       "function": "HRUS",
       "address": 1363,
       "scale": {
@@ -535,11 +569,15 @@
         "rawHigh": 1000,
         "scaledLow": 0,
         "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "GridFreqLimit2High",
+        "model": "40104"
       }
     },
     {
       "id": "OverFrequencyRegion2TripTime",
-      "pollClass": "normal",
+      "pollClass": "slow",
       "function": "HRUS",
       "address": 1364,
       "scale": {
@@ -548,11 +586,15 @@
         "rawHigh": 10,
         "scaledLow": 0,
         "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "GridFreqLimit2HighTime",
+        "model": "40104"
       }
     },
     {
       "id": "UnderFrequencyRegion1Boundary",
-      "pollClass": "normal",
+      "pollClass": "slow",
       "function": "HRUS",
       "address": 1365,
       "scale": {
@@ -561,11 +603,15 @@
         "rawHigh": 1000,
         "scaledLow": 0,
         "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "GridFreqLimit1Low",
+        "model": "40104"
       }
     },
     {
       "id": "UnderFrequencyRegion1TripTime",
-      "pollClass": "normal",
+      "pollClass": "slow",
       "function": "HRUS",
       "address": 1366,
       "scale": {
@@ -574,11 +620,15 @@
         "rawHigh": 10,
         "scaledLow": 0,
         "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "GridFreqLimit1LowTime",
+        "model": "40104"
       }
     },
     {
       "id": "UnderFrequencyRegion2Boundary",
-      "pollClass": "normal",
+      "pollClass": "slow",
       "function": "HRUS",
       "address": 1367,
       "scale": {
@@ -587,11 +637,15 @@
         "rawHigh": 1000,
         "scaledLow": 0,
         "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "GridFreqLimit2Low",
+        "model": "40104"
       }
     },
     {
       "id": "UnderFrequencyRegion2TripTime",
-      "pollClass": "normal",
+      "pollClass": "slow",
       "function": "HRUS",
       "address": 1368,
       "scale": {
@@ -600,11 +654,15 @@
         "rawHigh": 10,
         "scaledLow": 0,
         "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "GridFreqLimit2LowTime",
+        "model": "40104"
       }
     },
     {
       "id": "VoltVarV1",
-      "pollClass": "normal",
+      "pollClass": "slow",
       "function": "HRUS",
       "address": 1381,
       "scale": {
@@ -613,11 +671,15 @@
         "rawHigh": 1000,
         "scaledLow": 0,
         "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "UnderOverV1",
+        "model": "40104"
       }
     },
     {
       "id": "VoltVarV2",
-      "pollClass": "normal",
+      "pollClass": "slow",
       "function": "HRUS",
       "address": 1382,
       "scale": {
@@ -626,11 +688,15 @@
         "rawHigh": 1000,
         "scaledLow": 0,
         "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "UnderOverV2",
+        "model": "40104"
       }
     },
     {
       "id": "VoltVarV3",
-      "pollClass": "normal",
+      "pollClass": "slow",
       "function": "HRUS",
       "address": 1383,
       "scale": {
@@ -639,11 +705,15 @@
         "rawHigh": 1000,
         "scaledLow": 0,
         "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "UnderOverV3",
+        "model": "40104"
       }
     },
     {
       "id": "VoltVarV4",
-      "pollClass": "normal",
+      "pollClass": "slow",
       "function": "HRUS",
       "address": 1384,
       "scale": {
@@ -652,11 +722,15 @@
         "rawHigh": 1000,
         "scaledLow": 0,
         "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "UnderOverV4",
+        "model": "40104"
       }
     },
     {
       "id": "MaximumCapacitiveReactiveQ1",
-      "pollClass": "normal",
+      "pollClass": "slow",
       "function": "HRUS",
       "address": 1385,
       "scale": {
@@ -665,11 +739,15 @@
         "rawHigh": 100,
         "scaledLow": 0,
         "scaledHigh": 0
+      },
+      "ss40k": {
+        "name": "Q1",
+        "model": "40104"
       }
     },
     {
       "id": "InitialCapacitiveReactiveQ2",
-      "pollClass": "normal",
+      "pollClass": "slow",
       "function": "HRUS",
       "address": 1386,
       "scale": {
@@ -678,11 +756,15 @@
         "rawHigh": 100,
         "scaledLow": 0,
         "scaledHigh": 0
+      },
+      "ss40k": {
+        "name": "Q2",
+        "model": "40104"
       }
     },
     {
       "id": "InitialInductiveReactiveQ3",
-      "pollClass": "normal",
+      "pollClass": "slow",
       "function": "HRUS",
       "address": 1385,
       "scale": {
@@ -691,11 +773,15 @@
         "rawHigh": 100,
         "scaledLow": 0,
         "scaledHigh": 0
+      },
+      "ss40k": {
+        "name": "Q3",
+        "model": "40104"
       }
     },
     {
       "id": "MaximumInductiveReactiveQ4",
-      "pollClass": "normal",
+      "pollClass": "slow",
       "function": "HRUS",
       "address": 1386,
       "scale": {
@@ -704,11 +790,15 @@
         "rawHigh": 100,
         "scaledLow": 0,
         "scaledHigh": 0
+      },
+      "ss40k": {
+        "name": "Q4",
+        "model": "40104"
       }
     },
     {
       "id": "VoltWattStartV1",
-      "pollClass": "normal",
+      "pollClass": "slow",
       "function": "HRUS",
       "address": 1411,
       "scale": {
@@ -725,7 +815,7 @@
     },
     {
       "id": "VoltWattEndV2",
-      "pollClass": "normal",
+      "pollClass": "slow",
       "function": "HRUS",
       "address": 1412,
       "scale": {
@@ -742,7 +832,7 @@
     },
     {
       "id": "VoltWattStartP1",
-      "pollClass": "normal",
+      "pollClass": "slow",
       "function": "HRUS",
       "address": 1413,
       "scale": {
@@ -753,13 +843,13 @@
         "scaledHigh": 1
       },
       "ss40k": {
-        "name": "VoltWattP1",
+        "name": "ActivePowerPercent",
         "model": "40104"
       }
     },
     {
       "id": "VoltWattEndP2",
-      "pollClass": "normal",
+      "pollClass": "slow",
       "function": "HRUS",
       "address": 1414,
       "scale": {
@@ -776,7 +866,7 @@
     },
     {
       "id": "HighStartFrequencyPoint",
-      "pollClass": "normal",
+      "pollClass": "slow",
       "function": "HRUS",
       "address": 1431,
       "scale": {
@@ -785,11 +875,15 @@
         "rawHigh": 1000,
         "scaledLow": 0,
         "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "OverFrequencyDroop_dbOF",
+        "model": "40104"
       }
     },
     {
       "id": "HighFrequencyRampRate",
-      "pollClass": "normal",
+      "pollClass": "slow",
       "function": "HRUS",
       "address": 1433,
       "scale": {
@@ -798,11 +892,15 @@
         "rawHigh": 1000,
         "scaledLow": 0,
         "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "OverFrequencyDroop_kOF",
+        "model": "40104"
       }
     },
     {
       "id": "LowFrequencyStartPoint",
-      "pollClass": "normal",
+      "pollClass": "slow",
       "function": "HR",
       "address": 1441,
       "scale": {
@@ -811,11 +909,15 @@
         "rawHigh": 1000,
         "scaledLow": 0,
         "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "UnderFrequencyDroop_dbUF",
+        "model": "40104"
       }
     },
     {
       "id": "LowFrequencyRampRate",
-      "pollClass": "normal",
+      "pollClass": "slow",
       "function": "HRUS",
       "address": 1433,
       "scale": {
@@ -824,11 +926,15 @@
         "rawHigh": 1000,
         "scaledLow": 0,
         "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "UnderFrequencyDroop_kUF",
+        "model": "40104"
       }
     },
     {
       "id": "RCTimeConstant",
-      "pollClass": "normal",
+      "pollClass": "slow",
       "function": "HRUS",
       "address": 1446,
       "scale": {
@@ -837,11 +943,15 @@
         "rawHigh": 0,
         "scaledLow": 0,
         "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "VqOpenLoopResponseTime",
+        "model": "40104"
       }
     },
     {
       "id": "WattVarGenerationP1",
-      "pollClass": "normal",
+      "pollClass": "slow",
       "function": "HR",
       "address": 1471,
       "scale": {
@@ -850,11 +960,15 @@
         "rawHigh": 100,
         "scaledLow": 0,
         "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "PQP1",
+        "model": "40104"
       }
     },
     {
       "id": "WattVarGenerationQ1",
-      "pollClass": "normal",
+      "pollClass": "slow",
       "function": "HR",
       "address": 1472,
       "scale": {
@@ -867,7 +981,7 @@
     },
     {
       "id": "WattVarGenerationP2",
-      "pollClass": "normal",
+      "pollClass": "slow",
       "function": "HR",
       "address": 1473,
       "scale": {
@@ -876,11 +990,15 @@
         "rawHigh": 100,
         "scaledLow": 0,
         "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "PQP2",
+        "model": "40104"
       }
     },
     {
       "id": "WattVarGenerationQ2",
-      "pollClass": "normal",
+      "pollClass": "slow",
       "function": "HR",
       "address": 1474,
       "scale": {
@@ -893,7 +1011,7 @@
     },
     {
       "id": "WattVarGenerationP3",
-      "pollClass": "normal",
+      "pollClass": "slow",
       "function": "HR",
       "address": 1475,
       "scale": {
@@ -902,11 +1020,15 @@
         "rawHigh": 100,
         "scaledLow": 0,
         "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "PQP3",
+        "model": "40104"
       }
     },
     {
       "id": "WattVarGenerationQ3",
-      "pollClass": "normal",
+      "pollClass": "slow",
       "function": "HR",
       "address": 1476,
       "scale": {
@@ -919,7 +1041,7 @@
     },
     {
       "id": "WattVarAbsorptionP1",
-      "pollClass": "normal",
+      "pollClass": "slow",
       "function": "HR",
       "address": 1477,
       "scale": {
@@ -932,7 +1054,7 @@
     },
     {
       "id": "WattVarAbsorptionQ1",
-      "pollClass": "normal",
+      "pollClass": "slow",
       "function": "HR",
       "address": 1478,
       "scale": {
@@ -945,7 +1067,7 @@
     },
     {
       "id": "WattVarAbsorptionP2",
-      "pollClass": "normal",
+      "pollClass": "slow",
       "function": "HR",
       "address": 1479,
       "scale": {
@@ -958,7 +1080,7 @@
     },
     {
       "id": "WattVarAbsorptionQ2",
-      "pollClass": "normal",
+      "pollClass": "slow",
       "function": "HR",
       "address": 1480,
       "scale": {
@@ -971,7 +1093,7 @@
     },
     {
       "id": "WattVarAbsorptionP3",
-      "pollClass": "normal",
+      "pollClass": "slow",
       "function": "HR",
       "address": 1481,
       "scale": {
@@ -984,7 +1106,7 @@
     },
     {
       "id": "WattVarAbsorptionQ3",
-      "pollClass": "normal",
+      "pollClass": "slow",
       "function": "HR",
       "address": 1482,
       "scale": {
@@ -999,11 +1121,7 @@
       "id": "DCInputVoltage",
       "pollClass": "normal",
       "function": "HR",
-      "address": 493,
-      "ss40k": {
-        "name": "vBat",
-        "model": "40101"
-      }
+      "address": 493
     },
     {
       "id": "DCBusVoltage",
@@ -1029,283 +1147,45 @@
       }
     },
     {
-      "id": "PVDCStatusWord",
-      "pollClass": "normal",
-      "function": "HRUS",
-      "address": 34032,
-      "bitfieldStatus": true
-    },
-    {
-      "id": "PVDCStringStatusWord",
-      "pollClass": "normal",
-      "function": "HRUS",
-      "address": 34033,
-      "bitfieldStatus": true
-    },
-    {
-      "id": "PVDCGeneratingStatusWord",
-      "pollClass": "normal",
-      "function": "HRUS",
-      "address": 34034,
-      "bitfieldStatus": true
-    },
-    {
-      "id": "PVSideTotalPower",
-      "pollClass": "normal",
-      "function": "HR",
-      "address": 34053,
-      "scale": {
-        "mode": "Linear",
-        "rawLow": 0,
-        "rawHigh": 10,
-        "scaledLow": 0,
-        "scaledHigh": 1
-      },
-      "ss40k": {
-        "name": "pPvTotal",
-        "model": "40101",
-        "exportMultiplier": 1000
-      }
-    },
-    {
-      "id": "PV1SideTotalPower",
-      "pollClass": "normal",
-      "function": "HR",
-      "address": 34054,
-      "scale": {
-        "mode": "Linear",
-        "rawLow": 0,
-        "rawHigh": 10,
-        "scaledLow": 0,
-        "scaledHigh": 1
-      },
-      "ss40k": {
-        "name": "pMppt1",
-        "model": "40101",
-        "exportMultiplier": 1000
-      }
-    },
-    {
-      "id": "PV2SideTotalPower",
-      "pollClass": "normal",
-      "function": "HR",
-      "address": 34055,
-      "scale": {
-        "mode": "Linear",
-        "rawLow": 0,
-        "rawHigh": 10,
-        "scaledLow": 0,
-        "scaledHigh": 1
-      },
-      "ss40k": {
-        "name": "pMppt2",
-        "model": "40101",
-        "exportMultiplier": 1000
-      }
-    },
-    {
-      "id": "PV3SideTotalPower",
-      "pollClass": "normal",
-      "function": "HR",
-      "address": 34056,
-      "scale": {
-        "mode": "Linear",
-        "rawLow": 0,
-        "rawHigh": 10,
-        "scaledLow": 0,
-        "scaledHigh": 1
-      },
-      "ss40k": {
-        "name": "pMppt3",
-        "model": "40101",
-        "exportMultiplier": 1000
-      }
-    },
-    {
-      "id": "PV1SideVoltage",
-      "pollClass": "normal",
-      "function": "HR",
-      "address": 34063,
-      "scale": {
-        "mode": "Linear",
-        "rawLow": 0,
-        "rawHigh": 10,
-        "scaledLow": 0,
-        "scaledHigh": 1
-      },
-      "ss40k": {
-        "name": "vMppt1",
-        "model": "40101"
-      }
-    },
-    {
-      "id": "PV2SideVoltage",
-      "pollClass": "normal",
-      "function": "HR",
-      "address": 34064,
-      "scale": {
-        "mode": "Linear",
-        "rawLow": 0,
-        "rawHigh": 10,
-        "scaledLow": 0,
-        "scaledHigh": 1
-      },
-      "ss40k": {
-        "name": "vMppt2",
-        "model": "40101"
-      }
-    },
-    {
-      "id": "PV3SideVoltage",
-      "pollClass": "normal",
-      "function": "HR",
-      "address": 34065,
-      "scale": {
-        "mode": "Linear",
-        "rawLow": 0,
-        "rawHigh": 10,
-        "scaledLow": 0,
-        "scaledHigh": 1
-      },
-      "ss40k": {
-        "name": "vMppt3",
-        "model": "40101"
-      }
-    },
-    {
-      "id": "PVSideTotalCurrent",
-      "pollClass": "normal",
-      "function": "HR",
-      "address": 34066,
-      "scale": {
-        "mode": "Linear",
-        "rawLow": 0,
-        "rawHigh": 10,
-        "scaledLow": 0,
-        "scaledHigh": 1
-      }
-    },
-    {
-      "id": "PV1SideTotalCurrent",
-      "pollClass": "normal",
-      "function": "HR",
-      "address": 34067,
-      "scale": {
-        "mode": "Linear",
-        "rawLow": 0,
-        "rawHigh": 10,
-        "scaledLow": 0,
-        "scaledHigh": 1
-      },
-      "ss40k": {
-        "name": "iMppt1",
-        "model": "40101"
-      }
-    },
-    {
-      "id": "PV2SideTotalCurrent",
-      "pollClass": "normal",
-      "function": "HR",
-      "address": 34068,
-      "scale": {
-        "mode": "Linear",
-        "rawLow": 0,
-        "rawHigh": 10,
-        "scaledLow": 0,
-        "scaledHigh": 1
-      },
-      "ss40k": {
-        "name": "iMppt2",
-        "model": "40101"
-      }
-    },
-    {
-      "id": "PV3SideTotalCurrent",
-      "pollClass": "normal",
-      "function": "HR",
-      "address": 34069,
-      "scale": {
-        "mode": "Linear",
-        "rawLow": 0,
-        "rawHigh": 10,
-        "scaledLow": 0,
-        "scaledHigh": 1
-      },
-      "ss40k": {
-        "name": "iMppt3",
-        "model": "40101"
-      }
-    },
-    {
-      "id": "PVExternalDcBusVoltage",
-      "pollClass": "normal",
-      "function": "HR",
-      "address": 34076,
-      "scale": {
-        "mode": "Linear",
-        "rawLow": 0,
-        "rawHigh": 10,
-        "scaledLow": 0,
-        "scaledHigh": 1
-      }
-    },
-    {
-      "id": "PVInternalDcBusVoltage",
-      "pollClass": "normal",
-      "function": "HR",
-      "address": 34077,
-      "scale": {
-        "mode": "Linear",
-        "rawLow": 0,
-        "rawHigh": 10,
-        "scaledLow": 0,
-        "scaledHigh": 1
-      }
-    },
-    {
-      "id": "PVBusSidePower",
-      "pollClass": "normal",
-      "function": "HR",
-      "address": 34078,
-      "scale": {
-        "mode": "Linear",
-        "rawLow": 0,
-        "rawHigh": 10,
-        "scaledLow": 0,
-        "scaledHigh": 1
-      }
-    },
-    {
-      "id": "PVBusSideCurrent",
-      "pollClass": "normal",
-      "function": "HR",
-      "address": 34079,
-      "scale": {
-        "mode": "Linear",
-        "rawLow": 0,
-        "rawHigh": 10,
-        "scaledLow": 0,
-        "scaledHigh": 1
-      }
-    },
-    {
-      "id": "PVModuleTemperature",
-      "pollClass": "normal",
-      "function": "HR",
-      "address": 34081
-    },
-    {
-      "id": "PVGeneratedEnergyHighWord",
+      "id": "PVDC1GeneratedEnergyHighWord",
       "pollClass": "slow",
       "function": "HRUS",
       "address": 34082,
       "supporting": true
     },
     {
-      "id": "PVGeneratedEnergyLowWord",
+      "id": "PVDC1GeneratedEnergyLowWord",
       "pollClass": "slow",
       "function": "HRUS",
       "address": 34083,
+      "supporting": true
+    },
+    {
+      "id": "PVDC2GeneratedEnergyHighWord",
+      "pollClass": "slow",
+      "function": "HRUS",
+      "address": 34382,
+      "supporting": true
+    },
+    {
+      "id": "PVDC2GeneratedEnergyLowWord",
+      "pollClass": "slow",
+      "function": "HRUS",
+      "address": 34383,
+      "supporting": true
+    },
+    {
+      "id": "PVDC3GeneratedEnergyHighWord",
+      "pollClass": "slow",
+      "function": "HRUS",
+      "address": 34682,
+      "supporting": true
+    },
+    {
+      "id": "PVDC3GeneratedEnergyLowWord",
+      "pollClass": "slow",
+      "function": "HRUS",
+      "address": 34683,
       "supporting": true
     },
     {
@@ -1313,10 +1193,14 @@
       "pollClass": "slow",
       "calc": {
         "inputs": {
-          "hi": "PVGeneratedEnergyHighWord",
-          "lo": "PVGeneratedEnergyLowWord"
+          "hi1": "PVDC1GeneratedEnergyHighWord",
+          "lo1": "PVDC1GeneratedEnergyLowWord",
+          "hi2": "PVDC2GeneratedEnergyHighWord",
+          "lo2": "PVDC2GeneratedEnergyLowWord",
+          "hi3": "PVDC3GeneratedEnergyHighWord",
+          "lo3": "PVDC3GeneratedEnergyLowWord"
         },
-        "expr": "(hi * 65536 + lo) * 0.1"
+        "expr": "((hi1 * 65536 + lo1) + (hi2 * 65536 + lo2) + (hi3 * 65536 + lo3)) * 0.1"
       },
       "ss40k": {
         "name": "ePvTot",
@@ -1326,7 +1210,7 @@
     },
     {
       "id": "ReactivePowerSetpoint",
-      "pollClass": "manual",
+      "pollClass": "slow",
       "function": "HR",
       "address": 1025,
       "ss40k": {
@@ -1343,7 +1227,11 @@
       "address": 36,
       "alarm": true,
       "supportingTag": true,
-      "bitfieldStatus": true
+      "bitfieldStatus": true,
+      "ss40k": {
+        "name": "pcsStatusWord36",
+        "model": "50103"
+      }
     },
     {
       "id": "SinexcelStatusWord37",
@@ -1354,7 +1242,11 @@
       "address": 37,
       "alarm": true,
       "supportingTag": true,
-      "bitfieldStatus": true
+      "bitfieldStatus": true,
+      "ss40k": {
+        "name": "pcsStatusWord37",
+        "model": "50103"
+      }
     },
     {
       "id": "SinexcelFaultWord106",
@@ -1365,7 +1257,11 @@
       "address": 106,
       "alarm": true,
       "supportingTag": true,
-      "bitfieldStatus": true
+      "bitfieldStatus": true,
+      "ss40k": {
+        "name": "pcsFaultWord106",
+        "model": "50103"
+      }
     },
     {
       "id": "SinexcelFaultWord107",
@@ -1376,7 +1272,11 @@
       "address": 107,
       "alarm": true,
       "supportingTag": true,
-      "bitfieldStatus": true
+      "bitfieldStatus": true,
+      "ss40k": {
+        "name": "pcsFaultWord107",
+        "model": "50103"
+      }
     },
     {
       "id": "SinexcelFaultWord108",
@@ -1387,7 +1287,11 @@
       "address": 108,
       "alarm": true,
       "supportingTag": true,
-      "bitfieldStatus": true
+      "bitfieldStatus": true,
+      "ss40k": {
+        "name": "pcsFaultWord108",
+        "model": "50103"
+      }
     },
     {
       "id": "SinexcelFaultWord109",
@@ -1398,7 +1302,11 @@
       "address": 109,
       "alarm": true,
       "supportingTag": true,
-      "bitfieldStatus": true
+      "bitfieldStatus": true,
+      "ss40k": {
+        "name": "pcsFaultWord109",
+        "model": "50103"
+      }
     },
     {
       "id": "SinexcelFaultWord110",
@@ -1409,7 +1317,11 @@
       "address": 110,
       "alarm": true,
       "supportingTag": true,
-      "bitfieldStatus": true
+      "bitfieldStatus": true,
+      "ss40k": {
+        "name": "pcsFaultWord110",
+        "model": "50103"
+      }
     },
     {
       "id": "SinexcelFaultWord112",
@@ -1420,7 +1332,11 @@
       "address": 112,
       "alarm": true,
       "supportingTag": true,
-      "bitfieldStatus": true
+      "bitfieldStatus": true,
+      "ss40k": {
+        "name": "pcsFaultWord112",
+        "model": "50103"
+      }
     },
     {
       "id": "SinexcelFaultWord113",
@@ -1431,7 +1347,11 @@
       "address": 113,
       "alarm": true,
       "supportingTag": true,
-      "bitfieldStatus": true
+      "bitfieldStatus": true,
+      "ss40k": {
+        "name": "pcsFaultWord113",
+        "model": "50103"
+      }
     },
     {
       "id": "SinexcelFaultWord114",
@@ -1442,7 +1362,11 @@
       "address": 114,
       "alarm": true,
       "supportingTag": true,
-      "bitfieldStatus": true
+      "bitfieldStatus": true,
+      "ss40k": {
+        "name": "pcsFaultWord114",
+        "model": "50103"
+      }
     },
     {
       "id": "SinexcelFaultWord115",
@@ -1453,7 +1377,11 @@
       "address": 115,
       "alarm": true,
       "supportingTag": true,
-      "bitfieldStatus": true
+      "bitfieldStatus": true,
+      "ss40k": {
+        "name": "pcsFaultWord115",
+        "model": "50103"
+      }
     },
     {
       "id": "SinexcelFaultWord118",
@@ -1464,7 +1392,11 @@
       "address": 118,
       "alarm": true,
       "supportingTag": true,
-      "bitfieldStatus": true
+      "bitfieldStatus": true,
+      "ss40k": {
+        "name": "pcsFaultWord118",
+        "model": "50103"
+      }
     },
     {
       "id": "SinexcelFaultWord119",
@@ -1475,7 +1407,11 @@
       "address": 119,
       "alarm": true,
       "supportingTag": true,
-      "bitfieldStatus": true
+      "bitfieldStatus": true,
+      "ss40k": {
+        "name": "pcsFaultWord119",
+        "model": "50103"
+      }
     },
     {
       "id": "SinexcelFaultWord120",
@@ -1486,7 +1422,11 @@
       "address": 120,
       "alarm": true,
       "supportingTag": true,
-      "bitfieldStatus": true
+      "bitfieldStatus": true,
+      "ss40k": {
+        "name": "pcsFaultWord120",
+        "model": "50103"
+      }
     },
     {
       "id": "SinexcelFaultWord121",
@@ -1497,7 +1437,11 @@
       "address": 121,
       "alarm": true,
       "supportingTag": true,
-      "bitfieldStatus": true
+      "bitfieldStatus": true,
+      "ss40k": {
+        "name": "pcsFaultWord121",
+        "model": "50103"
+      }
     },
     {
       "id": "pcsWarning",
@@ -1829,6 +1773,617 @@
       "ss40k": {
         "name": "rsdEPOFault",
         "model": "40103"
+      }
+    },
+    {
+      "id": "GridTotalPowerFactor",
+      "pollClass": "normal",
+      "function": "HR",
+      "address": 220,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 100,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "GridL1PowerFactor",
+      "pollClass": "normal",
+      "function": "HR",
+      "address": 221,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 100,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "GridL2PowerFactor",
+      "pollClass": "normal",
+      "function": "HR",
+      "address": 222,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 100,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "GridL3PowerFactor",
+      "pollClass": "normal",
+      "function": "HR",
+      "address": 223,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 100,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "GridTotalActivePower",
+      "pollClass": "normal",
+      "function": "HR",
+      "address": 224,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "pGridImpTot",
+        "model": "40101",
+        "exportMultiplier": 1000,
+        "exportExpr": "max(value, 0)"
+      }
+    },
+    {
+      "id": "GridL1ActivePower",
+      "pollClass": "normal",
+      "function": "HR",
+      "address": 225,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "pGridL1",
+        "model": "40101",
+        "exportMultiplier": 1000
+      }
+    },
+    {
+      "id": "GridL2ActivePower",
+      "pollClass": "normal",
+      "function": "HR",
+      "address": 226,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "pGridL2",
+        "model": "40101",
+        "exportMultiplier": 1000
+      }
+    },
+    {
+      "id": "GridL3ActivePower",
+      "pollClass": "normal",
+      "function": "HR",
+      "address": 227,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "pGridL3",
+        "model": "40101",
+        "exportMultiplier": 1000
+      }
+    },
+    {
+      "id": "GridTotalReactivePower",
+      "pollClass": "normal",
+      "function": "HR",
+      "address": 228,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "GridL1ReactivePower",
+      "pollClass": "normal",
+      "function": "HR",
+      "address": 229,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "GridL2ReactivePower",
+      "pollClass": "normal",
+      "function": "HR",
+      "address": 230,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "GridL3ReactivePower",
+      "pollClass": "normal",
+      "function": "HR",
+      "address": 231,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "GridTotalApparentPower",
+      "pollClass": "normal",
+      "function": "HR",
+      "address": 232,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "GridL1ApparentPower",
+      "pollClass": "normal",
+      "function": "HR",
+      "address": 233,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "GridL2ApparentPower",
+      "pollClass": "normal",
+      "function": "HR",
+      "address": 234,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "GridL3ApparentPower",
+      "pollClass": "normal",
+      "function": "HR",
+      "address": 235,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      }
+    },
+    {
+      "id": "GridL1Current",
+      "pollClass": "normal",
+      "function": "HR",
+      "address": 236,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "iGridL1",
+        "model": "40101"
+      }
+    },
+    {
+      "id": "GridL2Current",
+      "pollClass": "normal",
+      "function": "HR",
+      "address": 237,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "iGridL2",
+        "model": "40101"
+      }
+    },
+    {
+      "id": "GridL3Current",
+      "pollClass": "normal",
+      "function": "HR",
+      "address": 238,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "iGridL3",
+        "model": "40101"
+      }
+    },
+    {
+      "id": "GridFrequency",
+      "pollClass": "normal",
+      "function": "HRUS",
+      "address": 239,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 100,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "fGrid",
+        "model": "40101"
+      }
+    },
+    {
+      "id": "GridL1L2Voltage",
+      "pollClass": "normal",
+      "function": "HRUS",
+      "address": 240,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "vGridL12",
+        "model": "40101"
+      }
+    },
+    {
+      "id": "GridL2L3Voltage",
+      "pollClass": "normal",
+      "function": "HRUS",
+      "address": 241,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "vGridL23",
+        "model": "40101"
+      }
+    },
+    {
+      "id": "GridL3L1Voltage",
+      "pollClass": "normal",
+      "function": "HRUS",
+      "address": 242,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "vGridL31",
+        "model": "40101"
+      }
+    },
+    {
+      "id": "GridL1NVoltage",
+      "pollClass": "normal",
+      "function": "HRUS",
+      "address": 243,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "vGridL1N",
+        "model": "40101"
+      }
+    },
+    {
+      "id": "GridL2NVoltage",
+      "pollClass": "normal",
+      "function": "HRUS",
+      "address": 244,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "vGridL2N",
+        "model": "40101"
+      }
+    },
+    {
+      "id": "GridL3NVoltage",
+      "pollClass": "normal",
+      "function": "HRUS",
+      "address": 245,
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "vGridL3N",
+        "model": "40101"
+      }
+    },
+    {
+      "id": "GridExportActivePower",
+      "description": "Derived SS40K export grid power from signed PCS.GridTotalActivePower",
+      "pollClass": "normal",
+      "ss40k": {
+        "sourceTagID": "PCS.GridTotalActivePower",
+        "name": "pGridExpTot",
+        "model": "40101",
+        "exportMultiplier": 1000,
+        "exportExpr": "max(-value, 0)"
+      }
+    },
+    {
+      "id": "BatteryScheduling",
+      "description": "Temporary hard-coded daily schedule telemetry for cloud UI validation",
+      "pollClass": "startup",
+      "constant": 1,
+      "ss40k": {
+        "name": "BatteryScheduling",
+        "model": "40104"
+      }
+    },
+    {
+      "id": "ACChargeStatus",
+      "description": "Temporary hard-coded daily schedule telemetry for cloud UI validation",
+      "pollClass": "startup",
+      "constant": 0,
+      "ss40k": {
+        "name": "ACChargeStatus",
+        "model": "40104"
+      }
+    },
+    {
+      "id": "chgST1",
+      "description": "Temporary hard-coded daily schedule telemetry for cloud UI validation",
+      "pollClass": "startup",
+      "constant": 0,
+      "ss40k": {
+        "name": "chgST1",
+        "model": "40104"
+      }
+    },
+    {
+      "id": "chgET1",
+      "description": "Temporary hard-coded daily schedule telemetry for cloud UI validation",
+      "pollClass": "startup",
+      "constant": 15127,
+      "ss40k": {
+        "name": "chgET1",
+        "model": "40104"
+      }
+    },
+    {
+      "id": "chgST2",
+      "description": "Temporary hard-coded daily schedule telemetry for cloud UI validation",
+      "pollClass": "startup",
+      "constant": 0,
+      "ss40k": {
+        "name": "chgST2",
+        "model": "40104"
+      }
+    },
+    {
+      "id": "chgET2",
+      "description": "Temporary hard-coded daily schedule telemetry for cloud UI validation",
+      "pollClass": "startup",
+      "constant": 0,
+      "ss40k": {
+        "name": "chgET2",
+        "model": "40104"
+      }
+    },
+    {
+      "id": "chgST3",
+      "description": "Temporary hard-coded daily schedule telemetry for cloud UI validation",
+      "pollClass": "startup",
+      "constant": 0,
+      "ss40k": {
+        "name": "chgST3",
+        "model": "40104"
+      }
+    },
+    {
+      "id": "chgET3",
+      "description": "Temporary hard-coded daily schedule telemetry for cloud UI validation",
+      "pollClass": "startup",
+      "constant": 0,
+      "ss40k": {
+        "name": "chgET3",
+        "model": "40104"
+      }
+    },
+    {
+      "id": "dischgST1",
+      "description": "Temporary hard-coded daily schedule telemetry for cloud UI validation",
+      "pollClass": "startup",
+      "constant": 0,
+      "ss40k": {
+        "name": "dischgST1",
+        "model": "40104"
+      }
+    },
+    {
+      "id": "dischgET1",
+      "description": "Temporary hard-coded daily schedule telemetry for cloud UI validation",
+      "pollClass": "startup",
+      "constant": 15127,
+      "ss40k": {
+        "name": "dischgET1",
+        "model": "40104"
+      }
+    },
+    {
+      "id": "dischgST2",
+      "description": "Temporary hard-coded daily schedule telemetry for cloud UI validation",
+      "pollClass": "startup",
+      "constant": 0,
+      "ss40k": {
+        "name": "dischgST2",
+        "model": "40104"
+      }
+    },
+    {
+      "id": "dischgET2",
+      "description": "Temporary hard-coded daily schedule telemetry for cloud UI validation",
+      "pollClass": "startup",
+      "constant": 0,
+      "ss40k": {
+        "name": "dischgET2",
+        "model": "40104"
+      }
+    },
+    {
+      "id": "dischgST3",
+      "description": "Temporary hard-coded daily schedule telemetry for cloud UI validation",
+      "pollClass": "startup",
+      "constant": 0,
+      "ss40k": {
+        "name": "dischgST3",
+        "model": "40104"
+      }
+    },
+    {
+      "id": "dischgET3",
+      "description": "Temporary hard-coded daily schedule telemetry for cloud UI validation",
+      "pollClass": "startup",
+      "constant": 0,
+      "ss40k": {
+        "name": "dischgET3",
+        "model": "40104"
+      }
+    },
+    {
+      "id": "acChgST1",
+      "description": "Temporary hard-coded daily schedule telemetry for cloud UI validation",
+      "pollClass": "startup",
+      "constant": 0,
+      "ss40k": {
+        "name": "acChgST1",
+        "model": "40104"
+      }
+    },
+    {
+      "id": "acChgET1",
+      "description": "Temporary hard-coded daily schedule telemetry for cloud UI validation",
+      "pollClass": "startup",
+      "constant": 0,
+      "ss40k": {
+        "name": "acChgET1",
+        "model": "40104"
+      }
+    },
+    {
+      "id": "acChgST2",
+      "description": "Temporary hard-coded daily schedule telemetry for cloud UI validation",
+      "pollClass": "startup",
+      "constant": 0,
+      "ss40k": {
+        "name": "acChgST2",
+        "model": "40104"
+      }
+    },
+    {
+      "id": "acChgET2",
+      "description": "Temporary hard-coded daily schedule telemetry for cloud UI validation",
+      "pollClass": "startup",
+      "constant": 0,
+      "ss40k": {
+        "name": "acChgET2",
+        "model": "40104"
+      }
+    },
+    {
+      "id": "acChgST3",
+      "description": "Temporary hard-coded daily schedule telemetry for cloud UI validation",
+      "pollClass": "startup",
+      "constant": 0,
+      "ss40k": {
+        "name": "acChgST3",
+        "model": "40104"
+      }
+    },
+    {
+      "id": "acChgET3",
+      "description": "Temporary hard-coded daily schedule telemetry for cloud UI validation",
+      "pollClass": "startup",
+      "constant": 0,
+      "ss40k": {
+        "name": "acChgET3",
+        "model": "40104"
       }
     }
   ],

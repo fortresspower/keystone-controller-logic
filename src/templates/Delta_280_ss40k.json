@@ -771,6 +771,206 @@
         "model": "40100",
         "exportMultiplier": 10000
       }
+    },
+    {
+      "id": "BatteryScheduling",
+      "description": "Temporary hard-coded daily schedule telemetry for cloud UI validation",
+      "pollClass": "startup",
+      "constant": 1,
+      "ss40k": {
+        "name": "BatteryScheduling",
+        "model": "40104"
+      }
+    },
+    {
+      "id": "ACChargeStatus",
+      "description": "Temporary hard-coded daily schedule telemetry for cloud UI validation",
+      "pollClass": "startup",
+      "constant": 0,
+      "ss40k": {
+        "name": "ACChargeStatus",
+        "model": "40104"
+      }
+    },
+    {
+      "id": "chgST1",
+      "description": "Temporary hard-coded daily schedule telemetry for cloud UI validation",
+      "pollClass": "startup",
+      "constant": 0,
+      "ss40k": {
+        "name": "chgST1",
+        "model": "40104"
+      }
+    },
+    {
+      "id": "chgET1",
+      "description": "Temporary hard-coded daily schedule telemetry for cloud UI validation",
+      "pollClass": "startup",
+      "constant": 15127,
+      "ss40k": {
+        "name": "chgET1",
+        "model": "40104"
+      }
+    },
+    {
+      "id": "chgST2",
+      "description": "Temporary hard-coded daily schedule telemetry for cloud UI validation",
+      "pollClass": "startup",
+      "constant": 0,
+      "ss40k": {
+        "name": "chgST2",
+        "model": "40104"
+      }
+    },
+    {
+      "id": "chgET2",
+      "description": "Temporary hard-coded daily schedule telemetry for cloud UI validation",
+      "pollClass": "startup",
+      "constant": 0,
+      "ss40k": {
+        "name": "chgET2",
+        "model": "40104"
+      }
+    },
+    {
+      "id": "chgST3",
+      "description": "Temporary hard-coded daily schedule telemetry for cloud UI validation",
+      "pollClass": "startup",
+      "constant": 0,
+      "ss40k": {
+        "name": "chgST3",
+        "model": "40104"
+      }
+    },
+    {
+      "id": "chgET3",
+      "description": "Temporary hard-coded daily schedule telemetry for cloud UI validation",
+      "pollClass": "startup",
+      "constant": 0,
+      "ss40k": {
+        "name": "chgET3",
+        "model": "40104"
+      }
+    },
+    {
+      "id": "dischgST1",
+      "description": "Temporary hard-coded daily schedule telemetry for cloud UI validation",
+      "pollClass": "startup",
+      "constant": 0,
+      "ss40k": {
+        "name": "dischgST1",
+        "model": "40104"
+      }
+    },
+    {
+      "id": "dischgET1",
+      "description": "Temporary hard-coded daily schedule telemetry for cloud UI validation",
+      "pollClass": "startup",
+      "constant": 15127,
+      "ss40k": {
+        "name": "dischgET1",
+        "model": "40104"
+      }
+    },
+    {
+      "id": "dischgST2",
+      "description": "Temporary hard-coded daily schedule telemetry for cloud UI validation",
+      "pollClass": "startup",
+      "constant": 0,
+      "ss40k": {
+        "name": "dischgST2",
+        "model": "40104"
+      }
+    },
+    {
+      "id": "dischgET2",
+      "description": "Temporary hard-coded daily schedule telemetry for cloud UI validation",
+      "pollClass": "startup",
+      "constant": 0,
+      "ss40k": {
+        "name": "dischgET2",
+        "model": "40104"
+      }
+    },
+    {
+      "id": "dischgST3",
+      "description": "Temporary hard-coded daily schedule telemetry for cloud UI validation",
+      "pollClass": "startup",
+      "constant": 0,
+      "ss40k": {
+        "name": "dischgST3",
+        "model": "40104"
+      }
+    },
+    {
+      "id": "dischgET3",
+      "description": "Temporary hard-coded daily schedule telemetry for cloud UI validation",
+      "pollClass": "startup",
+      "constant": 0,
+      "ss40k": {
+        "name": "dischgET3",
+        "model": "40104"
+      }
+    },
+    {
+      "id": "acChgST1",
+      "description": "Temporary hard-coded daily schedule telemetry for cloud UI validation",
+      "pollClass": "startup",
+      "constant": 0,
+      "ss40k": {
+        "name": "acChgST1",
+        "model": "40104"
+      }
+    },
+    {
+      "id": "acChgET1",
+      "description": "Temporary hard-coded daily schedule telemetry for cloud UI validation",
+      "pollClass": "startup",
+      "constant": 0,
+      "ss40k": {
+        "name": "acChgET1",
+        "model": "40104"
+      }
+    },
+    {
+      "id": "acChgST2",
+      "description": "Temporary hard-coded daily schedule telemetry for cloud UI validation",
+      "pollClass": "startup",
+      "constant": 0,
+      "ss40k": {
+        "name": "acChgST2",
+        "model": "40104"
+      }
+    },
+    {
+      "id": "acChgET2",
+      "description": "Temporary hard-coded daily schedule telemetry for cloud UI validation",
+      "pollClass": "startup",
+      "constant": 0,
+      "ss40k": {
+        "name": "acChgET2",
+        "model": "40104"
+      }
+    },
+    {
+      "id": "acChgST3",
+      "description": "Temporary hard-coded daily schedule telemetry for cloud UI validation",
+      "pollClass": "startup",
+      "constant": 0,
+      "ss40k": {
+        "name": "acChgST3",
+        "model": "40104"
+      }
+    },
+    {
+      "id": "acChgET3",
+      "description": "Temporary hard-coded daily schedule telemetry for cloud UI validation",
+      "pollClass": "startup",
+      "constant": 0,
+      "ss40k": {
+        "name": "acChgET3",
+        "model": "40104"
+      }
     }
   ],
   "commands": [

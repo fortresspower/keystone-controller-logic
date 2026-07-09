@@ -22,6 +22,8 @@ export interface TelemetryTemplateSs40k {
   name: string;
   model: string | number;
   exportMultiplier?: number;
+  sourceTagID?: string;
+  exportExpr?: string;
 }
 
 export interface TelemetryTemplateEntry {

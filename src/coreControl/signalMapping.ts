@@ -18,14 +18,30 @@ export interface SignalMappingResult {
 }
 
 const SIGNAL_ORDER: CanonicalSignalKey[] = [
+  "gridPowerKw",
   "utilityPowerKw",
+  "pvPowerKw",
   "pvKw",
+  "pcsPowerKw",
   "pcsActivePowerKw",
+  "loadPowerKw",
   "siteLoadKw",
   "backupLoadKw",
   "batteryPowerKw",
+  "generatorPowerKw",
   "generatorRunning",
 ];
+
+const SIGNAL_ALIASES: Partial<Record<CanonicalSignalKey, CanonicalSignalKey[]>> = {
+  gridPowerKw: ["utilityPowerKw"],
+  utilityPowerKw: ["gridPowerKw"],
+  loadPowerKw: ["siteLoadKw"],
+  siteLoadKw: ["loadPowerKw"],
+  pvPowerKw: ["pvKw"],
+  pvKw: ["pvPowerKw"],
+  pcsPowerKw: ["pcsActivePowerKw"],
+  pcsActivePowerKw: ["pcsPowerKw"],
+};
 
 export function evaluateSignalMapping(
   signalMapping: SignalMappingConfig | undefined,
@@ -39,8 +55,12 @@ export function evaluateSignalMapping(
   }
 
   const telemetryScope = buildTelemetryScope(telemetry);
+  const explicitlyConfigured = new Set(
+    Object.keys(signalMapping.signals) as CanonicalSignalKey[]
+  );
+  const configured = expandSignalAliases(signalMapping.signals);
   for (const signal of SIGNAL_ORDER) {
-    const spec = signalMapping.signals[signal];
+    const spec = configured[signal];
     if (!spec?.expr) continue;
 
     const value = evaluateSignal(signal, spec, {
@@ -50,7 +70,9 @@ export function evaluateSignalMapping(
 
     if (value.ok) {
       signals[signal] = value.value;
+      mirrorSignalAliases(signals, signal, value.value);
     } else {
+      if (!explicitlyConfigured.has(signal)) continue;
       diagnostics.push({
         signal,
         status: value.status,
@@ -61,6 +83,33 @@ export function evaluateSignalMapping(
   }
 
   return { signals, diagnostics };
+}
+
+function expandSignalAliases(
+  signals: SignalMappingConfig["signals"]
+): Partial<Record<CanonicalSignalKey, SignalMappingSignalConfig>> {
+  const out = { ...(signals || {}) };
+  for (const [signal, aliases] of Object.entries(SIGNAL_ALIASES) as [
+    CanonicalSignalKey,
+    CanonicalSignalKey[],
+  ][]) {
+    const spec = out[signal];
+    if (!spec) continue;
+    for (const alias of aliases) {
+      if (!out[alias]) out[alias] = spec;
+    }
+  }
+  return out;
+}
+
+function mirrorSignalAliases(
+  signals: Partial<Record<CanonicalSignalKey, number | boolean>>,
+  signal: CanonicalSignalKey,
+  value: number | boolean
+) {
+  for (const alias of SIGNAL_ALIASES[signal] || []) {
+    if (signals[alias] === undefined) signals[alias] = value;
+  }
 }
 
 function evaluateSignal(

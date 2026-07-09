@@ -6,6 +6,7 @@ interface Runtime {
   timers: NodeJS.Timeout[];
   inflight: number;
   values: Record<string, any>;
+  updatedAt: Record<string, number>;
   pending: Set<string>;
   nextReqId: number;
 }
@@ -23,6 +24,7 @@ export function start(
     timers: [],
     inflight: 0,
     values: {},
+    updatedAt: {},
     pending: new Set<string>(),
     nextReqId: 1,
   };
@@ -35,15 +37,17 @@ export function start(
     : [];
 
   if (constants.length) {
+    const timestamp = Date.now();
     for (const item of constants) {
       rt.values[item.tagID] = item.value;
+      rt.updatedAt[item.tagID] = timestamp;
     }
     send(
       null,
       constants.map((item: any) => ({
         tagID: item.tagID,
         value: item.value,
-        timestamp: Date.now(),
+        timestamp,
         alarm: item.alarm || "No",
         supportingTag: item.supportingTag || "No",
       })),
@@ -261,8 +265,8 @@ function parseValue(regs: number[], base: number, item: TagMapItem) {
         (item as any).wordOrder32 === "CDAB" || (item as any).wordOrder32 === "BADC" ? a : b;
 
       let u = be
-        ? ((hi << 16) >>> 0) | (lo >>> 0)
-        : ((lo << 16) >>> 0) | (hi >>> 0);
+        ? (hi >>> 0) * 0x10000 + (lo >>> 0)
+        : (lo >>> 0) * 0x10000 + (hi >>> 0);
 
       if (parser === "S32" && u > 0x7fffffff) {
         u = u - 0x100000000;
@@ -500,13 +504,14 @@ export function onReply(
   if (rt) {
     for (const sample of samples) {
       rt.values[sample.tagID] = sample.value;
+      rt.updatedAt[sample.tagID] = Number(sample.timestamp) || Date.now();
     }
   }
 
   const calcValues =
     rt?.values ||
     Object.fromEntries(samples.map((sample) => [sample.tagID, sample.value]));
-  const derived = evaluateCalculatedTags(plan, calcValues);
+  const derived = evaluateCalculatedTags(plan, calcValues, env, rt?.updatedAt);
   if (derived.length) {
     samples.push(...derived);
   }
@@ -536,9 +541,17 @@ export function onReply(
   };
 }
 
-function evaluateCalculatedTags(plan: ReadPlan, values: Record<string, any>) {
+function evaluateCalculatedTags(
+  plan: ReadPlan,
+  values: Record<string, any>,
+  env: ReaderEnv,
+  updatedAt?: Record<string, number>
+) {
   const calcs = Array.isArray((plan as any).calcs) ? (plan as any).calcs : [];
   const out: any[] = [];
+  const maxAgeMs = Number(env.CALC_INPUT_MAX_AGE_MS ?? env.TelemetryCalcInputMaxAgeMs ?? 60000);
+  const now = Date.now();
+  const enforceFreshness = !!updatedAt && Number.isFinite(maxAgeMs) && maxAgeMs > 0;
 
   for (const calc of calcs) {
     const scope: Record<string, any> = {};
@@ -546,12 +559,15 @@ function evaluateCalculatedTags(plan: ReadPlan, values: Record<string, any>) {
 
     for (const [name, tagID] of Object.entries(calc.inputs || {})) {
       const value = values[tagID as string];
+      const inputUpdatedAt = updatedAt?.[tagID as string];
       if (
         !(
           (typeof value === "number" && Number.isFinite(value)) ||
           typeof value === "string" ||
           typeof value === "bigint"
-        )
+        ) ||
+        (enforceFreshness &&
+          (!Number.isFinite(inputUpdatedAt) || now - Number(inputUpdatedAt) > maxAgeMs))
       ) {
         missing = true;
         break;

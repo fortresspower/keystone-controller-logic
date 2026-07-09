@@ -436,11 +436,6 @@
           "lo": "PVGeneratedEnergyLowWord"
         },
         "expr": "(hi * 65536 + lo) * 0.1"
-      },
-      "ss40k": {
-        "name": "ePvTot",
-        "model": "40102",
-        "exportMultiplier": 1000
       }
     }
   ],

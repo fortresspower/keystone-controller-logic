@@ -33,6 +33,10 @@ export {
   buildSs40kLookup,
   DEFAULT_SS40K_MODEL_INDEX_MAP,
 } from "./ss40k";
+export {
+  filterSs40kPayloadsForReporting,
+  type Ss40kReportingState,
+} from "./reportingStrategy";
 
 export function initTelemetry(config: SiteConfig): {
   caps: SiteCapabilities;

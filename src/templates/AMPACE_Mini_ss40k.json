@@ -34,8 +34,7 @@
       },
       "ss40k": {
         "name": "vBat",
-        "model": "40101",
-        "exportMultiplier": 10
+        "model": "40101"
       }
     },
     {
@@ -71,6 +70,46 @@
         "rawHigh": 10,
         "scaledLow": 0,
         "scaledHigh": 1
+      }
+    },
+    {
+      "id": "BamsTotalOutEng",
+      "description": "BAMS cumulative discharge energy",
+      "category": "Telemetry",
+      "function": "HRUI",
+      "address": 62053,
+      "pollClass": "slow",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "eBatDischgTot",
+        "model": "40102",
+        "exportMultiplier": 1000
+      }
+    },
+    {
+      "id": "BamsTotalInEng",
+      "description": "BAMS cumulative charge energy",
+      "category": "Telemetry",
+      "function": "HRUI",
+      "address": 62051,
+      "pollClass": "slow",
+      "scale": {
+        "mode": "Linear",
+        "rawLow": 0,
+        "rawHigh": 10,
+        "scaledLow": 0,
+        "scaledHigh": 1
+      },
+      "ss40k": {
+        "name": "eBatChgTot",
+        "model": "40102",
+        "exportMultiplier": 1000
       }
     },
     {
@@ -193,7 +232,7 @@
       },
       "ss40k": {
         "name": "iBatChgMaxBms",
-        "model": "40201",
+        "model": "40200",
         "exportMultiplier": 100
       }
     },
@@ -213,7 +252,7 @@
       },
       "ss40k": {
         "name": "iBatDischgMaxBms",
-        "model": "40201",
+        "model": "40200",
         "exportMultiplier": 100
       }
     },

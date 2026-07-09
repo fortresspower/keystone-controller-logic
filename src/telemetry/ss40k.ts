@@ -25,6 +25,7 @@ export interface Ss40kLookupEntry {
   model: string;
   modelIndex: string;
   exportMultiplier: number;
+  exportExpr?: string;
 }
 
 export interface Ss40kBuildLookupResult {
@@ -54,6 +55,7 @@ export interface Ss40kBuildPayloadOptions {
   fixedSerialNumber?: string;
   signalMapping?: SignalMappingConfig;
   mergeByModelIndex?: boolean;
+  merge40kByModelIndex?: boolean;
 }
 
 export interface Ss40kPayloadMeta {
@@ -79,19 +81,40 @@ export interface Ss40kPayloadMessage {
 
 export const DEFAULT_SS40K_MODEL_INDEX_MAP: Record<string, string> = {
   "40100": "0",
-  "40101": "1",
-  "40102": "2",
-  "40103": "3",
-  "40104": "4",
-  "40201": "5",
-  "40204": "6",
-  "40211": "7",
-  "40214": "8",
-  "42100": "20",
-  "42101": "21",
-  "42103": "23",
-  "42104": "24",
+  "40101": "0",
+  "40102": "0",
+  "40103": "0",
+  "40104": "10",
+  "40200": "0",
+  "40201": "0",
+  "40204": "0",
+  "40211": "0",
+  "40214": "0",
+  "42100": "0",
+  "42101": "0",
+  "42103": "0",
+  "42104": "0",
+  "50103": "0",
 };
+
+const SS40K_KW_TO_W_POINTS = new Set([
+  "pGridImpTot",
+  "pGridExpTot",
+  "pGridL1",
+  "pGridL2",
+  "pGridL3",
+  "pLoad",
+  "pLoadL1",
+  "pLoadL2",
+  "pLoadL3",
+  "pBkupTot",
+  "pPvTotal",
+  "pMppt1",
+  "pMppt2",
+  "pMppt3",
+  "pBatChg",
+  "pBatDischg",
+]);
 
 export function buildSs40kLookup(
   equipmentConfig: Ss40kEquipmentConfig,
@@ -121,7 +144,10 @@ export function buildSs40kLookup(
     for (const entry of telemetryEntries) {
       const lookupEntry = toLookupEntry(equipment, cfg.profileName, entry, modelIndexMap);
       if (!lookupEntry) continue;
-      lookup[lookupEntry.sourceTagID] = lookupEntry;
+      const lookupKey = lookup[lookupEntry.sourceTagID]
+        ? `${lookupEntry.sourceTagID}#${lookupEntry.model}.${lookupEntry.name}`
+        : lookupEntry.sourceTagID;
+      lookup[lookupKey] = lookupEntry;
     }
   }
 
@@ -144,6 +170,7 @@ export function buildSs40kFixedPayloads(
     fixedSerialNumber,
     signalMapping,
     mergeByModelIndex = false,
+    merge40kByModelIndex = false,
   } = options;
   const groups: Record<
     string,
@@ -161,40 +188,52 @@ export function buildSs40kFixedPayloads(
     if (!Array.isArray(samples)) continue;
     for (const sample of samples) {
       if (!sample || typeof sample.tagID !== "string" || !sample.tagID) continue;
-      const meta = lookup[sample.tagID];
-      if (!meta) continue;
+      const metas = lookupEntriesForSourceTag(lookup, sample.tagID);
+      if (!metas.length) continue;
 
-      const groupKey = mergeByModelIndex
-        ? `${meta.modelIndex}::${meta.model}`
-        : `${meta.equipment}::${meta.model}`;
-      if (!groups[groupKey]) {
-        groups[groupKey] = {
-          equipment: mergeByModelIndex ? "site" : meta.equipment,
-          model: meta.model,
-          modelIndex: meta.modelIndex,
-          version,
-          latestTimestamp: null,
-          fixed: {
-            ID: Number(meta.model),
-          },
-        };
-      }
+      for (const meta of metas) {
+        const shouldMergeByModelIndex =
+          mergeByModelIndex || (merge40kByModelIndex && meta.model.startsWith("40"));
+        const groupKey = shouldMergeByModelIndex
+          ? `${meta.modelIndex}::${meta.model}`
+          : `${meta.equipment}::${meta.model}`;
+        if (!groups[groupKey]) {
+          groups[groupKey] = {
+            equipment: shouldMergeByModelIndex ? "site" : meta.equipment,
+            model: meta.model,
+            modelIndex: meta.modelIndex,
+            version,
+            latestTimestamp: null,
+            fixed: {
+              ID: Number(meta.model),
+            },
+          };
+        }
 
-      groups[groupKey].fixed[meta.name] =
-        meta.name === "SN"
-          ? normalizeSerialNumber(sample.value)
-          : toFixedValue(sample.value, meta.exportMultiplier);
+        const exportValue =
+          meta.exportExpr && meta.name !== "SN"
+            ? evaluateExportExpr(meta.exportExpr, sample.value)
+            : sample.value;
+        const fixedValue =
+          meta.name === "SN"
+            ? normalizeSerialNumber(exportValue)
+            : toFixedValue(exportValue, meta.exportMultiplier);
+        setFixedValue(groups[groupKey].fixed, meta.name, fixedValue);
 
-      const iso = toIsoTimestamp(sample.timestamp);
-      if (iso && (!groups[groupKey].latestTimestamp || iso > groups[groupKey].latestTimestamp)) {
-        groups[groupKey].latestTimestamp = iso;
+        const iso = toIsoTimestamp(sample.timestamp);
+        if (iso && (!groups[groupKey].latestTimestamp || iso > groups[groupKey].latestTimestamp)) {
+          groups[groupKey].latestTimestamp = iso;
+        }
       }
     }
   }
 
   applySiteSignalOverrides(groups, telemetry, signalMapping);
   applyPerEquipmentIdentity(groups, lookup, telemetry);
-  applyFixedSerialNumberTo40k(groups, fixedSerialNumber || findSystemSerialNumber(lookup, telemetry));
+  applyFixedSerialNumberToSystemModels(
+    groups,
+    fixedSerialNumber || findSystemSerialNumber(lookup, telemetry)
+  );
 
   return Object.values(groups)
     .sort((a, b) =>
@@ -219,15 +258,45 @@ export function buildSs40kFixedPayloads(
     }));
 }
 
-function applyFixedSerialNumberTo40k(
+function setFixedValue(
+  fixed: Record<string, unknown>,
+  name: string,
+  value: unknown
+) {
+  const existing = fixed[name];
+  if (
+    name === "pPvTotal" &&
+    typeof existing === "number" &&
+    Number.isFinite(existing) &&
+    typeof value === "number" &&
+    Number.isFinite(value)
+  ) {
+    fixed[name] = existing + value;
+    return;
+  }
+  fixed[name] = value;
+}
+
+function applyFixedSerialNumberToSystemModels(
   groups: Record<string, { model: string; fixed: Record<string, unknown> }>,
   serialNumber: string | null
 ) {
   if (!serialNumber) return;
   for (const group of Object.values(groups)) {
-    if (!group.model.startsWith("40")) continue;
+    if (!group.model.startsWith("40") && group.model !== "50103") continue;
     group.fixed.SN = serialNumber;
   }
+}
+
+function lookupEntriesForSourceTag(
+  lookup: Record<string, Ss40kLookupEntry>,
+  sourceTagID: string
+): Ss40kLookupEntry[] {
+  const direct = lookup[sourceTagID];
+  const duplicates = Object.entries(lookup)
+    .filter(([key, value]) => key !== sourceTagID && value.sourceTagID === sourceTagID)
+    .map(([, value]) => value);
+  return direct ? [direct, ...duplicates] : duplicates;
 }
 
 function applyPerEquipmentIdentity(
@@ -244,29 +313,24 @@ function applyPerEquipmentIdentity(
     const identity = identityByEquipment[group.equipment];
     if (!identity) continue;
     if (identity.SN) group.fixed.SN = identity.SN;
-    if (identity.BatteryId != null) group.fixed.BatteryId = identity.BatteryId;
   }
 }
 
 function findIdentityByEquipment(
   lookup: Record<string, Ss40kLookupEntry>,
   telemetry: Ss40kTelemetryStore
-): Record<string, { SN?: string; BatteryId?: unknown }> {
-  const out: Record<string, { SN?: string; BatteryId?: unknown }> = {};
+): Record<string, { SN?: string }> {
+  const out: Record<string, { SN?: string }> = {};
   for (const samples of Object.values(telemetry || {})) {
     if (!Array.isArray(samples)) continue;
     for (const sample of samples) {
       if (!sample || typeof sample.tagID !== "string") continue;
       const meta = lookup[sample.tagID];
       if (!meta || !meta.model.startsWith("42")) continue;
-      if (meta.name !== "SN" && meta.name !== "BatteryId") continue;
+      if (meta.name !== "SN") continue;
       const identity = (out[meta.equipment] ||= {});
-      if (meta.name === "SN") {
-        const serial = normalizeSerialNumber(sample.value);
-        if (serial) identity.SN = serial;
-      } else {
-        identity.BatteryId = toFixedValue(sample.value, meta.exportMultiplier);
-      }
+      const serial = normalizeSerialNumber(sample.value);
+      if (serial) identity.SN = serial;
     }
   }
   return out;
@@ -315,7 +379,7 @@ function applySiteSignalOverrides(
   telemetry: Ss40kTelemetryStore,
   signalMapping: SignalMappingConfig | undefined
 ) {
-  if (!signalMapping?.signals) return;
+  if (!signalMapping?.signals && !signalMapping?.ss40k) return;
 
   const result = evaluateSignalMapping(signalMapping, telemetry);
   const signals = result.signals;
@@ -326,16 +390,16 @@ function applySiteSignalOverrides(
     for (const fixed of fixed40101) fixed[name] = value;
   };
 
-  const pvKw = finiteNumber(signals.pvKw);
+  const pvKw = firstFiniteSignal(signals, "pvPowerKw", "pvKw");
   if (pvKw !== null) setAll("pPvTotal", Math.round(pvKw * 1000));
 
-  const utilityPowerKw = finiteNumber(signals.utilityPowerKw);
+  const utilityPowerKw = firstFiniteSignal(signals, "gridPowerKw", "utilityPowerKw");
   if (utilityPowerKw !== null) {
     setAll("pGridImpTot", Math.round(Math.max(utilityPowerKw, 0) * 1000));
     setAll("pGridExpTot", Math.round(Math.max(-utilityPowerKw, 0) * 1000));
   }
 
-  const siteLoadKw = finiteNumber(signals.siteLoadKw);
+  const siteLoadKw = firstFiniteSignal(signals, "loadPowerKw", "siteLoadKw");
   if (siteLoadKw !== null) setAll("pLoad", Math.round(siteLoadKw * 1000));
 
   const backupLoadKw = finiteNumber(signals.backupLoadKw);
@@ -346,6 +410,94 @@ function applySiteSignalOverrides(
     setAll("pBatDischg", Math.round(Math.max(batteryPowerKw, 0) * 1000));
     setAll("pBatChg", Math.round(Math.max(-batteryPowerKw, 0) * 1000));
   }
+
+  applyDirectSs40kOverrides(fixed40101, telemetry, signalMapping);
+}
+
+function firstFiniteSignal(
+  signals: Partial<Record<string, unknown>>,
+  ...keys: string[]
+): number | null {
+  for (const key of keys) {
+    const value = finiteNumber(signals[key]);
+    if (value !== null) return value;
+  }
+  return null;
+}
+
+function applyDirectSs40kOverrides(
+  fixed40101: Record<string, unknown>[],
+  telemetry: Ss40kTelemetryStore,
+  signalMapping: SignalMappingConfig
+) {
+  if (!signalMapping.ss40k) return;
+  const scope = buildTelemetryExpressionScope(telemetry);
+  for (const [point, spec] of Object.entries(signalMapping.ss40k)) {
+    if (!point || !spec?.expr) continue;
+    try {
+      const value = evaluateMappingExpr(spec.expr, scope);
+      const numeric = finiteNumber(value);
+      if (numeric === null) continue;
+      const signed = spec.invertSign ? -numeric : numeric;
+      const fixedValue = SS40K_KW_TO_W_POINTS.has(point)
+        ? Math.round(signed * 1000)
+        : signed;
+      for (const fixed of fixed40101) fixed[point] = fixedValue;
+    } catch {
+      continue;
+    }
+  }
+}
+
+function buildTelemetryExpressionScope(
+  telemetry: Ss40kTelemetryStore
+): Record<string, Record<string, unknown>> {
+  const roots: Record<string, Record<string, unknown>> = {};
+  const put = (tagID: string, value: unknown) => {
+    const parts = String(tagID).split(".");
+    if (parts.length < 2) return;
+    const root = parts.shift()!;
+    const leaf = parts.join(".");
+    roots[root] = roots[root] || {};
+    roots[root][leaf] = value;
+  };
+
+  for (const [key, samples] of Object.entries(telemetry || {})) {
+    if (Array.isArray(samples)) {
+      for (const sample of samples) {
+        if (sample?.tagID) put(sample.tagID, sample.value);
+      }
+    } else if (key.includes(".")) {
+      put(key, samples);
+    }
+  }
+  return roots;
+}
+
+function evaluateMappingExpr(
+  expr: string,
+  scope: Record<string, Record<string, unknown>>
+): unknown {
+  const deadband = (value: unknown, threshold: unknown) => {
+    const numeric = Number(value);
+    const limit = Math.abs(Number(threshold) || 0);
+    return Math.abs(numeric || 0) < limit ? 0 : numeric;
+  };
+  const names = Object.keys(scope).concat([
+    "deadband",
+    "max",
+    "min",
+    "abs",
+    "round",
+    "Math",
+  ]);
+  const values: unknown[] = Object.keys(scope).map((name) => scope[name]);
+  values.push(deadband, Math.max, Math.min, Math.abs, Math.round, Math);
+  const fn = new Function(
+    ...names,
+    `"use strict"; return (${expr});`
+  ) as (...args: unknown[]) => unknown;
+  return fn(...values);
 }
 
 function to40101FixedTargets(
@@ -391,7 +543,7 @@ function toLookupEntry(
 
   return {
     equipment,
-    sourceTagID: `${equipment}.${entry.id}`,
+    sourceTagID: entry.ss40k.sourceTagID || `${equipment}.${entry.id}`,
     profileName,
     name: entry.ss40k.name,
     model,
@@ -399,7 +551,35 @@ function toLookupEntry(
     exportMultiplier: Number.isFinite(exportMultiplier)
       ? exportMultiplier
       : 1,
+    exportExpr:
+      typeof entry.ss40k.exportExpr === "string" &&
+      entry.ss40k.exportExpr.trim()
+        ? entry.ss40k.exportExpr.trim()
+        : undefined,
   };
+}
+
+function evaluateExportExpr(expr: string, value: unknown): unknown {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) {
+    return value;
+  }
+  const max = Math.max;
+  const min = Math.min;
+  const abs = Math.abs;
+  const round = Math.round;
+  const fn = new Function(
+    "value",
+    "max",
+    "min",
+    "abs",
+    "round",
+    "Math",
+    `"use strict"; return (${expr});`
+  );
+  const result = fn(numeric, max, min, abs, round, Math);
+  const out = Number(result);
+  return Number.isFinite(out) ? out : value;
 }
 
 function toFixedValue(value: unknown, exportMultiplier: number): unknown {

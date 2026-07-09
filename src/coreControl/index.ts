@@ -318,6 +318,7 @@ export function runUnifiedControlCycle(
   );
   const measuredPcsActivePowerKw =
     input.baseTelemetry.pcsActivePowerKw ??
+    numericSignal(signalMapping.signals.pcsPowerKw) ??
     numericSignal(signalMapping.signals.pcsActivePowerKw) ??
     readTelemetryNumber(
       input.telemetry,
@@ -383,14 +384,31 @@ function pickSignalMeteringReadings(
     Pick<TelemetrySnapshot, "utilityPowerKw" | "siteLoadKw" | "pvKw">
   > = {};
 
+  const canonicalToInternal = {
+    utilityPowerKw: ["gridPowerKw", "utilityPowerKw"],
+    siteLoadKw: ["loadPowerKw", "siteLoadKw"],
+    pvKw: ["pvPowerKw", "pvKw"],
+  } as const;
+
   for (const key of ["utilityPowerKw", "siteLoadKw", "pvKw"] as const) {
-    const value = numericSignal(signals[key]);
+    const value = firstNumericSignal(signals, canonicalToInternal[key]);
     if (value != null) {
       readings[key] = value;
     }
   }
 
   return readings;
+}
+
+function firstNumericSignal(
+  signals: Partial<Record<string, unknown>>,
+  keys: readonly string[]
+): number | undefined {
+  for (const key of keys) {
+    const value = numericSignal(signals[key]);
+    if (value != null) return value;
+  }
+  return undefined;
 }
 
 function mergeTelemetryInput(

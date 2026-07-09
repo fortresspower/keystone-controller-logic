@@ -327,6 +327,62 @@ describe("unified control cycle", () => {
     expect(result.pipeline.warnings).toEqual([]);
   });
 
+  test("accepts canonical Mini PCS and PVDC site signal mapping", () => {
+    const config = makeMiniConfig();
+    config.operation.crdMode = "no-export";
+    config.metering.calculations = undefined;
+    config.signalMapping = {
+      sources: {
+        PCS: { profile: "Sinexcel_Mini_PCS_ss40k", role: "pcs" },
+        Load: { profile: "Sinexcel_Mini_Load_ss40k", role: "load" },
+        PVDC1: { profile: "Sinexcel_Mini_PVDC_Module1_ss40k", role: "pvdc" },
+        PVDC2: { profile: "Sinexcel_Mini_PVDC_Module2_ss40k", role: "pvdc" },
+      },
+      signals: {
+        gridPowerKw: {
+          expr: "PCS.GridTotalActivePower",
+        },
+        loadPowerKw: {
+          expr: "Load.LoadTotalActivePower",
+        },
+        pvPowerKw: {
+          expr: "PVDC1.PVBusSidePower + PVDC2.PVBusSidePower",
+        },
+        pcsPowerKw: {
+          expr: "PCS.ACBusTotalActivePower",
+          invertSign: true,
+        },
+      },
+    };
+
+    const result = runUnifiedControlCycle(config, {
+      telemetry: {
+        PCS: [
+          { tagID: "PCS.GridTotalActivePower", value: -34.1 },
+          { tagID: "PCS.ACBusTotalActivePower", value: -6.5 },
+        ],
+        Load: [{ tagID: "Load.LoadTotalActivePower", value: 2 }],
+        PVDC1: [{ tagID: "PVDC1.PVBusSidePower", value: 16.4 }],
+        PVDC2: [{ tagID: "PVDC2.PVBusSidePower", value: 17.9 }],
+      },
+      baseTelemetry: {
+        soc: 0.5,
+        gridStatus: "normal",
+        machineStatus: miniMachineStatus(),
+      },
+    });
+
+    expect(result.telemetry).toMatchObject({
+      utilityPowerKw: -34.1,
+      pcsActivePowerKw: 6.5,
+      siteLoadKw: 2,
+      pvKw: 34.3,
+    });
+    expect(result.diagnostics.metering).toEqual([]);
+    expect(result.diagnostics.signalMapping).toEqual([]);
+    expect(result.pipeline.warnings).toEqual([]);
+  });
+
   test("keeps metering diagnostics with the cycle result", () => {
     const config = makeConfig();
     delete config.metering.calculations!.pvKw;

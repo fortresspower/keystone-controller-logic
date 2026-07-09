@@ -154,8 +154,7 @@
       "pollClass": "normal",
       "ss40k": {
         "name": "vBat",
-        "model": "40101",
-        "exportMultiplier": 10
+        "model": "40101"
       }
     },
     {
