@@ -165,6 +165,11 @@ const TEMPLATE_FILE_ALIASES: Record<string, string> = {
   pvdc_module_1: "Sinexcel_Mini_PVDC_Module1_ss40k.json",
   pvdc_module_2: "Sinexcel_Mini_PVDC_Module2_ss40k.json",
   pvdc_module_3: "Sinexcel_Mini_PVDC_Module3_ss40k.json",
+  NANO_Hybrid_PCS_ss40k: "NANO_Hybrid_PCS_ss40k.json",
+  NANO_Hybrid_PCS: "NANO_Hybrid_PCS_ss40k.json",
+  Nano_Hybrid_PCS: "NANO_Hybrid_PCS_ss40k.json",
+  nano_hybrid_pcs: "NANO_Hybrid_PCS_ss40k.json",
+  udt_NANO_HybridInverter_V15: "NANO_Hybrid_PCS_ss40k.json",
 };
 
 function templatesDir() {

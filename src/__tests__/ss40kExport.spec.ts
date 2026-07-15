@@ -617,6 +617,34 @@ describe("SS40K export helpers", () => {
     expect(exportedNames.filter((name) => !canonical40104Names.has(name))).toEqual([]);
   });
 
+  test("Nano Hybrid PCS template resolves by file and UDT profile names", () => {
+    const directTemplate = resolveTelemetryTemplate("NANO_Hybrid_PCS_ss40k");
+    const udtTemplate = resolveTelemetryTemplate("udt_NANO_HybridInverter_V15");
+
+    expect(directTemplate.device).toMatchObject({
+      vendor: "Solis",
+      name: "udt_NANO_HybridInverter_V15",
+    });
+    expect(udtTemplate.device).toEqual(directTemplate.device);
+
+    const { lookup } = buildSs40kLookup({
+      PCS: "udt_NANO_HybridInverter_V15",
+    });
+
+    expect(lookup["PCS.PowerStatus"]).toMatchObject({
+      equipment: "PCS",
+      name: "PowerStatus",
+      model: "40101",
+      modelIndex: "0",
+    });
+    expect(lookup["PCS.BatteryScheduling"]).toMatchObject({
+      equipment: "PCS",
+      name: "BatteryScheduling",
+      model: "40104",
+      modelIndex: "10",
+    });
+  });
+
   test("inverter 40104 exposes visible daily schedule fields on component 10 by default", () => {
     const template = resolveTelemetryTemplate("Sinexcel_Mini_PCS_ss40k");
     const constants = Object.fromEntries(
