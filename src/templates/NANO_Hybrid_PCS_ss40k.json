@@ -229,168 +229,114 @@
         "model": "40104"
       }
     },
-    {
-      "id": "TOUChargingPlan1StartTimeH",
-      "description": "TOU charge plan 1 start hour. Register 43711",
-      "category": "BatteryTOUCharge",
-      "pollClass": "slow",
-      "function": "HR",
-      "address": 3710,
-      "ss40k": {
-        "name": "chgST1h",
-        "model": "40104"
-      }
-    },
-    {
-      "id": "TOUChargingPlan1StartTimeM",
-      "description": "TOU charge plan 1 start minute. Register 43712",
-      "category": "BatteryTOUCharge",
-      "pollClass": "slow",
-      "function": "HR",
-      "address": 3711,
-      "ss40k": {
-        "name": "chgST1m",
-        "model": "40104"
-      }
-    },
-    {
-      "id": "TOUChargingPlan1EndTimeH",
-      "description": "TOU charge plan 1 end hour. Register 43713",
-      "category": "BatteryTOUCharge",
-      "pollClass": "slow",
-      "function": "HR",
-      "address": 3712,
-      "ss40k": {
-        "name": "chgET1h",
-        "model": "40104"
-      }
-    },
-    {
-      "id": "TOUChargingPlan1EndTimeM",
-      "description": "TOU charge plan 1 end minute. Register 43714",
-      "category": "BatteryTOUCharge",
-      "pollClass": "slow",
-      "function": "HR",
-      "address": 3713,
-      "ss40k": {
-        "name": "chgET1m",
-        "model": "40104"
-      }
-    },
-    {
-      "id": "TOUChargingPlan2StartTimeH",
-      "description": "TOU charge plan 2 start hour. Register 43718",
-      "category": "BatteryTOUCharge",
-      "pollClass": "slow",
-      "function": "HR",
-      "address": 3717,
-      "ss40k": {
-        "name": "chgST2h",
-        "model": "40104"
-      }
-    },
-    {
-      "id": "TOUChargingPlan2StartTimeM",
-      "description": "TOU charge plan 2 start minute. Register 43719",
-      "category": "BatteryTOUCharge",
-      "pollClass": "slow",
-      "function": "HR",
-      "address": 3718,
-      "ss40k": {
-        "name": "chgST2m",
-        "model": "40104"
-      }
-    },
-    {
-      "id": "TOUChargingPlan2EndTimeH",
-      "description": "TOU charge plan 2 end hour. Register 43720",
-      "category": "BatteryTOUCharge",
-      "pollClass": "slow",
-      "function": "HR",
-      "address": 3719,
-      "ss40k": {
-        "name": "chgET2h",
-        "model": "40104"
-      }
-    },
-    {
-      "id": "TOUChargingPlan2EndTimeM",
-      "description": "TOU charge plan 2 end minute. Register 43721",
-      "category": "BatteryTOUCharge",
-      "pollClass": "slow",
-      "function": "HR",
-      "address": 3720,
-      "ss40k": {
-        "name": "chgET2m",
-        "model": "40104"
-      }
-    },
-    {
-      "id": "TOUChargingPlan3StartTimeH",
-      "description": "TOU charge plan 3 start hour. Register 43725",
-      "category": "BatteryTOUCharge",
-      "pollClass": "slow",
-      "function": "HR",
-      "address": 3724,
-      "ss40k": {
-        "name": "chgST3h",
-        "model": "40104"
-      }
-    },
-    {
-      "id": "TOUChargingPlan3StartTimeM",
-      "description": "TOU charge plan 3 start minute. Register 43726",
-      "category": "BatteryTOUCharge",
-      "pollClass": "slow",
-      "function": "HR",
-      "address": 3725,
-      "ss40k": {
-        "name": "chgST3m",
-        "model": "40104"
-      }
-    },
-    {
-      "id": "TOUChargingPlan3EndTimeH",
-      "description": "TOU charge plan 3 end hour. Register 43727",
-      "category": "BatteryTOUCharge",
-      "pollClass": "slow",
-      "function": "HR",
-      "address": 3726,
-      "ss40k": {
-        "name": "chgET3h",
-        "model": "40104"
-      }
-    },
-    {
-      "id": "TOUChargingPlan3EndTimeM",
-      "description": "TOU charge plan 3 end minute. Register 43728",
-      "category": "BatteryTOUCharge",
-      "pollClass": "slow",
-      "function": "HR",
-      "address": 3727,
-      "ss40k": {
-        "name": "chgET3m",
-        "model": "40104"
-      }
-    },
-    {
-      "id": "TOUMaximumDischargingPower",
-      "description": "TOU max discharging power (0.1kW). Read from register 48113. Write to 48113, 48115, 48117 together.",
-      "category": "BatteryTOUDischarge",
-      "pollClass": "normal",
-      "function": "HR",
-      "address": 8112,
-      "scale": {
-        "mode": "Linear",
-        "rawLow": 0,
-        "rawHigh": 10,
-        "scaledLow": 0,
-        "scaledHigh": 1
-      },
-      "ss40k": {
-        "name": "TOUMaximumDischargingPower",
-        "model": "40104"
-      }
+{
+  "id": "chgST1",
+  "description": "TOU charge plan 1 start time U16. Register 43711",
+  "category": "BatteryTOUCharge",
+  "pollClass": "slow",
+  "function": "HR",
+  "address": 3710,
+  "ss40k": { "name": "chgST1", "model": "40104" }
+},
+{
+  "id": "chgET1",
+  "description": "TOU charge plan 1 end time U16. Register 43713",
+  "category": "BatteryTOUCharge",
+  "pollClass": "slow",
+  "function": "HR",
+  "address": 3712,
+  "ss40k": { "name": "chgET1", "model": "40104" }
+},
+{
+  "id": "chgST2",
+  "description": "TOU charge plan 2 start time U16. Register 43718",
+  "category": "BatteryTOUCharge",
+  "pollClass": "slow",
+  "function": "HR",
+  "address": 3717,
+  "ss40k": { "name": "chgST2", "model": "40104" }
+},
+{
+  "id": "chgET2",
+  "description": "TOU charge plan 2 end time U16. Register 43720",
+  "category": "BatteryTOUCharge",
+  "pollClass": "slow",
+  "function": "HR",
+  "address": 3719,
+  "ss40k": { "name": "chgET2", "model": "40104" }
+},
+{
+  "id": "chgST3",
+  "description": "TOU charge plan 3 start time U16. Register 43725",
+  "category": "BatteryTOUCharge",
+  "pollClass": "slow",
+  "function": "HR",
+  "address": 3724,
+  "ss40k": { "name": "chgST3", "model": "40104" }
+},
+{
+  "id": "chgET3",
+  "description": "TOU charge plan 3 end time U16. Register 43727",
+  "category": "BatteryTOUCharge",
+  "pollClass": "slow",
+  "function": "HR",
+  "address": 3726,
+  "ss40k": { "name": "chgET3", "model": "40104" }
+},
+{
+  "id": "dischgST1",
+  "description": "TOU discharge plan 1 start time U16. Register 43753",
+  "category": "BatteryTOUDischarge",
+  "pollClass": "slow",
+  "function": "HR",
+  "address": 3752,
+  "ss40k": { "name": "dischgST1", "model": "40104" }
+},
+{
+  "id": "dischgET1",
+  "description": "TOU discharge plan 1 end time U16. Register 43755",
+  "category": "BatteryTOUDischarge",
+  "pollClass": "slow",
+  "function": "HR",
+  "address": 3754,
+  "ss40k": { "name": "dischgET1", "model": "40104" }
+},
+{
+  "id": "dischgST2",
+  "description": "TOU discharge plan 2 start time U16. Register 43760",
+  "category": "BatteryTOUDischarge",
+  "pollClass": "slow",
+  "function": "HR",
+  "address": 3759,
+  "ss40k": { "name": "dischgST2", "model": "40104" }
+},
+{
+  "id": "dischgET2",
+  "description": "TOU discharge plan 2 end time U16. Register 43762",
+  "category": "BatteryTOUDischarge",
+  "pollClass": "slow",
+  "function": "HR",
+  "address": 3761,
+  "ss40k": { "name": "dischgET2", "model": "40104" }
+},
+{
+  "id": "dischgST3",
+  "description": "TOU discharge plan 3 start time U16. Register 43767",
+  "category": "BatteryTOUDischarge",
+  "pollClass": "slow",
+  "function": "HR",
+  "address": 3766,
+  "ss40k": { "name": "dischgST3", "model": "40104" }
+},
+{
+  "id": "dischgET3",
+  "description": "TOU discharge plan 3 end time U16. Register 43769",
+  "category": "BatteryTOUDischarge",
+  "pollClass": "slow",
+  "function": "HR",
+  "address": 3768,
+  "ss40k": { "name": "dischgET3", "model": "40104" }
+}
     },
     {
       "id": "DischargingStopSoc",
@@ -987,26 +933,26 @@
       }
     },
     {
-      "id": "GeneratorStartSOC",
+      "id": "socGenStart",
       "description": "Generator start SOC %. Register 43344. Range 1-95%, default 20%",
       "category": "Generator",
       "pollClass": "slow",
       "function": "HR",
       "address": 3343,
       "ss40k": {
-        "name": "GeneratorStartSOC",
+        "name": "socGenStart",
         "model": "40104"
       }
     },
     {
-      "id": "GeneratorStopSOC",
+      "id": "socGenStop",
       "description": "Generator stop SOC %. Register 43345",
       "category": "Generator",
       "pollClass": "slow",
       "function": "HR",
       "address": 3344,
       "ss40k": {
-        "name": "GeneratorStopSOC",
+        "name": "socGenStop",
         "model": "40104"
       }
     },
@@ -1101,14 +1047,14 @@
       }
     },
     {
-      "id": "SmartLoadOnSOC",
+      "id": "SmartLoadOnSoc",
       "description": "Smart load on SOC %. Register 43673",
       "category": "LoadShedding",
       "pollClass": "slow",
       "function": "HR",
       "address": 3672,
       "ss40k": {
-        "name": "SmartLoadOnSOC",
+        "name": "SmartLoadOnSoc",
         "model": "40104"
       }
     },
@@ -1125,14 +1071,14 @@
       }
     },
     {
-      "id": "ModbusAddress",
+      "id": "ModbusAddr",
       "description": "Modbus device address. Register 43006. Range 1-99, default 1",
       "category": "Parallel",
       "pollClass": "startup",
       "function": "HR",
       "address": 3005,
       "ss40k": {
-        "name": "ModbusAddress",
+        "name": "ModbusAddr",
         "model": "40104"
       }
     },
