@@ -79,9 +79,9 @@
       "calc": {
         "inputs": {
           "voltage": "InternalSumVoltage",
-          "current": "AmpaceCurrentRaw"
+          "current": "BcuCurrent"
         },
-        "expr": "voltage * -current"
+        "expr": "voltage * current"
       },
       "pollClass": "slow",
       "ss40k": {
@@ -503,7 +503,7 @@
       "id": "SerialNumber",
       "function": "HRUI",
       "address": 39,
-      "pollClass": "normal",
+      "pollClass": "startup",
       "ss40k": {
         "name": "SN",
         "model": "42100"
