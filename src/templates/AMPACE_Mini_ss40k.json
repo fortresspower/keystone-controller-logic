@@ -718,7 +718,11 @@
       "noMerge": true,
       "alarm": true,
       "supportingTag": true,
-      "bitfieldStatus": true
+      "bitfieldStatus": true,
+      "ss40k": {
+        "name": "batteryProtectionAlarmWord",
+        "model": "52103"
+      }
     },
     {
       "id": "BamsSysFaultCode0_8",
@@ -730,7 +734,11 @@
       "noMerge": true,
       "alarm": true,
       "supportingTag": true,
-      "bitfieldStatus": true
+      "bitfieldStatus": true,
+      "ss40k": {
+        "name": "batterySystemFaultWord",
+        "model": "52103"
+      }
     },
     {
       "id": "BamsOtherErrCode0_8",
@@ -742,7 +750,11 @@
       "noMerge": true,
       "alarm": true,
       "supportingTag": true,
-      "bitfieldStatus": true
+      "bitfieldStatus": true,
+      "ss40k": {
+        "name": "batteryOtherErrorWord",
+        "model": "52103"
+      }
     },
     {
       "id": "BamsHwErrCode0_8",
@@ -754,7 +766,11 @@
       "noMerge": true,
       "alarm": true,
       "supportingTag": true,
-      "bitfieldStatus": true
+      "bitfieldStatus": true,
+      "ss40k": {
+        "name": "batteryHardwareErrorWord",
+        "model": "52103"
+      }
     },
     {
       "id": "BamsHwStaCode0_8",
@@ -766,7 +782,11 @@
       "noMerge": true,
       "alarm": true,
       "supportingTag": true,
-      "bitfieldStatus": true
+      "bitfieldStatus": true,
+      "ss40k": {
+        "name": "batteryHardwareStatusWord",
+        "model": "52103"
+      }
     },
     {
       "id": "BamsFaultCode0_8",

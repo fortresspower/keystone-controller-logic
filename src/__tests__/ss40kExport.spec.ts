@@ -6,6 +6,7 @@ import {
   DEFAULT_SS40K_MODEL_INDEX_MAP,
 } from "../telemetry/ss40k";
 import { buildAmpaceBcu42kEquipmentConfig } from "../telemetry/ampaceBcu42k";
+import { buildCatlSbmu42kEquipmentConfig } from "../telemetry/catlSbmu42k";
 import { resolveTelemetryTemplate } from "../telemetry/templateAdapter";
 
 describe("SS40K export helpers", () => {
@@ -202,6 +203,32 @@ describe("SS40K export helpers", () => {
       modelIndex: "0",
       exportMultiplier: 1,
     });
+    expect(DEFAULT_SS40K_MODEL_INDEX_MAP["52103"]).toBe("0");
+    expect(lookup["BMS.BamsProtAlarm0_8"]).toMatchObject({
+      name: "batteryProtectionAlarmWord",
+      model: "52103",
+      modelIndex: "0",
+    });
+    expect(lookup["BMS.BamsSysFaultCode0_8"]).toMatchObject({
+      name: "batterySystemFaultWord",
+      model: "52103",
+      modelIndex: "0",
+    });
+    expect(lookup["BMS.BamsOtherErrCode0_8"]).toMatchObject({
+      name: "batteryOtherErrorWord",
+      model: "52103",
+      modelIndex: "0",
+    });
+    expect(lookup["BMS.BamsHwErrCode0_8"]).toMatchObject({
+      name: "batteryHardwareErrorWord",
+      model: "52103",
+      modelIndex: "0",
+    });
+    expect(lookup["BMS.BamsHwStaCode0_8"]).toMatchObject({
+      name: "batteryHardwareStatusWord",
+      model: "52103",
+      modelIndex: "0",
+    });
 
     const messages = buildSs40kFixedPayloads({
       lookup,
@@ -217,6 +244,11 @@ describe("SS40K export helpers", () => {
           { tagID: "BMS.BamsTotalOutEng", value: 987.6 },
           { tagID: "BMS.batWarning", value: 20 },
           { tagID: "BMS.batFault", value: 1 },
+          { tagID: "BMS.BamsProtAlarm0_8", value: 1 },
+          { tagID: "BMS.BamsSysFaultCode0_8", value: 2 },
+          { tagID: "BMS.BamsOtherErrCode0_8", value: 4 },
+          { tagID: "BMS.BamsHwErrCode0_8", value: 8 },
+          { tagID: "BMS.BamsHwStaCode0_8", value: 16 },
         ],
       },
       topic: "fort/v1/things/test/telem",
@@ -274,6 +306,26 @@ describe("SS40K export helpers", () => {
             batFault: 1,
           },
         },
+      },
+    });
+    expect(byModel["52103"]).toMatchObject({
+      payload: {
+        "0": {
+          id: 52103,
+          fixed: {
+            ID: 52103,
+            batteryProtectionAlarmWord: 1,
+            batterySystemFaultWord: 2,
+            batteryOtherErrorWord: 4,
+            batteryHardwareErrorWord: 8,
+            batteryHardwareStatusWord: 16,
+          },
+        },
+      },
+      ss40k: {
+        equipment: "BMS",
+        model: "52103",
+        modelIndex: "0",
       },
     });
   });
@@ -335,6 +387,7 @@ describe("SS40K export helpers", () => {
         AMPACE_BCU_1: [
           { tagID: "AMPACE_BCU_1.SerialNumber", value: 2350317571 },
           { tagID: "AMPACE_BCU_1.Manufacturer", value: "AMPACE" },
+          { tagID: "AMPACE_BCU_1.ProductModel", value: "MINI" },
           { tagID: "AMPACE_BCU_1.BatteryType", value: 4 },
           { tagID: "AMPACE_BCU_1.USOC", value: 0.72 },
           { tagID: "AMPACE_BCU_1.SOH", value: 0.98 },
@@ -360,6 +413,7 @@ describe("SS40K export helpers", () => {
             ID: 42100,
             SN: "2350317571",
             Mn: "AMPACE",
+            Md: "MINI",
             Typ: 4,
           }),
         },
@@ -372,6 +426,7 @@ describe("SS40K export helpers", () => {
           fixed: expect.objectContaining({
             ID: 42101,
             SN: "2350317571",
+            Md: "MINI",
             SoC: 72,
             SoH: 98,
             V: 720.5,
@@ -388,6 +443,7 @@ describe("SS40K export helpers", () => {
           fixed: expect.objectContaining({
             ID: 42103,
             SN: "2350317571",
+            Md: "MINI",
             BatteryFault: 1,
           }),
         },
@@ -399,6 +455,145 @@ describe("SS40K export helpers", () => {
       expect(fixed).not.toHaveProperty("BatteryId");
       expect(fixed).not.toHaveProperty("Model");
       expect(fixed).not.toHaveProperty("ModelName");
+    }
+  });
+
+  test("generated CATL SBMU readers map each SBMU into SS42K battery models", () => {
+    const equipmentConfig = buildCatlSbmu42kEquipmentConfig({
+      count: 2,
+      route: "MBMU",
+      serialNumbers: [
+        "001PBAMP00000CF2H0100004",
+        "001PBAMP00000CF2H0100005",
+      ],
+    });
+    const { lookup, routeMap } = buildSs40kLookup(equipmentConfig);
+
+    expect(Object.keys(equipmentConfig)).toEqual(["CATL_SBMU_1", "CATL_SBMU_2"]);
+    expect(routeMap).toEqual({
+      CATL_SBMU_1: "MBMU",
+      CATL_SBMU_2: "MBMU",
+    });
+    expect(equipmentConfig.CATL_SBMU_1).toMatchObject({
+      profileName: "CATL_280_SBMU1_42k",
+    });
+    expect(equipmentConfig.CATL_SBMU_2).toMatchObject({
+      profileName: "CATL_280_SBMU2_42k",
+    });
+    expect(
+      equipmentConfig.CATL_SBMU_1 &&
+        typeof equipmentConfig.CATL_SBMU_1 === "object" &&
+        equipmentConfig.CATL_SBMU_1.template?.telemetry.find(
+          (tag) => tag.id === "BatterySubsystemVoltageOutside"
+        )
+    ).toMatchObject({ address: 0x0420 });
+    expect(
+      equipmentConfig.CATL_SBMU_2 &&
+        typeof equipmentConfig.CATL_SBMU_2 === "object" &&
+        equipmentConfig.CATL_SBMU_2.template?.telemetry.find(
+          (tag) => tag.id === "BatterySubsystemVoltageInside"
+        )
+    ).toMatchObject({ address: 0x0821 });
+    expect(lookup["CATL_SBMU_2.SerialNumber"]).toMatchObject({
+      equipment: "CATL_SBMU_2",
+      name: "SN",
+      model: "42100",
+      modelIndex: "0",
+    });
+    expect(lookup["CATL_SBMU_2.SOC"]).toMatchObject({
+      name: "SoC",
+      model: "42101",
+      exportMultiplier: 100,
+    });
+    expect(lookup["CATL_SBMU_2.BatterySubsystemPower"]).toMatchObject({
+      name: "W",
+      model: "42101",
+      exportMultiplier: 1000,
+    });
+    expect(lookup["CATL_SBMU_2.SbmuBatteryFault"]).toMatchObject({
+      name: "BatteryFault",
+      model: "42103",
+    });
+  });
+
+  test("SS42K CATL SBMU payloads keep configured per-SBMU SN", () => {
+    const { lookup } = buildSs40kLookup(
+      buildCatlSbmu42kEquipmentConfig({
+        count: 1,
+        route: "MBMU",
+        serialNumbers: ["001PBAMP00000CF2H0100004"],
+      })
+    );
+
+    const messages = buildSs40kFixedPayloads({
+      lookup,
+      telemetry: {
+        CATL_SBMU_1: [
+          { tagID: "CATL_SBMU_1.SerialNumber", value: "001PBAMP00000CF2H0100004" },
+          { tagID: "CATL_SBMU_1.Manufacturer", value: "CATL" },
+          { tagID: "CATL_SBMU_1.ProductModel", value: "eSpire280" },
+          { tagID: "CATL_SBMU_1.SOC", value: 0.71 },
+          { tagID: "CATL_SBMU_1.SOH", value: 0.99 },
+          { tagID: "CATL_SBMU_1.BatterySubsystemVoltageInside", value: 780.5 },
+          { tagID: "CATL_SBMU_1.BatterySubsystemCurrent", value: -12.5 },
+          { tagID: "CATL_SBMU_1.BatterySubsystemPower", value: -9.8 },
+          { tagID: "CATL_SBMU_1.SbmuBatteryFault", value: 1 },
+        ],
+      },
+      topic: "fort/v1/things/test/telem",
+      fixedSerialNumber: "PCS-SN",
+    });
+
+    const byModel = Object.fromEntries(
+      messages.map((message) => [message.ss40k.model, message])
+    );
+
+    expect(byModel["42100"]).toMatchObject({
+      payload: {
+        "0": {
+          id: 42100,
+          fixed: expect.objectContaining({
+            ID: 42100,
+            SN: "001PBAMP00000CF2H0100004",
+            Mn: "CATL",
+            Md: "eSpire280",
+          }),
+        },
+      },
+    });
+    expect(byModel["42101"]).toMatchObject({
+      payload: {
+        "0": {
+          id: 42101,
+          fixed: expect.objectContaining({
+            ID: 42101,
+            SN: "001PBAMP00000CF2H0100004",
+            Md: "eSpire280",
+            SoC: 71,
+            SoH: 99,
+            V: 780.5,
+            A: -12.5,
+            W: -9800,
+          }),
+        },
+      },
+    });
+    expect(byModel["42103"]).toMatchObject({
+      payload: {
+        "0": {
+          id: 42103,
+          fixed: expect.objectContaining({
+            ID: 42103,
+            SN: "001PBAMP00000CF2H0100004",
+            Md: "eSpire280",
+            BatteryFault: 1,
+          }),
+        },
+      },
+    });
+    for (const message of messages) {
+      const fixed = Object.values(message.payload)[0].fixed;
+      expect(fixed.SN).not.toBe("PCS-SN");
     }
   });
 
@@ -484,6 +679,12 @@ describe("SS40K export helpers", () => {
       modelIndex: "0",
       exportMultiplier: 1,
     });
+    expect(lookup["PCS.SinexcelStatusWord37"]).toMatchObject({
+      name: "pcsStatusWord37",
+      model: "50103",
+      modelIndex: "0",
+      exportMultiplier: 1,
+    });
     expect(lookup["PCS.SinexcelFaultWord106"]).toMatchObject({
       name: "pcsFaultWord106",
       model: "50103",
@@ -501,6 +702,7 @@ describe("SS40K export helpers", () => {
         PCS: [
           { tagID: "PCS.SerialNumber", value: "SH0P600458852403070035" },
           { tagID: "PCS.SinexcelStatusWord36", value: 96 },
+          { tagID: "PCS.SinexcelStatusWord37", value: 775 },
           { tagID: "PCS.SinexcelFaultWord106", value: 1 },
           { tagID: "PCS.SinexcelFaultWord121", value: 384 },
         ],
@@ -518,6 +720,7 @@ describe("SS40K export helpers", () => {
             ID: 50103,
             SN: "SH0P600458852403070035",
             pcsStatusWord36: 96,
+            pcsStatusWord37: 775,
             pcsFaultWord106: 1,
             pcsFaultWord121: 384,
           },
@@ -527,7 +730,7 @@ describe("SS40K export helpers", () => {
         equipment: "PCS",
         model: "50103",
         modelIndex: "0",
-        pointCount: 5,
+        pointCount: 6,
       }),
     });
   });

@@ -9,6 +9,20 @@
   },
   "telemetry": [
     {
+      "id": "SerialNumber",
+      "description": "Delta PCS system serial number decoded from SYS_SN_SEC_1..8",
+      "category": "Identity",
+      "function": "HRUS",
+      "address": 1537,
+      "length": 8,
+      "parser": "STR16BE",
+      "pollClass": "startup",
+      "ss40k": {
+        "name": "SN",
+        "model": "40101"
+      }
+    },
+    {
       "id": "SYS_TIME_MIN_SEC",
       "description": "Sys Time Min Sec",
       "category": "Time",

@@ -25,6 +25,10 @@ export {
   buildAmpaceBcu42kTemplate,
 } from "./ampaceBcu42k";
 export {
+  buildCatlSbmu42kEquipmentConfig,
+  buildCatlSbmu42kTemplate,
+} from "./catlSbmu42k";
+export {
   createTelemetryRuntimeState,
   handleTelemetryMessage,
 } from "./runtime";

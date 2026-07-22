@@ -95,6 +95,7 @@ export const DEFAULT_SS40K_MODEL_INDEX_MAP: Record<string, string> = {
   "42103": "0",
   "42104": "0",
   "50103": "0",
+  "52103": "0",
 };
 
 const SS40K_KW_TO_W_POINTS = new Set([
@@ -309,28 +310,32 @@ function applyPerEquipmentIdentity(
 ) {
   const identityByEquipment = findIdentityByEquipment(lookup, telemetry);
   for (const group of Object.values(groups)) {
-    if (!group.model.startsWith("42")) continue;
+    if (!group.model.startsWith("42") && !group.model.startsWith("52")) continue;
     const identity = identityByEquipment[group.equipment];
     if (!identity) continue;
     if (identity.SN) group.fixed.SN = identity.SN;
+    if (identity.Md) group.fixed.Md = identity.Md;
   }
 }
 
 function findIdentityByEquipment(
   lookup: Record<string, Ss40kLookupEntry>,
   telemetry: Ss40kTelemetryStore
-): Record<string, { SN?: string }> {
-  const out: Record<string, { SN?: string }> = {};
+): Record<string, { SN?: string; Md?: unknown }> {
+  const out: Record<string, { SN?: string; Md?: unknown }> = {};
   for (const samples of Object.values(telemetry || {})) {
     if (!Array.isArray(samples)) continue;
     for (const sample of samples) {
       if (!sample || typeof sample.tagID !== "string") continue;
       const meta = lookup[sample.tagID];
-      if (!meta || !meta.model.startsWith("42")) continue;
-      if (meta.name !== "SN") continue;
+      if (!meta || (!meta.model.startsWith("42") && !meta.model.startsWith("52"))) continue;
       const identity = (out[meta.equipment] ||= {});
-      const serial = normalizeSerialNumber(sample.value);
-      if (serial) identity.SN = serial;
+      if (meta.name === "SN") {
+        const serial = normalizeSerialNumber(sample.value);
+        if (serial) identity.SN = serial;
+      } else if (meta.name === "Md") {
+        identity.Md = toFixedValue(sample.value, meta.exportMultiplier);
+      }
     }
   }
   return out;

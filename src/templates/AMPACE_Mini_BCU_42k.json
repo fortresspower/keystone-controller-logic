@@ -21,6 +21,15 @@
       }
     },
     {
+      "id": "ProductModel",
+      "constant": "MINI",
+      "pollClass": "startup",
+      "ss40k": {
+        "name": "Md",
+        "model": "42100"
+      }
+    },
+    {
       "id": "BatteryType",
       "constant": 4,
       "pollClass": "startup",

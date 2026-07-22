@@ -1891,6 +1891,36 @@ describe("Telemetry baseline lock", () => {
       model: "40103",
     });
     expect(batFault?.calc?.expr).toContain("<< 1");
+    expect(
+      template.telemetry.find((tag) => tag.id === "BamsProtAlarm0_8")?.ss40k
+    ).toEqual({
+      name: "batteryProtectionAlarmWord",
+      model: "52103",
+    });
+    expect(
+      template.telemetry.find((tag) => tag.id === "BamsSysFaultCode0_8")?.ss40k
+    ).toEqual({
+      name: "batterySystemFaultWord",
+      model: "52103",
+    });
+    expect(
+      template.telemetry.find((tag) => tag.id === "BamsOtherErrCode0_8")?.ss40k
+    ).toEqual({
+      name: "batteryOtherErrorWord",
+      model: "52103",
+    });
+    expect(
+      template.telemetry.find((tag) => tag.id === "BamsHwErrCode0_8")?.ss40k
+    ).toEqual({
+      name: "batteryHardwareErrorWord",
+      model: "52103",
+    });
+    expect(
+      template.telemetry.find((tag) => tag.id === "BamsHwStaCode0_8")?.ss40k
+    ).toEqual({
+      name: "batteryHardwareStatusWord",
+      model: "52103",
+    });
 
     expect(
       template.telemetry.find((tag) => tag.id === "BamsDischargePower")?.ss40k
